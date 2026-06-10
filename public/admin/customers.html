@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Invoice Data - FTR System</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Table highlight row */
+        .table-custom tbody tr:hover td {
+            color: var(--accent);
+        }
+        .action-cell {
+            text-align: right;
+            padding-right: 1.5rem;
+        }
+        .search-metrics {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-metric {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .search-metric span.value {
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .form-row-side {
+            display: flex;
+            gap: 1rem;
+        }
+        .form-row-side .form-group {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span>FTR</span> Portal
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="upload.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Upload CDMS CSV
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html" class="sidebar-link active">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Invoice Data
+                    </a>
+                </li>
+                <li>
+                    <a href="customer-profiles.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        Customer Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="pdf-management.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Manage PDF
+                    </a>
+                </li>
+                <li>
+                    <a href="logs.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        System Activity Logs
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div id="userWidget" class="user-profile-widget">
+                    <span style="color: var(--text-muted);">Loading session...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content fade-in">
+            <div class="top-bar">
+                <div class="mobile-nav-toggle-container">
+                    <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
+                </div>
+                <div class="page-title">
+                    <h1>Invoice Data</h1>
+                    <p>Search, manage invoice details, and export accounting sync data.</p>
+                </div>
+            </div>
+
+            <!-- Search Filter Panel Card -->
+            <div class="content-card">
+                <div id="alertContainer" style="display: none;"></div>
+
+                <form id="searchForm" onsubmit="handleSearchSubmit(event)">
+                    <div class="filters-panel">
+                        <div class="form-group">
+                            <label for="tax_rec_id">Invoice/Tax Record ID</label>
+                            <input type="text" id="tax_rec_id" class="form-control" placeholder="e.g. RF2605-00123">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer">Customer Name</label>
+                            <input type="text" id="customer" class="form-control" placeholder="e.g. Company Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <input type="text" id="address" class="form-control" placeholder="e.g. 88/228 Bagplee...">
+                        </div>
+                        <div class="form-group">
+                            <label for="tax_id">Tax ID</label>
+                            <input type="text" id="tax_id" class="form-control" placeholder="13 digits">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_from">Service Date From</label>
+                            <input type="date" id="date_from" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_to">Service Date To</label>
+                            <input type="date" id="date_to" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="is_accounting_exported">Accounting Export Status</label>
+                            <select id="is_accounting_exported" class="form-control">
+                                <option value="all">All Records</option>
+                                <option value="false" selected>Pending Export Only</option>
+                                <option value="true">Exported Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filters-actions">
+                        <div class="search-metrics">
+                            <div class="search-metric">Results Found: <span class="value" id="resCount">0</span></div>
+                            <div class="search-metric">Completed Profiles: <span class="value" id="completeCount" style="color: var(--success);">0</span></div>
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" class="btn btn-secondary" onclick="exportFilteredCsv()" id="exportBtn">
+                                Export Results to CSV
+                            </button>
+                            <button type="submit" class="btn" id="searchBtn">
+                                Search Records
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results List Card -->
+            <div class="content-card" style="padding-top: 1rem;">
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Record ID</th>
+                                <th>Service Date</th>
+                                <th>Tax ID</th>
+                                <th>Cust Num</th>
+                                <th>Cust Name</th>
+                                <th>Cust Address</th>
+                                <th>Cust Branch</th>
+                                <th>Accounting Export</th>
+                                <th>PDF Status</th>
+                                <th class="action-cell">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <tr class="no-data">
+                                <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                    Use the filters above to search for records.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Profile Modal overlay -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Invoice Customer Link</h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            
+            <form id="editForm" onsubmit="handleEditSubmit(event)">
+                <div class="form-group">
+                    <label>Tax Record ID (Read-only)</label>
+                    <input type="text" id="editTaxRecId" class="form-control" style="opacity: 0.7;" readonly>
+                </div>
+
+                <!-- Side-by-side Tax ID and Branch -->
+                <div class="form-row-side">
+                    <div class="form-group">
+                        <label for="editTaxId">Tax ID</label>
+                        <input type="text" id="editTaxId" class="form-control" placeholder="13 digits" pattern="\d{13}" title="Please enter exactly 13 digits" required oninput="checkTaxIdLookup()">
+                    </div>
+                    <div class="form-group">
+                        <label for="editCustomerBranch">Customer Branch</label>
+                        <input type="text" id="editCustomerBranch" class="form-control" placeholder="e.g. สำนักงานใหญ่" required oninput="checkTaxIdLookup()">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCustomer">Customer Name</label>
+                    <input type="text" id="editCustomer" class="form-control" placeholder="Customer Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="editAddress">Address</label>
+                    <textarea id="editAddress" class="form-control" placeholder="Building, Street, Province, Zip..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editContainerNum">Container Number</label>
+                    <input type="text" id="editContainerNum" class="form-control" placeholder="e.g. TCNU1234567">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn" id="saveBtn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Branch Selector Popup Modal Overlay -->
+    <div class="modal-overlay" id="branchSelectorModal">
+        <div class="modal-container" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Select Customer Profile Branch</h2>
+                <button class="modal-close" onclick="closeBranchSelector()">&times;</button>
+            </div>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>Branch</th>
+                            <th>Cust Num</th>
+                            <th>Name</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="branchSelectorBody">
+                        <!-- Dynamically populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        let currentInvoices = [];
+        let branchProfiles = [];
+
+        window.addEventListener('load', () => {
+            // Trigger default search on page load
+            performSearch();
+        });
+
+        function handleSearchSubmit(e) {
+            e.preventDefault();
+            performSearch();
+        }
+
+        function getFilters() {
+            const customerVal = document.getElementById('customer').value;
+            const addressVal = document.getElementById('address').value;
+            return {
+                tax_rec_id: document.getElementById('tax_rec_id').value,
+                customer: customerVal,
+                company_name: customerVal,
+                address: addressVal,
+                tax_id: document.getElementById('tax_id').value,
+                date_from: document.getElementById('date_from').value,
+                date_to: document.getElementById('date_to').value,
+                is_accounting_exported: document.getElementById('is_accounting_exported').value
+            };
+        }
+
+        async function performSearch() {
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.innerText = 'Searching...';
+
+            const filters = getFilters();
+            const queryString = new URLSearchParams(filters).toString();
+
+            try {
+                const response = await fetch(`/api/admin/customers/search?${queryString}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentInvoices = data.customers;
+                    renderTable(data.customers);
+                } else {
+                    showAlert('danger', data.message || 'Failed to query records.');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network error. Failed to retrieve records.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Search Records';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString;
+            return d.toLocaleDateString('en-GB'); // dd/mm/yyyy
+        }
+
+        function renderTable(invoices) {
+            const body = document.getElementById('resultsTableBody');
+            body.innerHTML = '';
+
+            if (invoices.length === 0) {
+                body.innerHTML = `
+                    <tr class="no-data">
+                        <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            No records found matching current search criteria.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('resCount').innerText = '0';
+                document.getElementById('completeCount').innerText = '0';
+                return;
+            }
+
+            let completeProfiles = 0;
+
+            invoices.forEach(inv => {
+                const isComplete = inv.customer && inv.customer_addr && inv.tax_id;
+                if (isComplete) completeProfiles++;
+
+                const tr = document.createElement('tr');
+                
+                // Export status badge
+                const exportBadge = inv.is_accounting_exported 
+                    ? '<span class="badge badge-ready">Exported</span>' 
+                    : '<span class="badge badge-pending">Pending</span>';
+
+                // PDF generation status badge
+                let pdfBadgeClass = 'badge-pending';
+                if (inv.status === 'ready') pdfBadgeClass = 'badge-ready';
+                if (inv.status === 'failed') pdfBadgeClass = 'badge-failed';
+                const pdfBadge = `<span class="badge ${pdfBadgeClass}">${inv.status}</span>`;
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600; font-family: monospace;">${inv.tax_rec_id}</td>
+                    <td>${formatDate(inv.service_date)}</td>
+                    <td>${inv.tax_id || '-'}</td>
+                    <td>${inv.customer_code || '-'}</td>
+                    <td>${inv.customer || '-'}</td>
+                    <td>${inv.customer_addr || '<span style="color:var(--text-muted);font-style:italic;">Incomplete</span>'}</td>
+                    <td>${inv.customer_branch || '-'}</td>
+                    <td>${exportBadge}</td>
+                    <td>${pdfBadge}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="openEditModal('${inv.tax_rec_id}')">
+                            Edit
+                        </button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('resCount').innerText = invoices.length;
+            document.getElementById('completeCount').innerText = completeProfiles;
+        }
+
+        // CSV Export triggering function
+        async function exportFilteredCsv() {
+            const btn = document.getElementById('exportBtn');
+            btn.disabled = true;
+            btn.innerText = 'Exporting...';
+
+            const filters = getFilters();
+
+            try {
+                const response = await fetch('/api/admin/customers/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filters)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    
+                    const contentDisp = response.headers.get('Content-Disposition');
+                    let filename = 'accounting_export.csv';
+                    if (contentDisp && contentDisp.includes('filename=')) {
+                        filename = contentDisp.split('filename=')[1].trim();
+                    }
+
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    
+                    showAlert('success', 'Accounting CSV generated and downloaded. Record export states updated.');
+                    performSearch();
+                } else {
+                    const data = await response.json();
+                    showAlert('danger', data.message || 'Export failed. Only completed tax profiles can be exported.');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network error. Failed to export accounting CSV.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Export Results to CSV';
+            }
+        }
+
+        // Modal Operations
+        function openEditModal(taxRecId) {
+            const invoice = currentInvoices.find(inv => inv.tax_rec_id === taxRecId);
+            if (!invoice) return;
+
+            document.getElementById('editTaxRecId').value = invoice.tax_rec_id;
+            document.getElementById('editTaxId').value = invoice.tax_id || '';
+            document.getElementById('editCustomerBranch').value = invoice.customer_branch || 'สำนักงานใหญ่';
+            document.getElementById('editCustomer').value = invoice.customer || '';
+            document.getElementById('editAddress').value = invoice.customer_addr || '';
+            document.getElementById('editContainerNum').value = invoice.container_num || '';
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            document.getElementById('editForm').reset();
+            branchProfiles = [];
+        }
+
+        // Lookup profile dynamic trigger
+        async function checkTaxIdLookup() {
+            const taxIdVal = document.getElementById('editTaxId').value.trim();
+            const branchVal = document.getElementById('editCustomerBranch').value.trim();
+            
+            if (taxIdVal.length === 13) {
+                try {
+                    const response = await fetch(`/api/admin/customer-profiles/lookup?tax_id=${taxIdVal}`);
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        branchProfiles = data.profiles;
+                        if (branchProfiles.length === 0) {
+                            // Clear fields since profile doesn't exist
+                            document.getElementById('editCustomer').value = '';
+                            document.getElementById('editAddress').value = '';
+                            showAlert('danger', 'No Customer Profile found for this Tax ID. Please upload the profile first.');
+                        } else if (branchProfiles.length === 1) {
+                            // Auto select
+                            selectBranch(0);
+                        } else {
+                            // Multiple profiles, check if one matches the typed branch
+                            const exactMatchIdx = branchProfiles.findIndex(p => p.customer_branch.trim() === branchVal);
+                            if (exactMatchIdx !== -1) {
+                                selectBranch(exactMatchIdx);
+                            } else {
+                                // Show branch selector popup
+                                openBranchSelector();
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error('Lookup error:', err);
+                }
+            }
+        }
+
+        function openBranchSelector() {
+            const tbody = document.getElementById('branchSelectorBody');
+            tbody.innerHTML = '';
+            
+            branchProfiles.forEach((prof, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><strong>${prof.customer_branch || 'สำนักงานใหญ่'}</strong></td>
+                    <td>${prof.customer_num || '-'}</td>
+                    <td>${prof.customer_name || '-'}</td>
+                    <td>
+                        <button type="button" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="selectBranch(${idx})">Select</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('branchSelectorModal').classList.add('active');
+        }
+
+        function closeBranchSelector() {
+            document.getElementById('branchSelectorModal').classList.remove('active');
+        }
+
+        function selectBranch(index) {
+            const profile = branchProfiles[index];
+            if (!profile) return;
+            
+            document.getElementById('editCustomerBranch').value = profile.customer_branch || 'สำนักงานใหญ่';
+            document.getElementById('editCustomer').value = profile.customer_name || '';
+            document.getElementById('editAddress').value = profile.customer_addr || '';
+            
+            closeBranchSelector();
+        }
+
+        async function handleEditSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+
+            const taxRecId = document.getElementById('editTaxRecId').value;
+            const customerVal = document.getElementById('editCustomer').value;
+            const payload = {
+                customer: customerVal,
+                company_name: customerVal,
+                tax_id: document.getElementById('editTaxId').value,
+                customer_branch: document.getElementById('editCustomerBranch').value,
+                address: document.getElementById('editAddress').value,
+                container_num: document.getElementById('editContainerNum').value
+            };
+
+            try {
+                const response = await fetch(`/api/admin/customers/${taxRecId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeEditModal();
+                    performSearch(); // Refresh list
+                } else {
+                    alert(data.message || 'Failed to save changes.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network connection error. Failed to save changes.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save Changes';
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.className = `alert alert-${type}`;
+            alertContainer.innerText = message;
+            alertContainer.style.display = 'block';
+            alertContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

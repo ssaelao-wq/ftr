@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Login - FTR System</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body class="login-layout">
+    <div class="login-card fade-in">
+        <div class="login-logo">
+            <h1>FTR <span>System</span></h1>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem; font-size: 0.9rem;">Administrator Access Portal</p>
+        </div>
+
+        <div id="alertBox" style="display: none;"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="form-control" placeholder="Enter username" required autocomplete="username">
+            </div>
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn" style="width: 100%; justify-content: center;" id="submitBtn">
+                Sign In
+            </button>
+        </form>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const alertBox = document.getElementById('alertBox');
+            
+            btn.disabled = true;
+            btn.innerText = 'Signing In...';
+            alertBox.style.display = 'none';
+
+            const payload = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('/api/admin/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = '/admin/dashboard.html';
+                } else {
+                    alertBox.className = 'alert alert-danger';
+                    alertBox.innerText = data.message || 'Login failed. Invalid credentials.';
+                    alertBox.style.display = 'block';
+                    btn.disabled = false;
+                    btn.innerText = 'Sign In';
+                }
+            } catch (err) {
+                console.error(err);
+                alertBox.className = 'alert alert-danger';
+                alertBox.innerText = 'Network error. Please try again later.';
+                alertBox.style.display = 'block';
+                btn.disabled = false;
+                btn.innerText = 'Sign In';
+            }
+        });
+    </script>
+</body>
+</html>

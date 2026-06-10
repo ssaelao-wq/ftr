@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Activity Logs Viewer - FTR System</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .pagination-buttons {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .page-btn {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .page-btn:hover:not(:disabled) {
+            background-color: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .page-btn.active {
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        /* Mobile responsive adjustments */
+        @media (max-width: 576px) {
+            .pagination-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span>FTR</span> Portal
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="upload.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Upload CDMS CSV
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Invoice Data
+                    </a>
+                </li>
+                <li>
+                    <a href="customer-profiles.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        Customer Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="pdf-management.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Manage PDF
+                    </a>
+                </li>
+                <li>
+                    <a href="logs.html" class="sidebar-link active">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        System Activity Logs
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div id="userWidget" class="user-profile-widget">
+                    <span style="color: var(--text-muted);">Loading session...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content fade-in">
+            <div class="top-bar">
+                <div class="mobile-nav-toggle-container">
+                    <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
+                </div>
+                <div class="page-title">
+                    <h1>System Activity Logs</h1>
+                    <p>Track audit logs for CSV imports, downloads, PDF processing, and emails.</p>
+                </div>
+            </div>
+
+            <!-- Filters Panel Card -->
+            <div class="content-card">
+                <div id="alertContainer" style="display: none;"></div>
+
+                <form id="filterForm" onsubmit="handleFilterSubmit(event)">
+                    <div class="filters-panel">
+                        <div class="form-group">
+                            <label for="filterAction">Activity Type</label>
+                            <select id="filterAction" class="form-control">
+                                <option value="all">All Activities</option>
+                                <option value="REQ_MISS_DATA">REQ_MISS_DATA (Submit Tax Profile)</option>
+                                <option value="REQ_FULL_TAX">REQ_FULL_TAX (Request Tax Invoice)</option>
+                                <option value="REQ_UPLOAD_CDMS">REQ_UPLOAD_CDMS (CDMS Upload)</option>
+                                <option value="REQ_DOWNLOAD_MISS">REQ_DOWNLOAD_MISS (Accounting Download)</option>
+                                <option value="CRON_GEN_PDF">CRON_GEN_PDF (Nightly PDF Cron)</option>
+                                <option value="ONTHEFLY_GEN_PDF">ONTHEFLY_GEN_PDF (PDF On-The-Fly)</option>
+                                <option value="SENDING_EMAIL">SENDING_EMAIL (Email Delivery)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="date_from">Date From</label>
+                            <input type="date" id="date_from" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_to">Date To</label>
+                            <input type="date" id="date_to" class="form-control">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                        <button type="submit" class="btn" id="filterBtn">
+                            Filter Logs
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Logs Results Card -->
+            <div class="content-card" style="padding-top: 1rem;">
+                <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;" id="logsSummaryMeta">
+                    Showing 0 results.
+                </div>
+                
+                <!-- table-responsive wrapper handles mobile horizontal scrolling natively -->
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Log ID</th>
+                                <th style="width: 180px;">Activity Name</th>
+                                <th style="width: 150px;">Timestamp</th>
+                                <th>Details / Parameters</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody">
+                            <tr class="no-data">
+                                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
+                                    Loading activity logs...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Footer -->
+                <div class="pagination-container" id="paginationContainer" style="display: none;">
+                    <div style="font-size: 0.85rem; color: var(--text-muted);" id="paginationMeta">
+                        Page 1 of 1
+                    </div>
+                    <div class="pagination-buttons" id="paginationButtons"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        let currentPage = 1;
+
+        window.addEventListener('load', () => {
+            loadLogs(1);
+        });
+
+        function handleFilterSubmit(e) {
+            e.preventDefault();
+            loadLogs(1);
+        }
+
+        async function loadLogs(page = 1) {
+            currentPage = page;
+            const filterBtn = document.getElementById('filterBtn');
+            filterBtn.disabled = true;
+            filterBtn.innerText = 'Loading...';
+
+            const action = document.getElementById('filterAction').value;
+            const date_from = document.getElementById('date_from').value;
+            const date_to = document.getElementById('date_to').value;
+
+            const queryParams = new URLSearchParams({
+                action,
+                date_from,
+                date_to,
+                page
+            }).toString();
+
+            try {
+                const response = await fetch(`/api/admin/logs?${queryParams}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    renderLogsTable(data.logs);
+                    renderPagination(data.pagination);
+                } else {
+                    showAlert('danger', data.message || 'Failed to fetch activity logs.');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network error. Failed to retrieve logs.');
+            } finally {
+                filterBtn.disabled = false;
+                filterBtn.innerText = 'Filter Logs';
+            }
+        }
+
+        function renderLogsTable(logs) {
+            const body = document.getElementById('logsTableBody');
+            body.innerHTML = '';
+
+            if (!logs || logs.length === 0) {
+                body.innerHTML = `
+                    <tr class="no-data">
+                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
+                            No matching system activity logs found.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('logsSummaryMeta').innerText = 'Showing 0 results.';
+                return;
+            }
+
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                
+                // Set custom badge styling per action type
+                let badgeClass = 'badge-pending'; // default yellow
+                if (log.log_action.includes('GEN') || log.log_action.includes('UPLOAD')) {
+                    badgeClass = 'badge-ready'; // green
+                }
+                if (log.log_action.includes('EMAIL')) {
+                    badgeClass = 'badge-ready'; // green
+                }
+                if (log.log_action.includes('MISS')) {
+                    badgeClass = 'badge-pending';
+                }
+
+                // Format values display: replace colons with clean dividers
+                const valuesFormatted = (log.log_values || '')
+                    .split(':')
+                    .map(val => `<span style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); padding: 0.15rem 0.4rem; border-radius: 4px; font-family: monospace; font-size: 0.85rem; word-break: break-all;">${val}</span>`)
+                    .join(' <span style="color: var(--text-muted); font-size:0.8rem; margin: 0 0.2rem;">&rarr;</span> ');
+
+                tr.innerHTML = `
+                    <td style="font-family: monospace; color: var(--text-secondary);">${log.log_id}</td>
+                    <td><span class="badge ${badgeClass}">${log.log_action}</span></td>
+                    <td style="font-size: 0.85rem; white-space: nowrap;">${log.log_datetime}</td>
+                    <td style="line-height: 1.8; vertical-align: middle;">${valuesFormatted}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function renderPagination(pageData) {
+            const container = document.getElementById('paginationContainer');
+            const meta = document.getElementById('paginationMeta');
+            const buttonsDiv = document.getElementById('paginationButtons');
+
+            if (!pageData || pageData.totalLogs === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            document.getElementById('logsSummaryMeta').innerText = `Showing logs ${((pageData.currentPage - 1) * pageData.limit) + 1} - ${Math.min(pageData.currentPage * pageData.limit, pageData.totalLogs)} of ${pageData.totalLogs} matching events (Capped at 500 recent events).`;
+
+            meta.innerText = `Page ${pageData.currentPage} of ${pageData.totalPages}`;
+            buttonsDiv.innerHTML = '';
+
+            // Previous Button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerText = 'Prev';
+            prevBtn.disabled = pageData.currentPage === 1;
+            prevBtn.onclick = () => loadLogs(pageData.currentPage - 1);
+            buttonsDiv.appendChild(prevBtn);
+
+            // Page Number Buttons
+            for (let i = 1; i <= pageData.totalPages; i++) {
+                const btn = document.createElement('button');
+                btn.className = `page-btn ${pageData.currentPage === i ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.onclick = () => loadLogs(i);
+                buttonsDiv.appendChild(btn);
+            }
+
+            // Next Button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerText = 'Next';
+            nextBtn.disabled = pageData.currentPage === pageData.totalPages;
+            nextBtn.onclick = () => loadLogs(pageData.currentPage + 1);
+            buttonsDiv.appendChild(nextBtn);
+        }
+
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.className = `alert alert-${type}`;
+            alertContainer.innerText = message;
+            alertContainer.style.display = 'block';
+            alertContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

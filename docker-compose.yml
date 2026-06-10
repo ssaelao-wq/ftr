@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  web-app:
+    # 1. Point this to the local path where you unzipped your source code
+    build:
+      context: /www/wwwroot/ftr
+      dockerfile: Dockerfile
+    
+    container_name: ftr-app
+    restart: unless-stopped
+    
+    # 2. Ports mapping (Secured to local loopback interface)
+    ports:
+      - "127.0.0.1:3000:3000"
+    
+    extra_hosts:
+      - "host.docker.internal:host-gateway"      
+    
+    # 3. Persistent PDF storage volume mapping
+    volumes:
+      - /www/wwwroot/ftr/storage/pdfs:/app/storage/pdfs
+      - /www/wwwroot/ftr/.env:/app/.env

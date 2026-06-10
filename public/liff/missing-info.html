@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Tax Info - FTR</title>
+    <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #00B900; /* Line Green */
+            --secondary-color: #009900;
+            --bg-color: #f4f7f6;
+            --text-color: #333;
+            --border-radius: 12px;
+            --input-border: #dcdcdc;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--glass-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            background-color: #fafafa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.15);
+            background-color: #fff;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0,185,0,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #message-box {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .message-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .form-control:read-only {
+            background-color: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+            border-color: #e5e7eb;
+        }
+        .form-control:disabled {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            cursor: not-allowed;
+            border-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Update Tax Info</h1>
+            <p>Please provide your company details to generate the Full Tax Invoice.</p>
+        </div>
+
+        <form id="missingInfoForm">
+            <div class="form-group">
+                <label for="tax_rec_id">Tax Record ID</label>
+                <input type="text" id="tax_rec_id" class="form-control" placeholder="e.g. RF2605-00123" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="tax_id">Tax Identification Number</label>
+                <input type="text" id="tax_id" class="form-control" placeholder="13-digit Tax ID" pattern="\d{13}" title="Please enter exactly 13 digits" required oninput="handleTaxIdInput()">
+            </div>
+
+            <div class="form-group">
+                <label for="customer_branch">Customer Branch</label>
+                <select id="customer_branch" class="form-control" disabled required onchange="handleBranchSelect()">
+                    <option value="">-- Enter Tax ID first --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="customer_num">Customer Number</label>
+                <input type="text" id="customer_num" class="form-control" placeholder="Customer Number" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="company_name">Customer Name</label>
+                <input type="text" id="company_name" class="form-control" placeholder="Customer Name" readonly>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Address</label>
+                <textarea id="address" class="form-control" placeholder="e.g. 88/228 Bagplee..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="container_num">Container Number</label>
+                <textarea id="container_num" rows="2" class="form-control" placeholder="e.g. TCNU1234567"></textarea>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn" disabled>Update Information</button>
+        </form>
+
+        <div class="loader" id="loader" style="display: none;">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Updating profile...</p>
+        </div>
+
+        <div id="message-box"></div>
+    </div>
+
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script>
+        let lineUserId = null;
+        let branchProfiles = [];
+
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: "2010196890-kJW56aX3" });  // Your active LIFF ID
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    const profile = await liff.getProfile();
+                    lineUserId = profile.userId;
+                    console.log("LIFF initialized. Line User ID:", lineUserId);
+                }
+            } catch (err) {
+                console.error('LIFF Initialization failed', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeLiff);
+
+        // Fetch registered branches when Tax ID reaches 13 digits
+        async function handleTaxIdInput() {
+            const taxIdVal = document.getElementById('tax_id').value.trim();
+            const branchSelect = document.getElementById('customer_branch');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Reset fields
+            branchSelect.innerHTML = '<option value="">-- Enter Tax ID first --</option>';
+            branchSelect.disabled = true;
+            document.getElementById('customer_num').value = '';
+            document.getElementById('company_name').value = '';
+            document.getElementById('address').value = '';
+            submitBtn.disabled = true;
+
+            const msgBox = document.getElementById('message-box');
+            msgBox.style.display = 'none';
+
+            if (taxIdVal.length === 13) {
+                branchSelect.innerHTML = '<option value="">Searching branches...</option>';
+                try {
+                    const response = await fetch(`/api/customer/lookup-branches?tax_id=${taxIdVal}`);
+                    const data = await response.json();
+
+                    if (response.ok && data.success && data.branches.length > 0) {
+                        branchProfiles = data.branches;
+                        
+                        branchSelect.innerHTML = '<option value="">-- Select Branch --</option>';
+                        branchProfiles.forEach((prof, idx) => {
+                            const option = document.createElement('option');
+                            option.value = idx;
+                            option.textContent = prof.customer_branch || 'สำนักงานใหญ่';
+                            branchSelect.appendChild(option);
+                        });
+                        branchSelect.disabled = false;
+                    } else {
+                        branchSelect.innerHTML = '<option value="">No branch profile found</option>';
+                        msgBox.className = 'message-error';
+                        msgBox.style.display = 'block';
+                        msgBox.innerText = 'ไม่พบข้อมูลผู้เสียภาษีนี้ในระบบ กรุณาติดต่อเจ้าหน้าที่ (No registered profile found. Please contact staff.)';
+                    }
+                } catch (err) {
+                    console.error('Error fetching branches:', err);
+                    branchSelect.innerHTML = '<option value="">Error loading branches</option>';
+                }
+            }
+        }
+
+        // Populate details on selecting branch
+        function handleBranchSelect() {
+            const branchSelect = document.getElementById('customer_branch');
+            const selectedIdx = branchSelect.value;
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (selectedIdx !== "") {
+                const profile = branchProfiles[selectedIdx];
+                document.getElementById('customer_num').value = profile.customer_num || '';
+                document.getElementById('company_name').value = profile.customer_name || '';
+                document.getElementById('address').value = profile.customer_addr || '';
+                submitBtn.disabled = false;
+            } else {
+                document.getElementById('customer_num').value = '';
+                document.getElementById('company_name').value = '';
+                document.getElementById('address').value = '';
+                submitBtn.disabled = true;
+            }
+        }
+
+        document.getElementById('missingInfoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const loader = document.getElementById('loader');
+            const msgBox = document.getElementById('message-box');
+            const selectedIdx = document.getElementById('customer_branch').value;
+            
+            if (selectedIdx === "") return;
+            const profile = branchProfiles[selectedIdx];
+
+            btn.style.display = 'none';
+            loader.style.display = 'block';
+            msgBox.style.display = 'none';
+
+            const payload = {
+                line_user_id: lineUserId || 'mock_user_id_for_dev',
+                tax_rec_id: document.getElementById('tax_rec_id').value.trim(),
+                tax_id: document.getElementById('tax_id').value.trim(),
+                customer_branch: profile.customer_branch || 'สำนักงานใหญ่',
+                address: document.getElementById('address').value.trim(),
+                container_num: document.getElementById('container_num').value.trim()
+            };
+
+            try {
+                const response = await fetch('/api/customer/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                loader.style.display = 'none';
+                msgBox.style.display = 'block';
+                
+                if (response.ok) {
+                    msgBox.className = 'message-success';
+                    msgBox.innerText = 'Success! Your information has been updated. You can now request the Full Tax Invoice.';
+                    setTimeout(() => liff.closeWindow(), 3000);
+                } else {
+                    msgBox.className = 'message-error';
+                    msgBox.innerText = data.message || 'An error occurred. Please try again.';
+                    btn.style.display = 'block';
+                }
+            } catch (err) {
+                loader.style.display = 'none';
+                msgBox.style.display = 'block';
+                msgBox.className = 'message-error';
+                msgBox.innerText = 'Network error. Please try again.';
+                btn.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

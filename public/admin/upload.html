@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Upload CDMS CSV - FTR System</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .preview-container {
+            margin-top: 2rem;
+            display: none;
+        }
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .table-preview-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+        .table-preview-scroll th,
+        .table-preview-scroll td {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span>FTR</span> Portal
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="upload.html" class="sidebar-link active">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Upload CDMS CSV
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Invoice Data
+                    </a>
+                </li>
+                <li>
+                    <a href="customer-profiles.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        Customer Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="pdf-management.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Manage PDF
+                    </a>
+                </li>
+                <li>
+                    <a href="logs.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        System Activity Logs
+                    </a>
+                </li>
+
+            </ul>
+            <div class="sidebar-footer">
+                <div id="userWidget" class="user-profile-widget">
+                    <span style="color: var(--text-muted);">Loading session...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content fade-in">
+            <div class="top-bar">
+                <div class="mobile-nav-toggle-container">
+                    <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
+                </div>
+                <div class="page-title">
+                    <h1>Upload CDMS CSV</h1>
+                    <p>Import the daily transaction records export file from the CDMS system.</p>
+                </div>
+            </div>
+
+            <!-- Upload Area Card -->
+            <div class="content-card">
+                <div id="alertContainer" style="display: none;"></div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label for="uploadType" style="font-weight: 600; margin-right: 0.5rem;">Select Upload Type:</label>
+                    <select id="uploadType" class="form-control" style="width: auto; display: inline-block; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
+                        <option value="cdms">CDMS File</option>
+                        <option value="customer">Customer Profile File</option>
+                    </select>
+                </div>
+
+                <div class="file-drop-area" id="dropArea">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                    </svg>
+                    <p style="font-weight: 500; font-size: 1.1rem; margin-bottom: 0.25rem;">Drag and drop your CSV file here</p>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem;">Only CSV files (.csv) delimited by "|" are supported</p>
+                    <button class="btn btn-secondary" onclick="document.getElementById('csvFileInput').click()">Browse Files</button>
+                    <input type="file" id="csvFileInput" accept=".csv">
+                </div>
+
+                <!-- Preview Panel -->
+                <div class="preview-container" id="previewPanel">
+                    <div class="preview-header" style="display: block;">
+                        <h3 style="font-size: 1.15rem; font-weight: 600;">Data Preview</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.85rem;" id="previewMeta">Showing first 10 rows of the file.</p>
+                        
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem; margin-bottom: 1rem; justify-content: flex-start;">
+                            <button class="btn" id="confirmBtn" onclick="submitCsvFile()">Confirm & Import</button>
+                            <button class="btn btn-secondary" id="cancelBtn" onclick="resetUploadArea()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive table-preview-scroll" style="width: 100%; max-height: 60vh; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;">
+                        <table class="table-custom" id="previewTable" style="min-width: max-content; width: 100%;">
+                            <thead>
+                                <tr id="previewHeaders" style="position: sticky; top: 0; background: white; z-index: 1;"></tr>
+                            </thead>
+                            <tbody id="previewBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('csvFileInput');
+        const previewPanel = document.getElementById('previewPanel');
+        const alertContainer = document.getElementById('alertContainer');
+        let selectedFile = null;
+
+        // Setup Drag & Drop listeners
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropArea.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropArea.classList.remove('dragover');
+            }, false);
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (fileInput.files.length > 0) {
+                handleFileSelection(fileInput.files[0]);
+            }
+        });
+
+        // Parse file and display preview
+        function handleFileSelection(file) {
+            if (!file.name.endsWith('.csv')) {
+                showAlert('danger', 'Invalid file type. Please select a .csv file.');
+                return;
+            }
+            selectedFile = file;
+            alertContainer.style.display = 'none';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                // Auto-detect encoding: try UTF-8 first, fallback to Windows-874 if invalid bytes are found
+                let isUtf8 = true;
+                try {
+                    const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+                    utf8Decoder.decode(uint8Array);
+                } catch (err) {
+                    isUtf8 = false;
+                }
+                
+                const encoding = isUtf8 ? 'utf-8' : 'windows-874';
+                const decoder = new TextDecoder(encoding);
+                const text = decoder.decode(uint8Array);
+                parseAndPreviewCsv(text);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function splitCsvLine(line, delimiter) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === delimiter && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result.map(val => {
+                if (val.startsWith('"') && val.endsWith('"')) {
+                    return val.substring(1, val.length - 1).trim();
+                }
+                return val;
+            });
+        }
+
+        function parseAndPreviewCsv(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+            if (lines.length === 0) {
+                showAlert('danger', 'The uploaded file is empty.');
+                return;
+            }
+
+            // Auto-detect delimiter
+            let delimiter = '|';
+            const firstLine = lines[0];
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const pipeCount = (firstLine.match(/\|/g) || []).length;
+            if (commaCount > pipeCount) {
+                delimiter = ',';
+            }
+
+            const headers = splitCsvLine(firstLine, delimiter);
+            const uploadType = document.getElementById('uploadType').value;
+            
+            let requiredColumns = [];
+            if (uploadType === 'cdms') {
+                requiredColumns = ['InvoiceNo', 'InvoiceDate', 'PartNumber', 'PartName', 'Qty', 'Price', 'Amount'];
+            } else if (uploadType === 'customer') {
+                requiredColumns = ['เลขประจำตัวผู้เสียภาษี', 'รหัสลูกค้า', 'ชื่อลูกค้า', 'ที่อยู่', 'email', 'โทรศัพท์', 'ประเภทสาขา', 'สาขา'];
+            }
+            
+            // Flexible matching for headers
+            const missing = [];
+            
+            for (const col of requiredColumns) {
+                let found = false;
+                if (col === 'email') {
+                    // Check for email, Email, E-mail, e-mail
+                    const idx = headers.findIndex(h => h.toLowerCase().replace('-', '') === 'email');
+                    if (idx !== -1) {
+                        found = true;
+                    }
+                } else {
+                    const idx = headers.indexOf(col);
+                    if (idx !== -1) {
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    missing.push(col);
+                }
+            }
+
+            if (missing.length > 0) {
+                showAlert('danger', `Invalid CSV columns for ${uploadType === 'cdms' ? 'CDMS' : 'Customer Profile'}. Missing required column(s): ${missing.join(', ')}`);
+                return;
+            }
+
+            const headerRow = document.getElementById('previewHeaders');
+            headerRow.innerHTML = '';
+            const body = document.getElementById('previewBody');
+            body.innerHTML = '';
+
+            if (uploadType === 'customer') {
+                const idxTaxId = headers.indexOf('เลขประจำตัวผู้เสียภาษี');
+                const idxCustNum = headers.indexOf('รหัสลูกค้า');
+                const idxCustName = headers.indexOf('ชื่อลูกค้า');
+                const idxAddr = headers.indexOf('ที่อยู่');
+                const idxEmail = headers.findIndex(h => h.toLowerCase().replace('-', '') === 'email');
+                const idxPhone = headers.indexOf('โทรศัพท์');
+                const idxBranchType = headers.indexOf('ประเภทสาขา');
+                const idxBranchVal = headers.indexOf('สาขา');
+
+                // Render mapped table headers
+                const targetHeaders = ['Tax ID', 'Customer Num', 'Customer Name', 'Customer Addr', 'Customer Email', 'Customer Phone', 'Customer Branch'];
+                targetHeaders.forEach(h => {
+                    const th = document.createElement('th');
+                    th.innerText = h;
+                    headerRow.appendChild(th);
+                });
+
+                const validRows = [];
+                let skippedCount = 0;
+
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = splitCsvLine(lines[i], delimiter);
+                    if (cols.length === 0 || (cols.length === 1 && cols[0] === '')) continue;
+                    
+                    const taxId = cols[idxTaxId] || '';
+                    if (!taxId) {
+                        skippedCount++;
+                        continue;
+                    }
+
+                    const customerNum = cols[idxCustNum] || '';
+                    const customerName = cols[idxCustName] || '';
+                    const customerAddr = cols[idxAddr] || '';
+                    const customerEmail = cols[idxEmail] || '';
+                    const customerPhone = cols[idxPhone] || '';
+                    const branchType = cols[idxBranchType] || '';
+                    const branchVal = cols[idxBranchVal] || '';
+
+                    let customerBranch = 'สำนักงานใหญ่';
+                    if (branchType === 'สาขาย่อย') {
+                        customerBranch = branchVal || '';
+                    } else if (branchType && branchType !== 'สำนักงานใหญ่') {
+                        customerBranch = branchType;
+                    }
+
+                    validRows.push([taxId, customerNum, customerName, customerAddr, customerEmail, customerPhone, customerBranch]);
+                }
+
+                // Render first 10 valid preview rows
+                const previewRows = validRows.slice(0, 10);
+                previewRows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    row.forEach(cell => {
+                        const td = document.createElement('td');
+                        td.innerText = cell;
+                        tr.appendChild(td);
+                    });
+                    body.appendChild(tr);
+                });
+
+                document.getElementById('previewMeta').innerText = `Total Valid Records to Add: ${validRows.length} (Skipped ${skippedCount} rows without Tax ID) | Showing first 10 rows for verification.`;
+
+            } else {
+                // CDMS preview
+                headers.forEach(h => {
+                    const th = document.createElement('th');
+                    th.innerText = h;
+                    headerRow.appendChild(th);
+                });
+
+                const previewRows = lines.slice(1, 11);
+                previewRows.forEach(line => {
+                    const tr = document.createElement('tr');
+                    const cols = splitCsvLine(line, delimiter);
+                    cols.forEach(c => {
+                        const td = document.createElement('td');
+                        td.innerText = c;
+                        tr.appendChild(td);
+                    });
+                    body.appendChild(tr);
+                });
+
+                document.getElementById('previewMeta').innerText = `Total Rows: ${lines.length - 1} | Showing first 10 rows for verification.`;
+            }
+
+            dropArea.style.display = 'none';
+            previewPanel.style.display = 'block';
+        }
+
+        function resetUploadArea() {
+            selectedFile = null;
+            fileInput.value = '';
+            dropArea.style.display = 'block';
+            previewPanel.style.display = 'none';
+        }
+
+        async function submitCsvFile() {
+            if (!selectedFile) return;
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            confirmBtn.disabled = true;
+            cancelBtn.disabled = true;
+            confirmBtn.innerText = 'Importing...';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            const uploadType = document.getElementById('uploadType').value;
+            const endpoint = uploadType === 'cdms' ? '/api/admin/upload/cdms' : '/api/admin/upload/customer-profile';
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('success', data.message || 'Import completed successfully.');
+                    resetUploadArea();
+                } else {
+                    showAlert('danger', data.message || 'Import failed. Duplicate records or invalid schema.');
+                    confirmBtn.disabled = false;
+                    cancelBtn.disabled = false;
+                    confirmBtn.innerText = 'Confirm & Import';
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network connection error. Failed to import data.');
+                confirmBtn.disabled = false;
+                cancelBtn.disabled = false;
+                confirmBtn.innerText = 'Confirm & Import';
+            }
+        }
+
+        function showAlert(type, message) {
+            alertContainer.className = `alert alert-${type}`;
+            alertContainer.innerText = message;
+            alertContainer.style.display = 'block';
+            alertContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

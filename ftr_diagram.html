@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Tax Request System - Updated Architecture</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
+        .canvas { width: 100vw; height: 100vh; background-color: #ffffff; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 20px 20px; position: relative; overflow: auto; }
+        .group { position: absolute; border: 1px solid #fbbf24; background: rgba(251, 191, 36, 0.05); border-radius: 8px; padding: 10px; }
+        .group-db { border: 1px solid #94a3b8; background: rgba(148, 163, 184, 0.05); }
+        .group-title { position: absolute; top: 10px; left: 15px; font-size: 12px; font-weight: 600; color: #64748b; background: #f8fafc; padding: 2px 8px; border-radius: 4px; border: 1px solid #e2e8f0; }
+        .node { background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); width: 220px; position: absolute; font-size: 11px; }
+        .node-header { padding: 10px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f1f5f9; }
+        .node-icon { width: 24px; height: 24px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .node-content { padding: 8px 10px; color: #475569; }
+        .table-node { width: 240px; }
+        .table-row { display: flex; justify-content: space-between; padding: 3px 10px; font-family: monospace; font-size: 10px; border-bottom: 1px solid #f8fafc; }
+        .table-row:last-child { border-bottom: none; }
+        .table-row span:last-child { color: #94a3b8; }
+        .connector { fill: none; stroke-width: 1.5; marker-end: url(#arrow-purple); }
+        .purple-line { stroke: #8b5cf6; }
+        .blue-line { stroke: #3b82f6; marker-end: url(#arrow-blue); }
+        .orange-line { stroke: #f97316; }
+        .connector-label { font-size: 10px; fill: #64748b; font-weight: 400; }
+    </style>
+</head>
+<body>
+    <div class="canvas" id="canvas">
+        <!-- SVG for Connections -->
+        <svg class="absolute inset-0 w-full h-full pointer-events-none" style="min-width: 2000px; min-height: 1200px;">
+            <defs>
+                <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L0,10 L10,5 Z" fill="#8b5cf6" /></marker>
+                <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L0,10 L10,5 Z" fill="#3b82f6" /></marker>
+            </defs>
+
+            <!-- 1. LIFF Request Form -> Web Server -->
+            <path d="M 280 165 C 315 165 315 285 350 285" class="connector purple-line" />
+            <text x="265" y="235" class="connector-label">1. Request Tax Invoice (Requires email)</text>
+
+            <!-- 2. LIFF Profile Form -> Web Server -->
+            <path d="M 280 295 C 310 295 320 305 350 305" class="connector purple-line" />
+            <text x="240" y="340" class="connector-label">2. Update Invoice Profile Info</text>
+
+            <!-- 3. CDMS System -> Admin CDMS CSV Upload Handler -->
+            <path d="M 175 690 L 195 615" class="connector purple-line" style="stroke-dasharray: 4;" />
+            <text x="195" y="655" class="connector-label">3. Retrieve CDMS CSV & Upload manually</text>
+
+            <!-- 4. Admin Portal (CDMS CSV Upload Handler) -> Web Server -->
+            <path d="M 195 505 C 195 400 410 400 425 350" class="connector purple-line" />
+            <text x="210" y="420" class="connector-label">4. Post CDMS CSV to Web Server</text>
+
+            <!-- 5. Admin Portal (Accounting CSV Download Handler) -> Web Server -->
+            <path d="M 525 505 C 525 400 450 400 435 350" class="connector blue-line" />
+            <text x="445" y="445" class="connector-label">5. Request Missing Data CSV</text>
+
+            <!-- 6. Admin Portal (Accounting CSV Download Handler) -> Accounting System -->
+            <path d="M 525 605 L 495 680" class="connector purple-line" style="stroke-dasharray: 4;" />
+            <text x="510" y="650" class="connector-label">6. Import Downloaded CSV into Accounting</text>
+
+            <!-- 7. Web Server -> DB Invoices (Store / Update Records) -->
+            <path d="M 505 285 C 590 285 660 340 745 340" class="connector blue-line" />
+            <text x="545" y="320" class="connector-label">7. Insert/Update Invoices</text>
+
+            <!-- 8. Nightly Batch -> PDF Generator -->
+            <path d="M 505 135 L 565 135" class="connector orange-line" style="stroke-dasharray: 4; marker-end: none;" />
+            <text x="510" y="125" class="connector-label">8. Cron trigger</text>
+
+            <!-- 9. PDF Engine -> Invoices (Read Profile & Amount) -->
+            <path d="M 685 135 C 710 135 710 390 745 390" class="connector blue-line" />
+            <text x="650" y="210" class="connector-label">9. Read Invoice details</text>
+
+            <!-- 10. PDF Engine -> Generated Documents (Write Meta) -->
+            <path d="M 685 120 C 710 120 710 160 745 160" class="connector blue-line" />
+            <text x="675" y="105" class="connector-label">10. Store PDF Meta</text>
+
+            <!-- 11. Email Sender Node -> Client's Email Inbox -->
+            <path d="M 607 340 C 607 480 720 480 730 645" class="connector purple-line" style="stroke-dasharray: 4;" />
+            <text x="590" y="470" class="connector-label">11. Send Full Tax Invoice PDF via Email</text>
+        </svg>
+
+        <!-- GROUP: Client Interface -->
+        <div class="group" style="top: 60px; left: 30px; width: 250px; height: 330px;">
+            <div class="group-title">LINE OA & LIFF (Client UI)</div>
+            <div class="node" style="top: 50px; left: 15px; width: 220px;">
+                <div class="node-header">
+                    <div class="node-icon bg-purple-100 text-purple-600"><i class="fas fa-envelope-open-text"></i></div>
+                    <div class="font-semibold text-[12px]">LIFF Request Form</div>
+                </div>
+                <div class="node-content text-[10px]">
+                    User submits:
+                    <ul class="list-disc pl-4 my-1 space-y-0.5">
+                        <li><b>tax_rec_id</b> & <b>tax_id</b></li>
+                        <li><b>email_sending</b> details</li>
+                    </ul>
+                    <i>Enables automated PDF email dispatch</i>
+                </div>
+            </div>
+            <div class="node" style="top: 180px; left: 15px; width: 220px;">
+                <div class="node-header">
+                    <div class="node-icon bg-purple-100 text-purple-600"><i class="fas fa-file-alt"></i></div>
+                    <div class="font-semibold text-[12px]">LIFF Profile Form</div>
+                </div>
+                <div class="node-content text-[10px]">Capture: Tax ID, Company Name, Address, Branch Code.</div>
+            </div>
+        </div>
+
+        <!-- GROUP: Application Server -->
+        <div class="group" style="top: 60px; left: 340px; width: 360px; height: 370px;">
+            <div class="group-title">Application Server (Node.js)</div>
+            
+            <!-- Cron batch -->
+            <div class="node" style="top: 45px; left: 15px; width: 150px; border-color: #f97316;">
+                <div class="node-header">
+                    <div class="node-icon bg-orange-100 text-orange-600"><i class="fas fa-bolt"></i></div>
+                    <div class="font-semibold text-[11px]">Cron Nightly Batch</div>
+                </div>
+                <div class="node-content text-[10px]">Batch triggers ready and pending invoices for PDF engine.</div>
+            </div>
+            
+            <!-- Puppeteer representation -->
+            <div class="absolute" style="top: 40px; left: 235px; text-align: center; width: 110px;" id="pdf-engine">
+                <i class="fas fa-file-invoice text-4xl text-slate-800"></i>
+                <div class="text-[10px] font-bold mt-1">PDF Engine (Puppeteer)</div>
+            </div>
+
+            <!-- Express Web Server (Moved below 2 lines) -->
+            <div class="node" style="top: 210px; left: 15px; width: 150px;">
+                <div class="node-header">
+                    <div class="node-icon bg-slate-100 text-slate-700"><i class="fas fa-server"></i></div>
+                    <div class="font-semibold text-[11px]">Web Server (Express)</div>
+                </div>
+                <div class="node-content text-[10px] space-y-1">
+                    <div>• CDMS CSV Parser</div>
+                    <div>• Client request API</div>
+                    <div>• Accounting download API</div>
+                </div>
+            </div>
+
+            <!-- Email Delivery Node -->
+            <div class="node" style="top: 170px; left: 190px; width: 155px; border-color: #10b981;">
+                <div class="node-header">
+                    <div class="node-icon bg-emerald-100 text-emerald-600"><i class="fas fa-envelope"></i></div>
+                    <div class="font-semibold text-[11px]">Email Sender (SMTP)</div>
+                </div>
+                <div class="node-content text-[10px]">
+                    Dispatches the generated Full Tax Invoice PDF directly to user-supplied email.
+                </div>
+            </div>
+        </div>
+
+        <!-- GROUP: Database Layer -->
+        <div class="group group-db" style="top: 60px; left: 740px; width: 280px; height: 520px;">
+            <div class="group-title">MySQL Database (InnoDB)</div>
+            
+            <!-- generated_documents table -->
+            <div class="node table-node" style="top: 50px; left: 15px;">
+                <div class="node-header">
+                    <div class="node-icon bg-blue-100 text-blue-600"><i class="fas fa-file-pdf"></i></div>
+                    <div class="font-bold text-[11px]">generated_documents</div>
+                </div>
+                <div class="node-content bg-white p-0">
+                    <div class="table-row"><span>id</span><span>INT (PK)</span></div>
+                    <div class="table-row"><span>tax_rec_id</span><span>VARCHAR(50) (FK)</span></div>
+                    <div class="table-row"><span>pdf_url</span><span>VARCHAR(500)</span></div>
+                    <div class="table-row"><span>generated_at</span><span>TIMESTAMP</span></div>
+                </div>
+            </div>
+
+            <!-- invoices table -->
+            <div class="node table-node" style="top: 180px; left: 15px;">
+                <div class="node-header">
+                    <div class="node-icon bg-blue-100 text-blue-600"><i class="fas fa-file-invoice-dollar"></i></div>
+                    <div class="font-bold text-[11px]">invoices</div>
+                </div>
+                <div class="node-content bg-white p-0">
+                    <div class="table-row font-bold"><span class="text-blue-700">tax_rec_id</span><span>VARCHAR(50) (PK)</span></div>
+                    <div class="table-row"><span>line_user_id</span><span>VARCHAR(255)</span></div>
+                    <div class="table-row"><span>customer_code</span><span>VARCHAR(50)</span></div>
+                    <div class="table-row"><span>company_name</span><span>VARCHAR(255)</span></div>
+                    <div class="table-row"><span>tax_id</span><span>VARCHAR(13)</span></div>
+                    <div class="table-row"><span>address</span><span>TEXT</span></div>
+                    <div class="table-row"><span>service_date</span><span>DATE</span></div>
+                    <div class="table-row"><span>gross_amount</span><span>DECIMAL(10,2)</span></div>
+                    <div class="table-row"><span>vat_amount</span><span>DECIMAL(10,2)</span></div>
+                    <div class="table-row"><span>total_amount</span><span>DECIMAL(10,2)</span></div>
+                    <div class="table-row"><span>verification_code</span><span>VARCHAR(20)</span></div>
+                    <div class="table-row"><span>container_no</span><span>VARCHAR(50)</span></div>
+                    <div class="table-row font-bold"><span>status</span><span>ENUM</span></div>
+                    <div class="table-row"><span>created_at</span><span>TIMESTAMP</span></div>
+                    <div class="table-row"><span>updated_at</span><span>TIMESTAMP</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GROUP: Admin Web Portal -->
+        <div class="group" style="top: 460px; left: 30px; width: 670px; height: 200px;">
+            <div class="group-title">Admin Web Portal</div>
+            
+            <!-- Node: CDMS CSV Upload Handler -->
+            <div class="node" style="top: 45px; left: 20px; width: 290px; border-color: #3b82f6;">
+                <div class="node-header">
+                    <div class="node-icon bg-blue-100 text-blue-600"><i class="fas fa-upload"></i></div>
+                    <div class="font-semibold text-[12px]">CDMS CSV Upload Handler</div>
+                </div>
+                <div class="node-content text-[10px] space-y-1">
+                    <div>Fills raw shipment base invoice data. CDMS System exports daily shipment invoice details CSV post-18:00, which is physically retrieved and manually posted here.</div>
+                </div>
+            </div>
+
+            <!-- Node: Accounting CSV Download Handler -->
+            <div class="node" style="top: 45px; left: 350px; width: 290px; border-color: #10b981;">
+                <div class="node-header">
+                    <div class="node-icon bg-emerald-100 text-emerald-600"><i class="fas fa-download"></i></div>
+                    <div class="font-semibold text-[12px]">Accounting CSV Download Handler</div>
+                </div>
+                <div class="node-content text-[10px] space-y-1">
+                    <div>Extracts and downloads missing tax invoice records as a CSV file to reconcile billing accounts.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CDMS System Box (Moved directly below CDMS CSV Upload Handler) -->
+        <div class="node" style="top: 690px; left: 30px; width: 290px; height: 110px; border-color: #94a3b8;">
+            <div class="node-header">
+                <i class="fas fa-ship text-slate-600"></i>
+                <div class="font-bold text-[11px]">CDMS System</div>
+            </div>
+            <div class="node-content text-[9px] text-slate-500">
+                Exports daily shipment invoice details CSV post-18:00. This data is physically retrieved and uploaded to the Admin Web Portal CDMS Upload Handler.
+            </div>
+        </div>
+
+        <!-- Accounting System Box (Moved directly below Accounting CSV Download Handler) -->
+        <div class="group" style="top: 690px; left: 350px; width: 290px; height: 160px; border-color: #94a3b8;">
+            <div class="group-title" style="color: #64748b;">Accounting System</div>
+            <div class="node" style="top: 40px; left: 20px; width: 250px; border-color: #94a3b8;">
+                <div class="node-content text-center">
+                    <i class="fas fa-calculator text-2xl text-slate-600"></i>
+                    <div class="text-[10px] mt-2 font-semibold">Finance System</div>
+                    <p class="text-[9px] text-slate-500 mt-1">Imports CSV of missing tax invoice records from the Admin Portal Download Handler to complete billing journals.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Client's Email Inbox (Moved to bottom right, next to Admin Web Portal) -->
+        <div class="node" style="top: 600px; left: 740px; width: 280px; height: 110px; border-color: #10b981; border-style: dashed; background: #f0fdf4;">
+            <div class="node-header" style="border-bottom-style: dashed;">
+                <div class="node-icon bg-emerald-100 text-emerald-600"><i class="fas fa-envelope-open-text"></i></div>
+                <div class="font-bold text-[12px]">Client's Email Inbox</div>
+            </div>
+            <div class="node-content text-[10px] text-emerald-800">
+                Receives the generated Full Tax Invoice PDF directly via SMTP email delivery.
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>

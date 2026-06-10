@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Manage PDF Invoices - FTR System</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        .action-cell {
+            text-align: right;
+            padding-right: 1.5rem;
+            width: 150px;
+        }
+        .search-metrics {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-metric {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .search-metric span.value {
+            font-weight: 700;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <!-- Send Email Modal -->
+    <div id="emailModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center;" onclick="closeEmailModalOnOverlay(event)">
+        <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:2rem; width:min(420px, 90vw); position:relative;" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1.5rem;">
+                <div>
+                    <h2 style="margin:0; font-size:1.1rem; color:var(--text-primary); display:flex; align-items:center; gap:0.5rem;">
+                        <svg style="width:1.25rem;height:1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                        Send PDF Invoice
+                    </h2>
+                    <p id="emailModalSubtitle" style="margin:0.35rem 0 0; font-size:0.82rem; color:var(--text-muted);"></p>
+                </div>
+                <button onclick="closeEmailModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1.4rem;line-height:1;padding:0;">&times;</button>
+            </div>
+            <div style="margin-bottom:1.25rem;">
+                <label for="emailInputField" style="display:block; font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.4rem;">Recipient Email Address</label>
+                <input type="email" id="emailInputField" class="form-control" placeholder="e.g. customer@company.com" autocomplete="email" />
+            </div>
+            <div id="emailModalError" style="display:none; color:#f87171; font-size:0.82rem; margin-bottom:1rem;"></div>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button onclick="closeEmailModal()" class="btn" style="background:var(--border-color); color:var(--text-primary); min-width:80px;">Cancel</button>
+                <button id="emailSendBtn" onclick="confirmSendEmail()" class="btn" style="min-width:120px;">
+                    Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span>FTR</span> Portal
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="upload.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Upload CDMS CSV
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Invoice Data
+                    </a>
+                </li>
+                <li>
+                    <a href="customer-profiles.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        Customer Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="pdf-management.html" class="sidebar-link active">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Manage PDF
+                    </a>
+                </li>
+                <li>
+                    <a href="logs.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        System Activity Logs
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div id="userWidget" class="user-profile-widget">
+                    <span style="color: var(--text-muted);">Loading session...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content fade-in">
+            <div class="top-bar">
+                <div class="mobile-nav-toggle-container">
+                    <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
+                </div>
+                <div class="page-title">
+                    <h1>Manage PDF Invoices</h1>
+                    <p>Search tax records, manually generate PDF invoices, download files, or send emails.</p>
+                </div>
+            </div>
+
+            <!-- Search Filter Panel Card -->
+            <div class="content-card">
+                <div id="alertContainer" style="display: none;"></div>
+
+                <form id="searchForm" onsubmit="handleSearchSubmit(event)">
+                    <div class="filters-panel">
+                        <div class="form-group">
+                            <label for="tax_rec_id">Invoice/Tax Record ID</label>
+                            <input type="text" id="tax_rec_id" class="form-control" placeholder="e.g. RF2605-00123">
+                        </div>
+                        <div class="form-group">
+                            <label for="customer">Customer</label>
+                            <input type="text" id="customer" class="form-control" placeholder="e.g. CUS-01262">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tax_id">Tax ID</label>
+                            <input type="text" id="tax_id" class="form-control" placeholder="13 digits">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_from">Service Date From</label>
+                            <input type="date" id="date_from" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="date_to">Service Date To</label>
+                            <input type="date" id="date_to" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="pdf_status">PDF Status</label>
+                            <select id="pdf_status" class="form-control">
+                                <option value="all">All PDF Statuses</option>
+                                <option value="pending">Pending Only</option>
+                                <option value="ready">Ready Only</option>
+                                <option value="failed">Failed Only</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filters-actions">
+                        <div class="search-metrics">
+                            <div class="search-metric">Results Found: <span class="value" id="resCount">0</span></div>
+                            <div class="search-metric">PDFs Generated: <span class="value" id="generatedCount" style="color: var(--success);">0</span></div>
+                        </div>
+                        <button type="submit" class="btn" id="searchBtn">
+                            Search Records
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results List Card -->
+            <div class="content-card" style="padding-top: 1rem;">
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Record ID</th>
+                                <th>Service Date</th>
+                                <th>Customer</th>
+                                <th>Tax ID</th>
+                                <th>PDF Status</th>
+                                <th class="action-cell">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <tr class="no-data">
+                                <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                    Use the filters above to search for records.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        let currentInvoices = [];
+
+        window.addEventListener('load', () => {
+            performSearch();
+        });
+
+        function handleSearchSubmit(e) {
+            e.preventDefault();
+            performSearch();
+        }
+
+        function getFilters() {
+            const customerVal = document.getElementById('customer').value;
+            return {
+                tax_rec_id: document.getElementById('tax_rec_id').value,
+                customer: customerVal,
+                company_name: customerVal,
+                tax_id: document.getElementById('tax_id').value,
+                date_from: document.getElementById('date_from').value,
+                date_to: document.getElementById('date_to').value
+            };
+        }
+
+        async function performSearch() {
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.innerText = 'Searching...';
+
+            const filters = getFilters();
+            const queryString = new URLSearchParams(filters).toString();
+
+            try {
+                const response = await fetch(`/api/admin/customers/search?${queryString}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Filter results by PDF Status if selected
+                    const selectedStatus = document.getElementById('pdf_status').value;
+                    let filteredCustomers = data.customers;
+                    if (selectedStatus !== 'all') {
+                        filteredCustomers = data.customers.filter(c => c.status === selectedStatus);
+                    }
+                    currentInvoices = filteredCustomers;
+                    renderTable(filteredCustomers);
+                } else {
+                    showAlert('danger', data.message || 'Failed to query records.');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network error. Failed to retrieve records.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Search Records';
+            }
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString;
+            return d.toLocaleDateString('en-GB'); // dd/mm/yyyy
+        }
+
+        function renderTable(invoices) {
+            const body = document.getElementById('resultsTableBody');
+            body.innerHTML = '';
+
+            if (invoices.length === 0) {
+                body.innerHTML = `
+                    <tr class="no-data">
+                        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            No records found matching current search criteria.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('resCount').innerText = '0';
+                document.getElementById('generatedCount').innerText = '0';
+                return;
+            }
+
+            let generatedCount = 0;
+
+            invoices.forEach(inv => {
+                const isComplete = inv.customer && inv.customer_addr && inv.tax_id;
+                const isReady = inv.status === 'ready';
+                if (isReady) generatedCount++;
+
+                const tr = document.createElement('tr');
+                
+                // PDF generation status badge
+                let pdfBadgeClass = 'badge-pending';
+                if (inv.status === 'ready') pdfBadgeClass = 'badge-ready';
+                if (inv.status === 'failed') pdfBadgeClass = 'badge-failed';
+                const pdfBadge = `<span class="badge ${pdfBadgeClass}">${inv.status}</span>`;
+
+                // Set up tooltips and disabled attributes for each action
+                const genTooltip = !isComplete 
+                    ? 'Profile incomplete (Customer details missing)' 
+                    : (isReady ? 'PDF already generated' : 'Generate PDF Invoice');
+                const genDisabled = (!isComplete || isReady) ? 'disabled' : '';
+
+                const downloadTooltip = !isReady ? 'PDF not generated yet' : 'Download PDF';
+                const downloadDisabled = !isReady ? 'disabled' : '';
+
+                const emailTooltip = !isReady ? 'PDF not generated yet' : 'Send Email';
+                const emailDisabled = !isReady ? 'disabled' : '';
+
+                tr.innerHTML = `
+                    <td style="font-weight: 600; font-family: monospace;">${inv.tax_rec_id}</td>
+                    <td>${formatDate(inv.service_date)}</td>
+                    <td>${inv.customer || '-'}</td>
+                    <td>${inv.tax_id || '-'}</td>
+                    <td>${pdfBadge}</td>
+                    <td class="action-cell">
+                        <div class="actions-group">
+                            <button class="action-btn btn-gen" ${genDisabled} data-tooltip="${genTooltip}" onclick="generatePdfFile('${inv.tax_rec_id}', this)">
+                                <!-- Play/Wand Icon -->
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+                                </svg>
+                            </button>
+                            <button class="action-btn btn-download" ${downloadDisabled} data-tooltip="${downloadTooltip}" onclick="downloadPdfFile('${inv.tax_rec_id}')">
+                                <!-- Download Tray Icon -->
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                            </button>
+                            <button class="action-btn btn-email" ${emailDisabled} data-tooltip="${emailTooltip}" onclick="sendPdfEmail('${inv.tax_rec_id}')">
+                                <!-- Envelope Icon -->
+                                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('resCount').innerText = invoices.length;
+            document.getElementById('generatedCount').innerText = generatedCount;
+        }
+
+        async function generatePdfFile(taxRecId, btnElement) {
+            const originalHtml = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = `
+                <svg class="animate-spin" style="animation: spin 1s linear infinite;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity: 0.25;"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity: 0.75;"></path>
+                </svg>
+            `;
+
+            try {
+                const response = await fetch(`/api/admin/customers/${taxRecId}/generate-pdf`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('success', `PDF generated successfully for ${taxRecId}.`);
+                    performSearch(); // Refresh list to update states
+                } else {
+                    alert(data.message || 'Failed to generate PDF.');
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHtml;
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network connection error. Failed to generate PDF.');
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHtml;
+            }
+        }
+
+        function downloadPdfFile(taxRecId) {
+            window.location.href = `/api/admin/customers/${taxRecId}/download-pdf`;
+        }
+
+        // --- Email Modal ---
+        let emailTargetTaxRecId = null;
+
+        function sendPdfEmail(taxRecId) {
+            emailTargetTaxRecId = taxRecId;
+            document.getElementById('emailModalSubtitle').textContent = `Tax Record: ${taxRecId}`;
+            document.getElementById('emailInputField').value = '';
+            document.getElementById('emailModalError').style.display = 'none';
+            document.getElementById('emailModalError').textContent = '';
+
+            const sendBtn = document.getElementById('emailSendBtn');
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = 'Send Email';
+
+            const modal = document.getElementById('emailModal');
+            modal.style.display = 'flex';
+            setTimeout(() => document.getElementById('emailInputField').focus(), 50);
+        }
+
+        function closeEmailModal() {
+            document.getElementById('emailModal').style.display = 'none';
+            emailTargetTaxRecId = null;
+        }
+
+        function closeEmailModalOnOverlay(e) {
+            if (e.target === document.getElementById('emailModal')) closeEmailModal();
+        }
+
+        async function confirmSendEmail() {
+            const emailVal = document.getElementById('emailInputField').value.trim();
+            const errorDiv = document.getElementById('emailModalError');
+            const sendBtn  = document.getElementById('emailSendBtn');
+
+            // Client-side validation
+            if (!emailVal) {
+                errorDiv.textContent = 'Please enter a recipient email address.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailVal)) {
+                errorDiv.textContent = 'Please enter a valid email address.';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            errorDiv.style.display = 'none';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = `
+                <svg class="animate-spin" style="display:inline-block;animation:spin 1s linear infinite;width:1rem;height:1rem;vertical-align:middle;margin-right:6px;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" style="opacity:0.25;"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style="opacity:0.75;"></path>
+                </svg>Sending...
+            `;
+
+            try {
+                const response = await fetch(`/api/admin/customers/${emailTargetTaxRecId}/send-email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email_sending: emailVal })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeEmailModal();
+                    showAlert('success', `✓ Email sent successfully to ${emailVal} for record ${emailTargetTaxRecId}.`);
+                } else {
+                    errorDiv.textContent = data.message || 'Failed to send email. Please try again.';
+                    errorDiv.style.display = 'block';
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = 'Send Email';
+                }
+            } catch (err) {
+                console.error(err);
+                errorDiv.textContent = 'Network error. Could not reach the server.';
+                errorDiv.style.display = 'block';
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Send Email';
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.className = `alert alert-${type}`;
+            alertContainer.innerText = message;
+            alertContainer.style.display = 'block';
+            alertContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+    <style>
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</body>
+</html>

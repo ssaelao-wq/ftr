@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Customer Profiles - FTR System</title>
+    <link rel="stylesheet" href="admin.css">
+    <style>
+        /* Table highlight row */
+        .table-custom tbody tr:hover td {
+            color: var(--accent);
+        }
+        .action-cell {
+            text-align: right;
+            padding-right: 1.5rem;
+        }
+        .search-metrics {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .search-metric {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .search-metric span.value {
+            font-weight: 700;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span>FTR</span> Portal
+            </div>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z" /></svg>
+                        Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="upload.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                        Upload CDMS CSV
+                    </a>
+                </li>
+                <li>
+                    <a href="customers.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Invoice Data
+                    </a>
+                </li>
+                <li>
+                    <a href="customer-profiles.html" class="sidebar-link active">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                        Customer Profile
+                    </a>
+                </li>
+                <li>
+                    <a href="pdf-management.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        Manage PDF
+                    </a>
+                </li>
+                <li>
+                    <a href="logs.html" class="sidebar-link">
+                        <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        System Activity Logs
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div id="userWidget" class="user-profile-widget">
+                    <span style="color: var(--text-muted);">Loading session...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content fade-in">
+            <div class="top-bar">
+                <div class="mobile-nav-toggle-container">
+                    <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
+                </div>
+                <div class="page-title">
+                    <h1>Customer Profile Database</h1>
+                    <p>Search and manage customer profiles uploaded manually.</p>
+                </div>
+            </div>
+
+            <!-- Search Filter Panel Card -->
+            <div class="content-card">
+                <div id="alertContainer" style="display: none;"></div>
+
+                <form id="searchForm" onsubmit="handleSearchSubmit(event)">
+                    <div class="filters-panel">
+                        <div class="form-group">
+                            <label for="searchTaxId">Tax ID</label>
+                            <input type="text" id="searchTaxId" class="form-control" placeholder="13 digits">
+                        </div>
+                        <div class="form-group">
+                            <label for="searchCustomerNum">Customer Num</label>
+                            <input type="text" id="searchCustomerNum" class="form-control" placeholder="e.g. CUS-00098">
+                        </div>
+                        <div class="form-group">
+                            <label for="searchCustomerName">Customer Name</label>
+                            <input type="text" id="searchCustomerName" class="form-control" placeholder="e.g. Company Name">
+                        </div>
+                    </div>
+
+                    <div class="filters-actions" style="justify-content: flex-end;">
+                        <div class="search-metrics" style="margin-bottom: 0; margin-right: auto;">
+                            <div class="search-metric">Profiles Found: <span class="value" id="resCount">0</span></div>
+                        </div>
+                        <button type="submit" class="btn" id="searchBtn">
+                            Search Profiles
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results List Card -->
+            <div class="content-card" style="padding-top: 1rem;">
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Tax ID</th>
+                                <th>Cust Num</th>
+                                <th>Cust Name</th>
+                                <th>Cust Address</th>
+                                <th>Cust Email</th>
+                                <th>Cust Phone</th>
+                                <th>Cust Branch</th>
+                                <th>Created At</th>
+                                <th>Updated At</th>
+                                <th class="action-cell">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody">
+                            <tr class="no-data">
+                                <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                    Use the filters above to search for profiles.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Profile Modal overlay -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>Edit Customer Profile</h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            
+            <form id="editForm" onsubmit="handleEditSubmit(event)">
+                <input type="hidden" id="editProfileId">
+                <div class="form-group">
+                    <label>Tax ID (Read-only)</label>
+                    <input type="text" id="editTaxId" class="form-control" style="opacity: 0.7;" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Customer Number (Read-only)</label>
+                    <input type="text" id="editCustomerNum" class="form-control" style="opacity: 0.7;" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerName">Customer Name</label>
+                    <input type="text" id="editCustomerName" class="form-control" placeholder="Customer Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerAddr">Address</label>
+                    <textarea id="editCustomerAddr" class="form-control" placeholder="Building, Street, Province, Zip..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerEmail">Email</label>
+                    <input type="email" id="editCustomerEmail" class="form-control" placeholder="email@domain.com">
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerPhone">Phone</label>
+                    <input type="text" id="editCustomerPhone" class="form-control" placeholder="e.g. 02-1234567">
+                </div>
+                <div class="form-group">
+                    <label for="editCustomerBranch">Branch</label>
+                    <input type="text" id="editCustomerBranch" class="form-control" placeholder="e.g. สำนักงานใหญ่ or branch code" required>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn" id="saveBtn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script>
+        let currentProfiles = [];
+
+        window.addEventListener('load', () => {
+            performSearch();
+        });
+
+        function handleSearchSubmit(e) {
+            e.preventDefault();
+            performSearch();
+        }
+
+        async function performSearch() {
+            const btn = document.getElementById('searchBtn');
+            btn.disabled = true;
+            btn.innerText = 'Searching...';
+
+            const tax_id = document.getElementById('searchTaxId').value;
+            const customer_num = document.getElementById('searchCustomerNum').value;
+            const customer_name = document.getElementById('searchCustomerName').value;
+            
+            const queryString = new URLSearchParams({ tax_id, customer_num, customer_name }).toString();
+
+            try {
+                const response = await fetch(`/api/admin/customer-profiles/search?${queryString}`);
+                if (!response.ok) {
+                    let errMsg = 'Failed to query records.';
+                    try {
+                        const data = await response.json();
+                        errMsg = data.message || errMsg;
+                    } catch (e) {
+                        errMsg = `Server Error (${response.status}): ${response.statusText || 'Internal Server Error'}`;
+                    }
+                    showAlert('danger', errMsg);
+                    return;
+                }
+                const data = await response.json();
+                currentProfiles = data.profiles;
+                renderTable(data.profiles);
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network error. Failed to retrieve records.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Search Profiles';
+            }
+        }
+
+        function formatDateTime(dateString) {
+            if (!dateString) return '';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString;
+            return d.toLocaleString('en-GB'); // dd/mm/yyyy, hh:MM:ss
+        }
+
+        function renderTable(profiles) {
+            const body = document.getElementById('resultsTableBody');
+            body.innerHTML = '';
+
+            if (profiles.length === 0) {
+                body.innerHTML = `
+                    <tr class="no-data">
+                        <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                            No records found matching current search criteria.
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('resCount').innerText = '0';
+                return;
+            }
+
+            profiles.forEach(prof => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${prof.tax_id || '-'}</td>
+                    <td>${prof.customer_num || '-'}</td>
+                    <td>${prof.customer_name || '-'}</td>
+                    <td>${prof.customer_addr || '-'}</td>
+                    <td>${prof.customer_email || '-'}</td>
+                    <td>${prof.customer_phone || '-'}</td>
+                    <td>${prof.customer_branch || '-'}</td>
+                    <td>${formatDateTime(prof.created_at)}</td>
+                    <td>${formatDateTime(prof.updated_at)}</td>
+                    <td class="action-cell">
+                        <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="openEditModal('${prof.id}')">
+                            Edit
+                        </button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+
+            document.getElementById('resCount').innerText = profiles.length;
+        }
+
+        function openEditModal(profileId) {
+            const prof = currentProfiles.find(p => p.id == profileId);
+            if (!prof) return;
+
+            document.getElementById('editProfileId').value = prof.id;
+            document.getElementById('editTaxId').value = prof.tax_id || '';
+            document.getElementById('editCustomerNum').value = prof.customer_num || '';
+            document.getElementById('editCustomerName').value = prof.customer_name || '';
+            document.getElementById('editCustomerAddr').value = prof.customer_addr || '';
+            document.getElementById('editCustomerEmail').value = prof.customer_email || '';
+            document.getElementById('editCustomerPhone').value = prof.customer_phone || '';
+            document.getElementById('editCustomerBranch').value = prof.customer_branch || '';
+
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+            document.getElementById('editForm').reset();
+        }
+
+        async function handleEditSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+
+            const profileId = document.getElementById('editProfileId').value;
+            const payload = {
+                customer_name: document.getElementById('editCustomerName').value,
+                customer_addr: document.getElementById('editCustomerAddr').value,
+                customer_email: document.getElementById('editCustomerEmail').value,
+                customer_phone: document.getElementById('editCustomerPhone').value,
+                customer_branch: document.getElementById('editCustomerBranch').value
+            };
+
+            try {
+                const response = await fetch(`/api/admin/customer-profiles/${profileId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    closeEditModal();
+                    performSearch(); // Refresh list
+                } else {
+                    alert(data.message || 'Failed to save changes.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Network connection error. Failed to save changes.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Save Changes';
+            }
+        }
+
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.className = `alert alert-${type}`;
+            alertContainer.innerText = message;
+            alertContainer.style.display = 'block';
+            alertContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

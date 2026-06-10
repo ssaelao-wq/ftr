@@ -1,0 +1,96 @@
+<!--
+// **`public/index.html` (New):** This acts as your router dashboard, 
+// receiving incoming queries from your LINE menu items (such as `?target=add_info`)
+// and redirecting them immediately to their subdirectory destination.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Portal Router</title>
+    <!-- Include the official LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh;">
+    <div style="text-align: center; max-width: 80%;">
+        <div style="border: 4px solid #f3f3f3; border-top: 4px solid #06C755; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+        <div style="font-size: 1.1rem; font-weight: 600; color: #333; margin-bottom: 8px;">Connecting to Customer Portal...</div>
+        <p style="color: #888; font-size: 0.9rem; margin: 0;">Please wait while we load your page.</p>
+    </div>
+
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
+    <script>
+        // Retrieve the target query parameter first
+        const urlParams = new URLSearchParams(window.location.search);
+        let target = urlParams.get('target');
+
+	// Detect the base URL automatically from wherever the app is running
+	// localhost:3000  → "http://localhost:3000"
+	// ftr.uniconwebapp.com → "https://ftr.uniconwebapp.com"
+	const BASE_URL = window.location.origin;
+
+
+        // Fallback: Check if target is inside the liff.state parameter
+        if (!target) {
+            const stateParam = urlParams.get('liff.state');
+            if (stateParam) {
+                const decodedParams = new URLSearchParams(decodeURIComponent(stateParam));
+                target = decodedParams.get('target');
+            }
+        }
+
+        // If no query target is present, redirect to the admin web portal dashboard
+        if (!target) {
+            //window.location.replace('/admin/dashboard.html');
+            //window.location.replace('https://ftr.uniconwebapp.com/admin/dashboard.html');
+	    window.location.replace(BASE_URL + '/admin/dashboard.html');
+        } else {
+            // Initialize the LIFF SDK for LINE OA users
+            liff.init({
+                liffId: "2010196890-kJW56aX3" // Your active LIFF ID
+            })
+            .then(() => {
+                // Force login if the user is not authenticated inside LINE
+                if (!liff.isLoggedIn()) {
+                    //liff.login();
+                    //liff.login({ redirectUri: 'https://ftr.uniconwebapp.com/' }); 
+		    liff.login({ redirectUri: BASE_URL + '/' });
+                    return;
+                }
+
+                console.log("Routing to target:", target);
+
+                // Redirect to sub-pages located in the /liff/ directory
+                if (target === 'add_info') {
+                    window.location.replace('liff/missing-info.html');
+                } else if (target === 'req_fulltax') {
+                    window.location.replace('liff/request-invoice.html');
+                } else {
+                    // Default fallback page if no query target is present
+                    document.body.innerHTML = `
+                        <div style="text-align:center; padding: 20px; color:#555;">
+                            <h3 style="margin: 0 0 10px;">Welcome to Customer Portal</h3>
+                            <p style="font-size: 0.9rem; margin: 0;">Please select an option from your LINE Chat Menu.</p>
+                        </div>`;
+                }
+            })
+            .catch((err) => {
+                console.error("LIFF initialization failed:", err);
+                document.body.innerHTML = `
+                    <div style="text-align:center; padding: 20px; color:#e15b64;">
+                        <h3 style="margin: 0 0 10px;">Failed to initialize LINE App</h3>
+                        <p style="font-size: 0.9rem; margin: 0;">${err.message || err}</p>
+                    </div>`;
+            });
+        }
+    </script>
+</body>
+</html>

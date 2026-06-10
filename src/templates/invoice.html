@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ใบเสร็จรับเงิน/ใบกำกับภาษี</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&display=swap');
+
+        @page {
+            size: A4;
+            margin: 10mm 12mm 8mm 12mm;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Times New Roman', 'Sarabun', sans-serif;
+            font-size: 12.5px;
+            color: #000;
+            line-height: 1.35;
+            background: #fff;
+        }
+
+        .invoice-container {
+            width: 100%;
+            padding: 0;
+        }
+
+        /* ========== HEADER ========== */
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2px;
+        }
+        .header-table td {
+            vertical-align: top;
+        }
+        .logo-cell {
+            width: 180px;
+            padding-right: 5px;
+        }
+        .company-cell {
+            text-align: center;
+            padding-top: 60px;
+        }
+        .company-name-en {
+            font-size: 19px;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
+            line-height: 1.1;
+        }
+        .company-addr {
+            font-size: 13.5px;
+            margin-bottom: 0;
+        }
+        .company-phone {
+            font-size: 13.5px;
+            margin-bottom: 0;
+        }
+
+        /* ========== DOCUMENT TITLE ========== */
+        .doc-title-section {
+            text-align: center;
+            margin: 4px 0 2px 0;
+        }
+        .doc-title-th {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* ========== TAX ID + RECEIPT LINE ========== */
+        .tax-receipt-line {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+        }
+        .tax-receipt-line td {
+            font-size: 12px;
+            padding: 1px 0;
+        }
+        .tax-left {
+            text-align: left;
+        }
+        .tax-right {
+            text-align: right;
+            font-weight: normal;
+        }
+
+        /* ========== CUSTOMER & INVOICE INFO ========== */
+        .info-outer {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+        .info-outer > tbody > tr > td {
+            vertical-align: top;
+        }
+        .customer-box {
+            border: 1px solid #5B7DB1;
+            padding: 5px 8px;
+            width: 62%;
+            font-size: 12px;
+        }
+        .customer-label {
+            font-size: 11px;
+        }
+        .customer-label-th {
+            font-weight: bold;
+        }
+        .customer-label-en {
+            font-style: italic;
+            color: #333;
+            font-size: 10.5px;
+        }
+        .customer-name {
+            font-size: 12.5px;
+            font-weight: normal;
+            margin: 1px 0;
+        }
+        .customer-addr {
+            font-size: 12px;
+            margin: 0;
+        }
+        .customer-taxid-line {
+            margin-top: 4px;
+            font-size: 12px;
+        }
+        .branch-checkbox {
+            display: inline-block;
+            width: 11px;
+            height: 11px;
+            border: 1px solid #333;
+            text-align: center;
+            line-height: 11px;
+            font-size: 10px;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+        .customer-ref-line {
+            margin-top: 2px;
+            font-size: 11.5px;
+        }
+
+        .invoice-meta-box {
+            width: 38%;
+            padding: 0;
+            vertical-align: top;
+        }
+        .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #5B7DB1;
+        }
+        .meta-table td {
+            border: none;
+            padding: 4px 6px;
+            font-size: 12px;
+        }
+        .meta-label-cell {
+            width: 45%;
+        }
+        .meta-label-th {
+            font-weight: bold;
+            display: block;
+        }
+        .meta-label-en {
+            font-style: italic;
+            color: #444;
+            font-size: 10.5px;
+            display: block;
+        }
+        .meta-value-cell {
+            font-weight: bold;
+        }
+
+        /* ========== ITEMS TABLE ========== */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .items-table th {
+            border: 1px solid #5B7DB1;
+            padding: 3px 4px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .items-table td {
+            border: 1px solid #5B7DB1;
+            padding: 3px 5px;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+        .items-table tbody tr:not(.summary-row) td {
+            border-top: none;
+            border-bottom: none;
+        }
+        .items-table tbody tr:not(.summary-row) td:nth-child(3) { border-right: none; }
+        .items-table tbody tr:not(.summary-row) td:nth-child(4) { border-left: none; }
+        .col-no { width: 6%; }
+        .col-desc { width: 40%; }
+        .col-qty { width: 8%; }
+        .col-unit { width: 8%; }
+        .col-price { width: 14%; }
+        .col-amount { width: 14%; }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .th-label { display: block; }
+        .th-label-en {
+            display: block;
+            font-weight: normal;
+            font-style: italic;
+            color: #444;
+            font-size: 10.5px;
+        }
+
+        /* ========== SUMMARY ========== */
+        .summary-outer {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .summary-outer > tbody > tr > td {
+            vertical-align: top;
+            border: 1px solid #5B7DB1;
+        }
+        .baht-text-cell {
+            text-align: center;
+            vertical-align: bottom !important;
+            font-size: 13px;
+            padding: 5px;
+            padding-bottom: 4px;
+        }
+        .calc-label {
+            padding: 2px 6px;
+            font-size: 11.5px;
+        }
+        .calc-label .th-text {
+            font-weight: bold;
+            display: block;
+        }
+        .calc-label .en-text {
+            font-style: italic;
+            color: #555;
+            font-size: 10px;
+            display: block;
+        }
+        .calc-value {
+            text-align: right;
+            font-weight: normal;
+            border-left: 1px solid #5B7DB1;
+            padding: 2px 6px;
+            font-size: 11.5px;
+        }
+        .total-row td {
+            border-top: 1.5px solid #5B7DB1;
+            font-weight: bold;
+        }
+
+        /* ========== FOOTER ========== */
+        .footer-section {
+            margin-top: 8px;
+        }
+        .terms-box {
+            border: 1px solid #5B7DB1;
+            padding: 4px 8px;
+            margin-bottom: 5px;
+            font-size: 11px;
+        }
+        .terms-th {
+            font-weight: bold;
+        }
+        .terms-en {
+            font-style: italic;
+            color: #444;
+            font-size: 10px;
+        }
+        .payment-section {
+            font-size: 11.5px;
+            margin-bottom: 3px;
+        }
+        .payment-label {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .payment-options {
+            margin-bottom: 3px;
+        }
+        .cb {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 1px solid #333;
+            vertical-align: middle;
+            margin-right: 2px;
+            text-align: center;
+            line-height: 12px;
+            font-size: 10px;
+        }
+        .cb-checked::after {
+            content: "✓";
+        }
+        .cheque-line {
+            font-size: 11px;
+            margin-top: 2px;
+        }
+        .e-tax-notice {
+            text-align: center;
+            font-size: 10.5px;
+            font-style: italic;
+            color: #333;
+            margin-top: 8px;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+
+        <!-- ===== HEADER: Logo + Company Info ===== -->
+        <table class="header-table">
+            <tr>
+                <td class="logo-cell" style="vertical-align: top; padding-top: 0;">
+                    <img src="{{logoBase64}}" alt="UNICON Logo" style="width: 160px; height: auto; margin-left: 15px; display: block; margin-top: 0;" />
+                </td>
+                <td class="company-cell">
+                    <div class="company-name-en">UNICON CONTAINER SERVICES CO.,LTD</div>
+                    <div class="company-addr">13/1 Moo5.Kingkaew Road,Rajathewa Bangplee,Samutprakarn 10540</div>
+                    <div class="company-phone">(02)7388904-6 ACCOUNT (02)7388914 FAX:7388908</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- ===== TAX ID + Receipt/Tax Invoice line ===== -->
+        <table class="tax-receipt-line">
+            <tr>
+                <td class="tax-left" style="vertical-align: bottom; padding-bottom: 2px;">
+                    เลขประจำตัวผู้เสียภาษี/ Tax ID&nbsp;&nbsp;<strong>0115550007702</strong>&nbsp;&nbsp;&nbsp;&nbsp;สำนักงานใหญ่
+                </td>
+                <td class="tax-right" style="vertical-align: bottom; text-align: right;">
+                    <div style="font-size: 19px; font-weight: bold; margin-bottom: 2px;">ใบเสร็จรับเงิน/ใบกำกับภาษี</div>
+                    <div style="font-size: 12px; font-style: normal;">Receipt/Tax Invoice</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- ===== CUSTOMER & INVOICE METADATA ===== -->
+        <table class="info-outer">
+            <tr>
+                <!-- LEFT: Customer Box -->
+                <td class="customer-box">
+                    <div>
+                        <span class="customer-label-th">ลูกค้า</span>&nbsp;&nbsp;&nbsp;&nbsp;{{customer}}
+                    </div>
+                    <div class="customer-label-en">Customer</div>
+                    <div class="customer-name">{{customerCompanyName}}</div>
+                    <div class="customer-addr">{{customerAddr}}</div>
+                    <div style="height: 14px;"></div>
+                    <div class="customer-taxid-line">
+                        เลขประจำตัวผู้เสียภาษี&nbsp;&nbsp;<strong>{{taxId}}</strong>
+                        &nbsp;&nbsp;&nbsp;<span class="branch-checkbox">✓</span>&nbsp;{{customerBranch}}
+                    </div>
+                    <div style="font-size:10.5px; font-style:italic; color:#444;">Tax ID</div>
+                    <div class="customer-ref-line">
+                        <span class="customer-label-th">อ้างอิง</span><br>
+                        <span class="customer-label-en" style="font-size:10px;">Reference</span>
+                    </div>
+                </td>
+
+                <!-- RIGHT: Invoice Metadata -->
+                <td class="invoice-meta-box">
+                    <table class="meta-table">
+                        <tr>
+                            <td class="meta-label-cell">
+                                <span class="meta-label-th">เลขที่</span>
+                                <span class="meta-label-en">No.</span>
+                            </td>
+                            <td class="meta-value-cell">{{invoiceNo}}</td>
+                        </tr>
+                        <tr>
+                            <td class="meta-label-cell">
+                                <span class="meta-label-th">วันที่</span>
+                                <span class="meta-label-en">Date</span>
+                            </td>
+                            <td class="meta-value-cell">{{invoiceDate}}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="padding: 6px;">
+                                <span class="meta-label-th" style="font-size:11.5px;">อ้างอิงใบแจ้งหนี้</span><br>
+                                <span class="meta-label-en">Invoice No.Ref.</span>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        <!-- ===== ITEMS TABLE ===== -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th class="col-no">
+                        <span class="th-label">ลำดับ</span>
+                        <span class="th-label-en">No.</span>
+                    </th>
+                    <th class="col-desc">
+                        <span class="th-label">รหัสสินค้า/รายละเอียด</span>
+                        <span class="th-label-en">Code/Descriptions</span>
+                    </th>
+                    <th class="col-qty" colspan="2">
+                        <span class="th-label">จำนวน</span>
+                        <span class="th-label-en">Quantity</span>
+                    </th>
+                    <th class="col-price">
+                        <span class="th-label">หน่วยละ</span>
+                        <span class="th-label-en">unit Price</span>
+                    </th>
+                    <th class="col-amount">
+                        <span class="th-label">จำนวนเงิน</span>
+                        <span class="th-label-en">Amount</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {{itemRows}}
+                
+                <!-- ===== SUMMARY & TOTALS ===== -->
+                <tr class="summary-row">
+                    <td colspan="2" rowspan="7" class="baht-text-cell">
+                        {{bahtText}}
+                    </td>
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">รวมเป็นเงิน</span>
+                        <span class="en-text">Gross Amount</span>
+                    </td>
+                    <td class="calc-value">{{subtotal}}</td>
+                </tr>
+                <tr class="summary-row">
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">หักส่วนลด</span>
+                        <span class="en-text">Less Discount</span>
+                    </td>
+                    <td class="calc-value">{{discount}}</td>
+                </tr>
+                <tr class="summary-row">
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">ยอดหลังหักส่วนลด</span>
+                        <span class="en-text">After Discount</span>
+                    </td>
+                    <td class="calc-value">{{afterDiscount}}</td>
+                </tr>
+                <tr class="summary-row">
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">หักเงินมัดจำ</span>
+                        <span class="en-text">Less Deposit</span>
+                    </td>
+                    <td class="calc-value">{{deposit}}</td>
+                </tr>
+                <tr class="summary-row">
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">ยอดหลังหักส่วนลด</span>
+                        <span class="en-text">After Discount</span>
+                    </td>
+                    <td class="calc-value">{{afterDeposit}}</td>
+                </tr>
+                <tr class="summary-row">
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">จำนวนภาษีมูลค่าเพิ่ม &nbsp;7%</span>
+                        <span class="en-text">VAT</span>
+                    </td>
+                    <td class="calc-value">{{vat}}</td>
+                </tr>
+                <tr class="summary-row total-row">
+                    <td class="calc-label" colspan="3">
+                        <span class="th-text">จำนวนเงินรวมทั้งสิ้น</span>
+                        <span class="en-text">Total Invoice</span>
+                    </td>
+                    <td class="calc-value" style="font-size: 13px;">{{totalAmount}}</td>
+                </tr>
+            </tbody>
+        </table>
+
+
+
+        <!-- ===== FOOTER ===== -->
+        <div class="footer-section">
+            <!-- Terms -->
+            <div class="terms-box">
+                <div class="terms-th">ใบเสร็จรับเงินฉบับนี้จะสมบูรณ์ ต่อเมื่อบริษัทได้รับเงินตามเช็คแล้วเท่านั้น</div>
+                <div class="terms-en">This receipt will be valid only after the cheque is honored by bank.</div>
+
+                <!-- Payment Methods -->
+                <div class="payment-section" style="margin-top: 8px;">
+                    <div class="payment-label">ชำระเงินโดย</div>
+                    <div class="payment-options">
+                        <span class="cb"></span> เงินสด/Cash&nbsp;&nbsp;&nbsp;
+                        <span class="cb"></span> เงินโอน/Transfer&nbsp;&nbsp;&nbsp;
+                        <span class="cb"></span> อื่นๆ
+                    </div>
+                    <div class="cheque-line">
+                        <span class="cb"></span> เช็ค&nbsp;&nbsp;เลขที่&nbsp;______________________&nbsp;&nbsp;
+                        วันที่&nbsp;_____/_____/_____&nbsp;&nbsp;
+                        เช็คธนาคาร&nbsp;___________________
+                    </div>
+                </div>
+
+                <!-- E-Tax Notice -->
+                <div class="e-tax-notice">
+                    เอกสารนี้ได้จัดทำและส่งข้อมูลให้แก่กรมสรรพากรด้วยวิธีการทางอิเล็กทรอนิกส์
+                </div>
+            </div>
+        </div>
+
+    </div>
+</body>
+</html>
