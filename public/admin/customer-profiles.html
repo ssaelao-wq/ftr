@@ -117,15 +117,28 @@
                             <label for="searchCustomerName">Customer Name</label>
                             <input type="text" id="searchCustomerName" class="form-control" placeholder="e.g. Company Name">
                         </div>
+                        <div class="form-group">
+                            <label for="searchExportStatus">Accounting Export Status</label>
+                            <select id="searchExportStatus" class="form-control">
+                                <option value="all">All Records</option>
+                                <option value="false" selected>Pending Export Only</option>
+                                <option value="true">Exported Only</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div class="filters-actions" style="justify-content: flex-end;">
                         <div class="search-metrics" style="margin-bottom: 0; margin-right: auto;">
                             <div class="search-metric">Profiles Found: <span class="value" id="resCount">0</span></div>
                         </div>
-                        <button type="submit" class="btn" id="searchBtn">
-                            Search Profiles
-                        </button>
+                        <div style="display: flex; gap: 1rem;">
+                            <button type="button" class="btn btn-secondary" onclick="exportFilteredProfilesCsv()" id="exportBtn">
+                                Export Results to CSV
+                            </button>
+                            <button type="submit" class="btn" id="searchBtn">
+                                Search Profiles
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -143,6 +156,7 @@
                                 <th>Cust Email</th>
                                 <th>Cust Phone</th>
                                 <th>Cust Branch</th>
+                                <th>Accounting Export</th>
                                 <th>Created At</th>
                                 <th>Updated At</th>
                                 <th class="action-cell">Action</th>
@@ -150,7 +164,7 @@
                         </thead>
                         <tbody id="resultsTableBody">
                             <tr class="no-data">
-                                <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                <td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
                                     Use the filters above to search for profiles.
                                 </td>
                             </tr>
@@ -229,8 +243,9 @@
             const tax_id = document.getElementById('searchTaxId').value;
             const customer_num = document.getElementById('searchCustomerNum').value;
             const customer_name = document.getElementById('searchCustomerName').value;
+            const is_accounting_exported = document.getElementById('searchExportStatus').value;
             
-            const queryString = new URLSearchParams({ tax_id, customer_num, customer_name }).toString();
+            const queryString = new URLSearchParams({ tax_id, customer_num, customer_name, is_accounting_exported }).toString();
 
             try {
                 const response = await fetch(`/api/admin/customer-profiles/search?${queryString}`);
@@ -271,7 +286,7 @@
             if (profiles.length === 0) {
                 body.innerHTML = `
                     <tr class="no-data">
-                        <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                        <td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
                             No records found matching current search criteria.
                         </td>
                     </tr>
@@ -282,6 +297,10 @@
 
             profiles.forEach(prof => {
                 const tr = document.createElement('tr');
+                const exportBadge = prof.is_accounting_exported 
+                    ? '<span class="badge badge-ready">Exported</span>' 
+                    : '<span class="badge badge-pending">Pending</span>';
+
                 tr.innerHTML = `
                     <td>${prof.tax_id || '-'}</td>
                     <td>${prof.customer_num || '-'}</td>
@@ -290,6 +309,7 @@
                     <td>${prof.customer_email || '-'}</td>
                     <td>${prof.customer_phone || '-'}</td>
                     <td>${prof.customer_branch || '-'}</td>
+                    <td>${exportBadge}</td>
                     <td>${formatDateTime(prof.created_at)}</td>
                     <td>${formatDateTime(prof.updated_at)}</td>
                     <td class="action-cell">
@@ -302,6 +322,57 @@
             });
 
             document.getElementById('resCount').innerText = profiles.length;
+        }
+
+        async function exportFilteredProfilesCsv() {
+            const btn = document.getElementById('exportBtn');
+            btn.disabled = true;
+            btn.innerText = 'Exporting...';
+
+            const tax_id = document.getElementById('searchTaxId').value;
+            const customer_num = document.getElementById('searchCustomerNum').value;
+            const customer_name = document.getElementById('searchCustomerName').value;
+            const is_accounting_exported = document.getElementById('searchExportStatus').value;
+            
+            const payload = { tax_id, customer_num, customer_name, is_accounting_exported };
+
+            try {
+                const response = await fetch('/api/admin/customer-profiles/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const contentDisp = response.headers.get('Content-Disposition');
+                    let filename = 'customer_profile_export.csv';
+                    if (contentDisp && contentDisp.includes('filename=')) {
+                        filename = contentDisp.split('filename=')[1].trim();
+                    }
+
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    
+                    showAlert('success', 'Customer Profile CSV generated and downloaded. Record export states updated.');
+                    performSearch();
+                } else {
+                    const data = await response.json();
+                    showAlert('danger', data.message || 'Export failed.');
+                }
+            } catch (err) {
+                console.error(err);
+                showAlert('danger', 'Network error. Failed to export Customer Profile CSV.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Export Results to CSV';
+            }
         }
 
         function openEditModal(profileId) {

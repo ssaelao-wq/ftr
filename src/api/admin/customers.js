@@ -140,13 +140,13 @@ router.put('/:tax_rec_id', async (req, res) => {
             });
         }
 
-        // Update existing master customer profile's customer_name and customer_addr
+        // Update existing master customer profile's customer_name, customer_addr, and reset its accounting export flag
         await db.execute(
-            'UPDATE customer_profile SET customer_name = ?, customer_addr = ? WHERE tax_id = ? AND customer_branch = ?',
+            'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, is_accounting_exported = FALSE WHERE tax_id = ? AND customer_branch = ?',
             [finalCustomer.trim(), address.trim(), tax_id.trim(), finalBranch.trim()]
         );
 
-        // Update the invoice record to link to this profile, set container_num, reset status and export state
+        // Update the invoice record to link to this profile, set container_num, reset status and both export flags
         await db.execute(
             'UPDATE invoices SET tax_id = ?, customer_branch = ?, container_num = ?, status = \'pending\', is_accounting_exported = FALSE WHERE tax_rec_id = ?',
             [tax_id.trim(), finalBranch.trim(), container_num ? container_num.trim() : null, tax_rec_id]
@@ -214,7 +214,7 @@ router.post('/export', async (req, res) => {
         }
 
         // 5. Log download activity (Non-blocking)
-        await logActivity('REQ_DOWNLOAD_MISS', `${username}:${rows.length}`);
+        await logActivity('REQ_DOWNLOAD_MISS', `${username}:${rows.length}`, username);
 
         // 6. Return file download stream
         const filename = `accounting_export_${new Date().toISOString().slice(0,10).replace(/-/g,'')}_${Date.now()}.csv`;
@@ -252,11 +252,13 @@ router.post('/:tax_rec_id/generate-pdf', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Some missing data: company name, address, tax id' });
         }
         
+        const username = req.session.adminUser ? req.session.adminUser.username : 'system';
+
         // 3. Generate PDF (overwrites and updates DB status/timestamp)
         const generatedPdfUrl = await generatePdf(tax_rec_id);
         
         // 4. Log generation activity
-        await logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${record.tax_id}:admin:${generatedPdfUrl}`);
+        await logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${record.tax_id}:admin:${generatedPdfUrl}`, username);
         
         res.json({ success: true, message: 'PDF generated successfully.', pdf_url: generatedPdfUrl });
         
@@ -326,11 +328,13 @@ router.post('/:tax_rec_id/send-email', async (req, res) => {
 
         const pdfRelPath = pdfRows[0].pdf_folder;
 
+        const username = req.session.adminUser ? req.session.adminUser.username : 'system';
+
         // 3. Dispatch email (synchronous for admin — gives real-time success/failure feedback)
         await sendInvoiceEmail(email_sending.trim(), tax_rec_id, record.tax_id, pdfRelPath);
 
         // 4. Log the dispatch
-        await logActivity('SENDING_EMAIL', `${email_sending.trim()}:${pdfRelPath}`);
+        await logActivity('SENDING_EMAIL', `${email_sending.trim()}:${pdfRelPath}`, username);
 
         res.json({ success: true, message: `Email sent successfully to ${email_sending.trim()}.` });
 

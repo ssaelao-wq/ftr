@@ -1,283 +1,816 @@
 <!--
-`public/liff/missing-info.html` & `public/liff/request-invoice.html`:
-Activated the `DOMContentLoaded` event listener so that the LIFF SDK initiates dynamically
-on load to fetch the actual `lineUserId` from LINE.
+`public/liff/request-invoice.html`:
+Redesigned LIFF Request Full Tax Invoice page with 2-step flow.
+Includes checking step via GET /check-invoice and delivery popup with Email/LINE.
+Matches missing-info.html style system and UX.
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Request Tax Invoice - FTR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ขอใบกำกับภาษีเต็มรูป - FTR</title>
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ============================================================
+           CSS VARIABLES & RESET
+        ============================================================ */
         :root {
-            --primary-color: #00B900; /* Line Green */
-            --secondary-color: #009900;
-            --bg-color: #f4f7f6;
-            --text-color: #333;
-            --border-radius: 12px;
-            --input-border: #dcdcdc;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --green: #00B900;
+            --green-dark: #008f00;
+            --green-light: #e6f9e6;
+            --green-bg: linear-gradient(150deg, #00B900 0%, #007a00 100%);
+            --grey-100: #f8f9fa;
+            --grey-200: #e9ecef;
+            --grey-300: #dee2e6;
+            --grey-400: #ced4da;
+            --grey-500: #adb5bd;
+            --grey-600: #6c757d;
+            --grey-700: #495057;
+            --grey-800: #343a40;
+            --text: #1a1a2e;
+            --text-light: #6c757d;
+            --white: #ffffff;
+            --danger: #dc3545;
+            --danger-light: #fff5f5;
+            --warning: #ff9800;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
         }
 
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        body {
-            background: linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        html, body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--grey-100);
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
-        .container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: var(--glass-shadow);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .header h1 {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #444;
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            background-color: #fafafa;
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.15);
-            background-color: #fff;
-        }
-
-        textarea.form-control {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            background-color: var(--primary-color);
+        /* ============================================================
+           PAGE HEADER
+        ============================================================ */
+        .page-header {
+            background: var(--green-bg);
             color: white;
-            font-size: 1rem;
+            padding: 20px 16px 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 150px; height: 150px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px; left: -20px;
+            width: 100px; height: 100px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
+        }
+
+        .header-icon {
+            font-size: 2rem;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .page-header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .page-header p {
+            font-size: 0.82rem;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+
+        /* ============================================================
+           MAIN CARD
+        ============================================================ */
+        .main-card {
+            background: white;
+            margin: -16px 12px 16px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-body {
+            padding: 20px 16px 16px;
+        }
+
+        /* ============================================================
+           FORM FIELDS
+        ============================================================ */
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
             font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            margin-top: 10px;
+            color: var(--grey-700);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
-        .btn:hover {
-            background-color: var(--secondary-color);
+        .field-label .req {
+            color: var(--danger);
+            font-size: 0.9em;
         }
 
-        .btn:active {
-            transform: scale(0.98);
+        .field-input {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1.5px solid var(--grey-300);
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            -webkit-appearance: none;
         }
 
-        .btn:disabled {
-            background-color: #ccc;
+        .field-input:focus {
+            outline: none;
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(0,185,0,0.12);
+        }
+
+        .field-input:disabled {
+            background: var(--grey-100);
+            border-color: var(--grey-200);
+            color: var(--grey-500);
             cursor: not-allowed;
         }
 
-        .loader {
+        /* ============================================================
+           BOTTOM ACTION BAR
+        ============================================================ */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            padding: 14px 16px;
+            border-top: 1px solid var(--grey-200);
+            background: white;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 13px 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-ok {
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-ok:hover:not(:disabled) { background: var(--green-dark); }
+
+        .btn-ok:disabled {
+            background: var(--grey-300);
+            color: var(--grey-500);
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            background: var(--grey-200);
+            color: var(--grey-700);
+            flex: 0.55;
+        }
+
+        .btn-cancel:hover { background: var(--grey-300); }
+
+        /* ============================================================
+           STATUS BANNER
+        ============================================================ */
+        .status-banner {
             display: none;
-            text-align: center;
-            margin-top: 15px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 14px;
         }
 
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(0,185,0,0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        #message-box {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 0.9rem;
-            display: none;
-        }
-
-        .message-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message-error {
-            background-color: #f8d7da;
-            color: #721c24;
+        .status-banner.error {
+            background: var(--danger-light);
             border: 1px solid #f5c6cb;
+            color: #721c24;
         }
+
+        /* Checking indicator */
+        .checking-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: var(--grey-600);
+            padding: 4px 0;
+            justify-content: center;
+        }
+
+        .mini-spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(0,185,0,0.3);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============================================================
+           BOTTOM SHEET MODAL
+        ============================================================ */
+        .overlay-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 200;
+            backdrop-filter: blur(3px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            z-index: 201;
+            padding: 24px 20px 32px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+        }
+
+        .bottom-sheet.open { transform: translateY(0); }
+
+        .sheet-drag-handle { width: 36px; height: 4px; background: var(--grey-300); border-radius: 2px; margin: 0 auto 18px; }
+
+        .bottom-sheet h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .bottom-sheet .sheet-sub {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        /* Email block */
+        .email-block {
+            background: var(--grey-100);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .email-block label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--grey-700);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 7px;
+        }
+
+        .email-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .email-input-row .field-input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+
+        .btn-send-email {
+            padding: 10px 18px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.15s;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-send-email:active { transform: scale(0.96); }
+        .btn-send-email:hover { background: var(--green-dark); }
+
+        .sheet-or {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 14px 0;
+        }
+
+        .sheet-or .line { flex: 1; height: 1px; background: var(--grey-200); }
+        .sheet-or span { font-size: 0.75rem; color: var(--grey-500); font-weight: 600; }
+
+        .btn-send-line {
+            width: 100%;
+            padding: 14px;
+            background: #00B900;
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s, transform 0.15s;
+            margin-bottom: 10px;
+        }
+
+        .btn-send-line:active { transform: scale(0.97); }
+        .btn-send-line:hover { background: var(--green-dark); }
+
+        .btn-sheet-cancel {
+            width: 100%;
+            padding: 12px;
+            background: var(--grey-100);
+            color: var(--grey-600);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-sheet-cancel:hover { background: var(--grey-200); }
+
+        /* ============================================================
+           TOAST NOTIFICATION
+        ============================================================ */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: rgba(30,30,30,0.92);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 500;
+            max-width: calc(100vw - 32px);
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { background: rgba(0, 130, 0, 0.95); }
+        .toast.error { background: rgba(185, 0, 0, 0.95); }
+
+        /* ============================================================
+           LOADING OVERLAY
+        ============================================================ */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.75);
+            z-index: 400;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .loading-overlay.show { display: flex; }
+
+        .big-spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(0,185,0,0.25);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        .loading-overlay p {
+            font-size: 0.85rem;
+            color: var(--grey-600);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Request Tax Invoice</h1>
-            <p>We will generate and send the Full Tax Invoice to your email address.</p>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+    <span class="header-icon">🧾</span>
+    <h1>ขอใบกำกับภาษีเต็มรูป</h1>
+    <p>ระบุหมายเลขเพื่อตรวจสอบและขอเอกสาร</p>
+</div>
+
+<!-- MAIN CARD -->
+<div class="main-card">
+    <div class="card-body">
+        <!-- Error Banner -->
+        <div class="status-banner error" id="statusBanner"></div>
+
+        <!-- Tax Record ID -->
+        <div class="field-group">
+            <div class="field-label">Tax Record ID <span class="req">*</span></div>
+            <input type="text" id="taxRecId" class="field-input" placeholder="เช่น RF2605-00123"
+                   autocomplete="off" autocorrect="off" spellcheck="false">
         </div>
 
-        <form id="requestInvoiceForm">
-            <div class="form-group">
-                <label for="tax_rec_id">Tax Record ID</label>
-                <input type="text" id="tax_rec_id" class="form-control" placeholder="e.g. RF2605-00589" required>
-            </div>
-            <div class="form-group">
-                <label for="tax_id">Tax ID</label>
-                <input type="text" id="tax_id" class="form-control" placeholder="13 digits" pattern="\d{13}" title="Please enter exactly 13 digits" required>
-            </div>
-            <div class="form-group">
-                <label for="email_sending">Email Address</label>
-                <input type="email" id="email_sending" class="form-control" placeholder="Email to receive PDF" required>
-            </div>
-
-            <button type="submit" class="btn" id="submitBtn">Send to Email</button>
-        </form>
-
-        <div class="loader" id="loader" style="display: none;">
-            <div class="spinner"></div>
-            <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Processing request...</p>
+        <!-- Tax ID -->
+        <div class="field-group">
+            <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
+            <input type="text" id="taxId" class="field-input" placeholder="13 หลัก"
+                   maxlength="13" inputmode="numeric" pattern="\d{13}"
+                   autocomplete="off" autocorrect="off">
         </div>
 
-        <div id="message-box"></div>
+        <!-- Checking inline spinner -->
+        <div class="checking-indicator" id="checkingIndicator">
+            <div class="mini-spinner"></div>
+            <span>กำลังตรวจสอบข้อมูล...</span>
+        </div>
     </div>
 
-    <!-- LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script>
-        let lineUserId = null;
+    <!-- Actions -->
+    <div class="action-bar">
+        <button class="btn btn-ok" id="btnOk">ตกลง</button>
+        <button class="btn btn-cancel" id="btnCancel">ยกเลิก</button>
+    </div>
+</div>
 
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: "2010196890-kJW56aX3" }); // Your active LIFF ID
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                } else {
-                    const profile = await liff.getProfile();
-                    lineUserId = profile.userId;
-                    console.log("LIFF initialized. Line User ID:", lineUserId);
-                }
-            } catch (err) {
-                console.error('LIFF Initialization failed', err);
+<!-- BOTTOM SHEET MODAL (Delivery Options) -->
+<div class="overlay-backdrop" id="deliveryBackdrop"></div>
+<div class="bottom-sheet" id="deliverySheet">
+    <div class="sheet-drag-handle"></div>
+    <h2>ส่งใบกำกับภาษี</h2>
+    <p class="sheet-sub" id="sheetCustomerName">—</p>
+
+    <!-- Email Section -->
+    <div class="email-block">
+        <label for="emailInput">📧 ส่งทางอีเมล</label>
+        <div class="email-input-row">
+            <input type="email" id="emailInput" class="field-input" placeholder="ระบุอีเมลผู้รับ PDF" autocomplete="off">
+            <button class="btn-send-email" id="btnSendEmail">📨 ส่ง</button>
+        </div>
+    </div>
+
+    <div class="sheet-or">
+        <div class="line"></div>
+        <span>หรือ</span>
+        <div class="line"></div>
+    </div>
+
+    <!-- LINE Section -->
+    <button class="btn-send-line" id="btnSendLine">
+        <span>💚 ส่งทาง LINE</span>
+    </button>
+
+    <button class="btn-sheet-cancel" id="btnSheetCancel">ยกเลิก</button>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="big-spinner"></div>
+    <p>กำลังดำเนินการ...</p>
+</div>
+
+<!-- TOAST NOTIFICATION -->
+<div class="toast" id="toast"></div>
+
+<!-- LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+    // State machine configuration
+    const STATE = {
+        INITIAL: 'INITIAL',
+        CHECKING: 'CHECKING',
+        ERROR: 'ERROR',
+        POPUP_OPEN: 'POPUP_OPEN',
+        SUBMITTING: 'SUBMITTING',
+        SENT: 'SENT'
+    };
+
+    let currentState = STATE.INITIAL;
+    let lineUserId = null;
+    let pdfState = null; // 'ready' or 'no_pdf'
+    let currentCustomerName = '';
+
+    // Initialize LIFF
+    async function initializeLiff() {
+        try {
+            await liff.init({ liffId: "2010196890-kJW56aX3" }); // Your active LIFF ID
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            } else {
+                const profile = await liff.getProfile();
+                lineUserId = profile.userId;
+                console.log("LIFF initialized. Line User ID:", lineUserId);
             }
+        } catch (err) {
+            console.error('LIFF Initialization failed', err);
+            showToast('เชื่อมต่อ LINE ล้มเหลว', 'error');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeLiff);
+
+    // Dom Elements
+    const elements = {
+        taxRecId: document.getElementById('taxRecId'),
+        taxId: document.getElementById('taxId'),
+        statusBanner: document.getElementById('statusBanner'),
+        checkingIndicator: document.getElementById('checkingIndicator'),
+        btnOk: document.getElementById('btnOk'),
+        btnCancel: document.getElementById('btnCancel'),
+        deliveryBackdrop: document.getElementById('deliveryBackdrop'),
+        deliverySheet: document.getElementById('deliverySheet'),
+        sheetCustomerName: document.getElementById('sheetCustomerName'),
+        emailInput: document.getElementById('emailInput'),
+        btnSendEmail: document.getElementById('btnSendEmail'),
+        btnSendLine: document.getElementById('btnSendLine'),
+        btnSheetCancel: document.getElementById('btnSheetCancel'),
+        loadingOverlay: document.getElementById('loadingOverlay'),
+        toast: document.getElementById('toast')
+    };
+
+    // Toast helper
+    let toastTimeout;
+    function showToast(message, type = 'success') {
+        clearTimeout(toastTimeout);
+        elements.toast.innerText = message;
+        elements.toast.className = `toast show ${type}`;
+        toastTimeout = setTimeout(() => {
+            elements.toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // State updates
+    function updateState(newState, data = {}) {
+        currentState = newState;
+        
+        switch (newState) {
+            case STATE.INITIAL:
+                elements.taxRecId.disabled = false;
+                elements.taxId.disabled = false;
+                elements.btnOk.disabled = false;
+                elements.btnCancel.disabled = false;
+                elements.checkingIndicator.style.display = 'none';
+                elements.statusBanner.style.display = 'none';
+                
+                // Close Sheet
+                elements.deliveryBackdrop.style.display = 'none';
+                elements.deliverySheet.classList.remove('open');
+                elements.loadingOverlay.classList.remove('show');
+                break;
+
+            case STATE.CHECKING:
+                elements.taxRecId.disabled = true;
+                elements.taxId.disabled = true;
+                elements.btnOk.disabled = true;
+                elements.btnCancel.disabled = true;
+                elements.checkingIndicator.style.display = 'flex';
+                elements.statusBanner.style.display = 'none';
+                elements.loadingOverlay.classList.remove('show');
+                break;
+
+            case STATE.ERROR:
+                elements.taxRecId.disabled = false;
+                elements.taxId.disabled = false;
+                elements.btnOk.disabled = false;
+                elements.btnCancel.disabled = false;
+                elements.checkingIndicator.style.display = 'none';
+                if (data.errorMessage) {
+                    elements.statusBanner.innerText = data.errorMessage;
+                    elements.statusBanner.style.display = 'block';
+                }
+                break;
+
+            case STATE.POPUP_OPEN:
+                elements.checkingIndicator.style.display = 'none';
+                elements.statusBanner.style.display = 'none';
+                
+                // Setup Sheet info
+                elements.sheetCustomerName.innerText = `ผู้เสียภาษี: ${data.customerName || '—'}`;
+                elements.emailInput.value = '';
+                
+                // Slide up sheet
+                elements.deliveryBackdrop.style.display = 'block';
+                elements.deliverySheet.classList.add('open');
+                elements.loadingOverlay.classList.remove('show');
+                break;
+
+            case STATE.SUBMITTING:
+                elements.deliveryBackdrop.style.display = 'none';
+                elements.deliverySheet.classList.remove('open');
+                elements.loadingOverlay.classList.add('show');
+                break;
+
+            case STATE.SENT:
+                elements.loadingOverlay.classList.remove('show');
+                break;
+        }
+    }
+
+    // Handle verification
+    async function checkInvoice() {
+        const taxRecIdVal = elements.taxRecId.value.trim();
+        const taxIdVal = elements.taxId.value.trim();
+
+        if (!taxRecIdVal) {
+            showToast('กรุณากรอก Tax Record ID', 'error');
+            return;
+        }
+        if (!taxIdVal) {
+            showToast('กรุณากรอก Tax ID', 'error');
+            return;
+        }
+        if (taxIdVal.length !== 13 || !/^\d+$/.test(taxIdVal)) {
+            showToast('Tax ID ต้องเป็นตัวเลข 13 หลัก', 'error');
+            return;
         }
 
-        // Active listener to run LIFF Initialization on load
-        document.addEventListener('DOMContentLoaded', initializeLiff);
+        updateState(STATE.CHECKING);
 
-        document.getElementById('requestInvoiceForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const btn = document.getElementById('submitBtn');
-            const loader = document.getElementById('loader');
-            const msgBox = document.getElementById('message-box');
-            
-            btn.style.display = 'none';
-            loader.style.display = 'block';
-            msgBox.style.display = 'none';
+        try {
+            const res = await fetch(`/api/customer/check-invoice?tax_rec_id=${encodeURIComponent(taxRecIdVal)}&tax_id=${encodeURIComponent(taxIdVal)}`);
+            const data = await res.json();
 
-            const payload = {
-                line_user_id: lineUserId || 'mock_user_id_for_dev',
-                tax_rec_id: document.getElementById('tax_rec_id').value,
-                tax_id: document.getElementById('tax_id').value,
-                email_sending: document.getElementById('email_sending').value
-            };
-
-            try {
-                const response = await fetch('/api/customer/request-invoice', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-
-                loader.style.display = 'none';
-                msgBox.style.display = 'block';
-                
-                if (response.ok) {
-                    msgBox.className = 'message-success';
-                    msgBox.innerText = 'Success! The Full Tax Invoice has been generated and sent to your email.';
-                    // Optional: Close LIFF window after success
-                    setTimeout(() => liff.closeWindow(), 3000);
-                } else {
-                    msgBox.className = 'message-error';
-                    msgBox.innerText = data.message || 'An error occurred. Please try again.';
-                    btn.style.display = 'block';
-                }
-            } catch (err) {
-                loader.style.display = 'none';
-                msgBox.style.display = 'block';
-                msgBox.className = 'message-error';
-                msgBox.innerText = 'Network error. Please try again.';
-                btn.style.display = 'block';
+            if (res.ok && data.success) {
+                pdfState = data.pdf_state;
+                currentCustomerName = data.customer_name;
+                updateState(STATE.POPUP_OPEN, { customerName: data.customer_name });
+            } else {
+                updateState(STATE.ERROR, { errorMessage: data.message || 'เกิดข้อผิดพลาดในการตรวจสอบ' });
             }
-        });
-    </script>
+        } catch (err) {
+            console.error(err);
+            updateState(STATE.ERROR, { errorMessage: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง' });
+        }
+    }
+
+    // Submit Request
+    async function submitRequest(sendMethod, emailSending = '') {
+        const taxRecIdVal = elements.taxRecId.value.trim();
+        const taxIdVal = elements.taxId.value.trim();
+
+        updateState(STATE.SUBMITTING);
+
+        const payload = {
+            line_user_id: lineUserId || 'mock_user_id_for_dev',
+            tax_rec_id: taxRecIdVal,
+            tax_id: taxIdVal,
+            send_method: sendMethod,
+            email_sending: emailSending
+        };
+
+        try {
+            const res = await fetch('/api/customer/request-invoice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                updateState(STATE.SENT);
+                showToast(data.message || 'ส่งข้อมูลเรียบร้อยแล้ว', 'success');
+                setTimeout(() => {
+                    if (typeof liff !== 'undefined' && liff.closeWindow) {
+                        liff.closeWindow();
+                    }
+                }, 3000);
+            } else {
+                updateState(STATE.POPUP_OPEN, { customerName: currentCustomerName });
+                showToast(data.message || 'เกิดข้อผิดพลาดในการส่งข้อมูล', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            updateState(STATE.POPUP_OPEN, { customerName: currentCustomerName });
+            showToast('เกิดข้อผิดพลาดทางเครือข่าย', 'error');
+        }
+    }
+
+    // Event Listeners
+    elements.btnOk.addEventListener('click', checkInvoice);
+    
+    elements.btnCancel.addEventListener('click', () => {
+        elements.taxRecId.value = '';
+        elements.taxId.value = '';
+        updateState(STATE.INITIAL);
+    });
+
+    elements.btnSheetCancel.addEventListener('click', () => {
+        updateState(STATE.INITIAL);
+    });
+
+    elements.deliveryBackdrop.addEventListener('click', () => {
+        updateState(STATE.INITIAL);
+    });
+
+    // Send Email Trigger
+    elements.btnSendEmail.addEventListener('click', () => {
+        const email = elements.emailInput.value.trim();
+        if (!email) {
+            showToast('กรุณากรอกอีเมล', 'error');
+            return;
+        }
+        // Simple regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showToast('กรุณากรอกรูปแบบอีเมลให้ถูกต้อง', 'error');
+            return;
+        }
+        submitRequest('email', email);
+    });
+
+    // Send LINE Trigger
+    elements.btnSendLine.addEventListener('click', () => {
+        if (!lineUserId) {
+            showToast('ไม่พบข้อมูลผู้ใช้ LINE กรุณาตรวจสอบสิทธิ์การใช้งาน', 'error');
+            return;
+        }
+        submitRequest('line');
+    });
+</script>
 </body>
 </html>

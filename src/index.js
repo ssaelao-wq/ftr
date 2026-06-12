@@ -50,6 +50,7 @@ app.use('/admin', (req, res, next) => {
 
 // Serve static files (LIFF apps & Admin UI)
 app.use(express.static(path.join(__dirname, '../public')));
+app.use('/storage', express.static(path.join(__dirname, '../storage')));
 
 // Routes
 const customerRouter = require('./api/customer');

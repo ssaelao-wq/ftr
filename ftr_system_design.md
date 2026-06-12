@@ -1,9 +1,9 @@
 # Full Tax Request System (FTR) - System Specification
 
 ## 1. Executive Summary
-This project automates the issuance of Full Tax Invoices via Line Official Account (OA). Customers transition from paper "Brief Tax Invoices" to digital Full Tax Invoices by providing supplemental tax details (Company Name, Address, Tax ID) and requesting the Full Tax Invoices through a LIFF form by inputting their Tax Record ID, Tax ID, and recipient email address.
+This project automates the issuance of Full Tax Invoices via Line Official Account (OA). Customers transition from paper "Brief Tax Invoices" to digital Full Tax Invoices by providing supplemental tax details (Company Name, Address, Tax ID) and requesting the Full Tax Invoices through a LIFF form by inputting their Tax Record ID and Tax ID. The system then generates the invoice PDF on-the-fly and delivers it to the customer via email or LINE chat.
 
-The system leverages daily data syncs (uploaded via a secure, authenticated admin webpage) from the Container Data Management System (CDMS) to validate requests and export additional tax data (downloadable as CSV via an authenticated admin webpage) back to the Accounting System. Requested PDFs are dispatched dynamically via email rather than being stored permanently with the email address in the invoices table. To ensure complete auditability, a comprehensive Activity Log records all critical customer requests, admin data syncs, automated batch jobs, and email transmissions.
+The system leverages daily data syncs (uploaded via a secure, authenticated admin webpage) from the Container Data Management System (CDMS) to validate requests and export additional tax data (downloadable as CSV via an authenticated admin webpage) back to the Accounting System. Requested PDFs are dispatched dynamically via email or LINE rather than being stored permanently. To ensure complete auditability, a comprehensive Activity Log records all critical customer requests, admin data syncs, automated batch jobs, email transmissions, and LINE dispatches.
 
 ## 2. Goals & Objectives
 * **User Convenience:** 24/7 digital tax document requests via Line OA and LIFF, with automated delivery directly to the customer's specified email address.
@@ -18,32 +18,58 @@ The system leverages daily data syncs (uploaded via a secure, authenticated admi
 
 ## 4. User Flow
 1. **Service Completion:** Customer gets a physical "Brief Tax Invoice" with a **Tax Record ID** (e.g., RF2605-00589) and a verification code.
-2. **Adding Missing Info (LIFF):** Customer clicks "Update Info" in Line OA to open a LIFF form. They enter their **Tax ID**, **Company Name**, and **Address** along with the **Tax Record ID**. The system logs this activity.
-3. **Validation & Restriction:** System confirms these missing data fields can only be set once by the user. Any subsequent corrections require Admin intervention.
-4. **Request Full Tax Invoice (LIFF):** Customer opens the Request Full Tax Invoice LIFF form and submits their `tax_rec_id`, `tax_id`, and `email_sending` (the recipient email address for this specific request).
-5. **Delivery & Exception Handling:**
-   - *If CDMS data has not been uploaded yet:* The LIFF app displays the message "The Data is not ready yet".
-   - *If data is complete but PDF is missing:* Generated instantly on-the-fly, an email is created attaching the PDF, and sent to `email_sending`.
-   - *If PDF already exists:* An email is immediately created attaching the existing PDF and sent to `email_sending`. There is no restriction on the number of times a customer can request an existing Full Tax Invoice, and they can specify a different email address each time.
-   - *If data is incomplete:* User is prompted to complete their missing tax information.
+2. **Adding Customer Data & Generating PDF (LIFF — Combined Flow):** Customer clicks "กรอกข้อมูลลูกค้า" in Line OA to open the LIFF form. They enter their **Tax Record ID** and **Tax ID**, then click **Search** (🔍) to look up their company profile, or **Manual Input** (✏️) to enter data directly. After filling in all fields, they click **Save & Send** which generates the PDF on-the-fly and delivers it via the chosen channel.
+   - *If Tax Record ID is not found:* Error message displayed — `"ไม่มีใบกำกับภาษีของหมายเลขนี้"`.
+   - *If Tax ID matches a registered profile:* A customer selection sheet appears; customer selects their branch, fields are auto-populated (read-only). Only Container Number remains editable.
+   - *If Tax ID is not registered:* Manual entry mode — Customer Branch, Name, and Address are editable; Customer Number is pre-filled with `TMP-00000` (read-only).
+3. **Validation & One-Time Restriction:** The system enforces that customer data can only be submitted **once** from the Rich Menu (tracked via `is_customer_data_updated` flag). The PDF can also only be generated and sent **once** from the Rich Menu (tracked via `is_pdf_sent_from_richmenu` flag). Admin portal has no such restrictions.
+4. **PDF Delivery:** After clicking Save & Send and choosing a delivery method:
+   - *Send Email:* PDF is generated on-the-fly and sent as an email attachment. Customer sees: `"โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที"`.
+   - *Send LINE:* PDF is generated on-the-fly and a LINE Flex Message with a PDF download link is pushed to the customer's LINE chat. Customer sees: `"โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด"`.
+5. **Request Full Tax Invoice Form (LIFF — Separate):** Customer can also use the separate Request Invoice form (submitting `tax_rec_id`, `tax_id`, and `email_sending`) to re-request delivery of an already-complete invoice to any email address. No frequency restriction on this form.
 
 ## 5. Functional Requirements
 
 ### 5.1 Front-End: Line OA & LIFF Integration
 
 #### Rich Menu Functions:
-1. **Adding Missing Info Form (LIFF):**
-   - **Inputs:** `tax_rec_id` (Tax Record ID), `tax_id` (13-digit Tax ID), `customer_branch` (dropdown selection), `customer_num` (read-only), `company_name` (read-only), `address` (editable textarea), and `container_num` (optional).
-   - **Dynamic Profile Lookup:** Once a valid 13-digit Tax ID is entered, the LIFF app calls a backend lookup API to retrieve registered branches. If profiles are found, the branch dropdown is populated and enabled. Selecting a branch auto-fills the Customer Number, Company Name, and default Address. If no profile exists for the Tax ID, the user receives an error instructing them to contact staff.
-   - **Constraint:** One-time submission only. Admin assistance is required for any subsequent corrections.
-   - **Activity Logging:** Records action `REQ_MISS_DATA` with `action|datetime|values` where `values` is `company_name:address:tax_rec_id`.
-2. **Request Full Tax Invoice Form (LIFF):**
-   - **Inputs:** `tax_rec_id`, `tax_id`, and `email_sending` (new field).
-   - **Output:** Program retrieves or generates the PDF file, creates an email, and sends the PDF attachment to `email_sending`. `email_sending` is used dynamically and is NOT stored in the `invoices` table since the customer may change the destination email on every request. No restriction on request frequency.
-   - **Exception Handling:**
-     - *CDMS Data Missing:* If transaction data from CDMS has not been uploaded to the database yet, the LIFF app displays the message: "The Data is not ready yet".
-     - *Incomplete Profile:* If CDMS data exists but the customer's tax profile (`company_name`, `address`, `tax_id`) is incomplete, the LIFF app displays the message: "Some missing data: company name, address, tax id". Then the user has to "Adding missing Info Form (LIFF)" before back to request full tax invoice, this case the pdf file has to generate on-the-fly.
-   - **Activity Logging:** Records action `REQ_FULL_TAX` with `action|datetime|values` where `values` is `tax_rec_id:tax_id:email_sending`.
+1. **Adding Customer Data & Save & Send Form (LIFF) — `public/liff/missing-info.html`:**
+   - **Fields:** `tax_rec_id` (Tax Record ID), `tax_id` (13-digit Tax ID), `customer_branch`, `customer_num` (read-only or TMP-00000), `customer_name` (read-only or editable), `address` (read-only or editable), `container_num` (always editable).
+   - **UI Layout:** Tax Record ID and Tax ID fields are active on load. All customer fields are greyed out. Two buttons sit beside the Tax ID field: **Search** (🔍) and **Manual Input** (✏️).
+   - **State Machine:** The page operates as a 7-state machine:
+     - `INITIAL` — Tax Record ID & Tax ID editable; all customer fields locked.
+     - `SEARCHING` — Spinner shown; inputs temporarily disabled while API call is in progress.
+     - `NO_RECORD` — Tax Rec ID not found in DB; error banner shown; return to `INITIAL`.
+     - `PROFILE_FOUND` — Branches returned from `customer_profile`; customer selection bottom sheet shown.
+     - `PROFILE_SELECTED` — Customer selected; all fields populated and read-only; only Container Number editable.
+     - `MANUAL_ENTRY` — Tax ID not in `customer_profile`; Branch, Name, Address editable; Customer Num = `TMP-00000` (read-only).
+     - `LOCKED` — `is_customer_data_updated = TRUE`; entire form disabled; error banner shown.
+   - **Search Button (🔍):** Validates both fields, calls `GET /api/customer/lookup-branches?tax_rec_id=...&tax_id=...`. Handles `NO_RECORD`, `LOCKED`, branches-found, and no-branches (manual) responses.
+   - **Manual Input Button (✏️):** Calls the same API to verify the Tax Rec ID is valid and not locked, then enters `MANUAL_ENTRY` state regardless of Tax ID result.
+   - **Customer Selection Bottom Sheet:** Slide-up modal displaying a compact table of customer records (Customer Name, Address truncated to 2 lines, Branch badge). Compact font (0.74–0.85rem). Customer taps a row to select, then taps **ตกลง (OK)** to confirm or **ยกเลิก (Cancel)** to dismiss.
+   - **Save & Send Button:** Opens a delivery popup modal with:
+     - An email input field + **📨 Send Email** button (grouped together).
+     - A **💚 Send via LINE** button.
+     - A **Cancel** button.
+   - **Email Delivery:** Calls `POST /api/customer/save-and-send` with `send_method: 'email'`. Confirmation message shown: `"โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที"`.
+   - **LINE Delivery:** Calls `POST /api/customer/save-and-send` with `send_method: 'line'`. Confirmation message shown: `"โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด"`. The LINE delivery sends a **Flex Message** card with a tap-to-open PDF download link (LINE Messaging API does not support direct binary file attachments).
+   - **One-Time Constraints (Rich Menu only):**
+     - Customer data can only be submitted **once**: `is_customer_data_updated` flag in `invoices` table. If already set, show: `"ไม่สามารถแก้ไขข้อมูลลูกค้าได้มากกว่า 1 ครั้ง โปรดติดต่อ admin"`.
+     - PDF can only be generated & sent **once**: `is_pdf_sent_from_richmenu` flag. If already set, show: `"ไม่สามารถสร้างใบกำกับภาษีในรูปแบบ PDF ได้มากกว่า 1 ครั้ง โปรดติดต่อ admin"`.
+     - Admin portal is **not** subject to these restrictions.
+   - **Activity Logging:** Records `REQ_MISS_DATA` (`company_name:address:tax_rec_id`) and `ONTHEFLY_GEN_PDF` (`tax_rec_id:tax_id:send_method:pdf_path`).
+ 2. **Request Full Tax Invoice Form (LIFF) — `public/liff/request-invoice.html`:**
+    - **Inputs:** `tax_rec_id` and `tax_id`.
+    - **Verification (Step 1)**: Customer clicks **ตกลง (OK)**. The LIFF page calls `GET /api/customer/check-invoice` to verify invoice status and customer profile link status. If successful, the Delivery selection bottom sheet is opened.
+    - **Delivery Selection (Step 2)**: Customer selects either:
+      - **Email Delivery**: Inputs email address, clicks ส่ง. Calls `POST /api/customer/request-invoice` with `send_method: 'email'` and `email_sending`.
+      - **LINE Delivery**: Clicks ส่งทาง LINE. Calls `POST /api/customer/request-invoice` with `send_method: 'line'` and `line_user_id`.
+    - **Exception Handling**:
+      - *No Invoice:* Display `"ไม่มีใบกำกับภาษีของหมายเลขนี้"`.
+      - *Scenario 1 (Unlinked existing profile):* Display `"กรุณาเพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"`.
+      - *Scenario 2 (Unlinked new profile):* Display `"กรุณาสร้างลูกค้าใหม่ และ เพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"`.
+      - *Tax ID Mismatch:* Display `"หมายเลขประจำตัวผู้เสียภาษีไม่ตรงกับใบกำกับภาษีนี้"`.
+    - **Activity Logging:** Records `REQ_FULL_TAX` (`tax_rec_id:tax_id:email_sending` or `tax_rec_id:tax_id:LINE`).
 
 #### LIFF Performance Optimization:
 To ensure the webpages load instantly when tapped from the LINE OA Rich Menu, the following frontend speed optimizations are applied:
@@ -51,8 +77,10 @@ To ensure the webpages load instantly when tapped from the LINE OA Rich Menu, th
 * **Inlined CSS Stylesheets:** Critical CSS styles from `style.css` are embedded directly inside the HTML page `<style>` block. This removes the render-blocking HTTP request for external CSS, enabling the browser to perform instantaneous paint operations on page load.
 * **Native LINE LIFF URL Integration:** The Rich Menu triggers the forms via official LINE LIFF URLs (`https://liff.line.me/...`) rather than standard external browser links. This permits pre-authenticated access inside the LINE in-app web container, eliminating OAuth login redirect delays.
 
-#### Messaging API & Email Dispatch:
-Handles push/reply messaging in Line chat for status notifications, while the dedicated Email Engine dispatches the actual PDF documents to the requested email address.
+#### Messaging API, Email & LINE Dispatch:
+- **Email Dispatch:** The Email Engine (Nodemailer + Gmail OAuth2) dispatches the PDF as an attachment to the customer's specified email address.
+- **LINE Push Dispatch:** The LINE Messaging API (`POST https://api.line.me/v2/bot/message/push`) is used to push a branded **Flex Message** card to the customer's LINE chat. The Flex Message contains the invoice number, company name, and a **"📄 เปิด/ดาวโหลด ใบกำกับภาษี (PDF)"** button that opens the PDF URL in the LINE in-app browser. Note: LINE Messaging API does not support direct binary file attachments — the PDF link approach is the standard for Thai OA services.
+- **`line_user_id` Handling:** The customer's LINE User ID is captured in real-time via `liff.getProfile()` when the LIFF page loads. It is passed in the API request body for LINE push delivery and is **never stored in the database**.
 
 ### 5.2 Back-End: Node.js, Data Management & Admin Web Portal
 
@@ -72,8 +100,9 @@ Handles push/reply messaging in Line chat for status notifications, while the de
   - **CSV Download:** Downloads additional customer tax data (`company_name`, `address`, `tax_id` linked to `tax_rec_id`) for the Accounting System, marking them as exported.
   - **Activity Logging:** Records `REQ_DOWNLOAD_MISS` (`username:no_of_download_rec`).
 * **Customer Profile Database Webpage:**
-  - **Search:** Allows searching the master `customer_profile` table by `tax_id`, `customer_num`, or `customer_name`.
-  - **Edit:** Admins can edit fields including Customer Name, Address, Email, Phone, and Branch code.
+  - **Search:** Allows searching the master `customer_profile` table by `tax_id`, `customer_num`, `customer_name`, and the new **Accounting Export Status** filter (options: All Records, Pending Export Only [default], Exported Only).
+  - **Edit:** Admins can edit fields including Customer Name, Address, Email, Phone, and Branch code. Editing a profile propagates changes to the `invoices` table (updates branch links, resets PDF status to `pending`, and resets `is_accounting_exported = FALSE` on matching invoices).
+  - **Export:** Includes an **Export Results to CSV** button to download filtered profiles (where `is_accounting_exported = FALSE` by default) as a pipe-delimited (`|`) CSV, automatically marking them as exported in the database.
 * **Manage PDF Webpage:**
   - **Search:** Search invoices by ID, date, completion status, Tax ID, or Customer (by customer name or customer number).
   - **Actions:** Icon buttons with CSS tooltips and dynamic disabled states for:
@@ -83,14 +112,16 @@ Handles push/reply messaging in Line chat for status notifications, while the de
 * **Activity Logs Viewer Webpage:** UI for admins to view the audit trail from the `activity_logs` table.
 
 #### Activity Logging System:
-Auditing mechanism recording 7 distinct types of system events (format: `action|datetime|values`):
-1. `REQ_MISS_DATA`: Request to add missing data (`company_name:address:tax_rec_id`)
-2. `REQ_FULL_TAX`: Request full tax invoice (`tax_rec_id:tax_id:email_sending`)
-3. `REQ_UPLOAD_CDMS`: Upload CDMS data (`username:no_of_upload_rec`)
-4. `REQ_DOWNLOAD_MISS`: Download missing data (`username:no_of_download_rec`)
-5. `CRON_GEN_PDF`: PDFs generated by cron (`no_of_generated_rec`)
-6. `ONTHEFLY_GEN_PDF`: PDFs generated on-the-fly (`tax_rec_id:tax_id:email_sending:pdf_url`)
-7. `SENDING_EMAIL`: Sending email (`email_sending:pdf_url`)
+Auditing mechanism recording **9** distinct types of system events (format: `action|datetime|values`):
+1. `REQ_MISS_DATA`: Customer submitted data via LIFF Rich Menu form (`company_name:address:tax_rec_id`)
+2. `REQ_FULL_TAX`: Customer requested invoice via the Request Invoice LIFF form (`tax_rec_id:tax_id:email_sending`)
+3. `REQ_UPLOAD_CDMS`: Admin uploaded CDMS data (`username:no_of_upload_rec`)
+4. `REQ_DOWNLOAD_MISS`: Admin downloaded accounting export CSV (`username:no_of_download_rec`)
+5. `CRON_GEN_PDF`: PDFs generated by nightly cron batch (`no_of_generated_rec`)
+6. `ONTHEFLY_GEN_PDF`: PDF generated on-the-fly via Save & Send or Request Invoice (`tax_rec_id:tax_id:send_method:pdf_path`)
+7. `SENDING_EMAIL`: Email dispatched with PDF attachment (`email_address:pdf_path`)
+8. `SENDING_LINE`: LINE Flex Message dispatched with PDF download link (`tax_rec_id:pdf_url`)
+9. `REQ_DOWNLOAD_CUSTOMER`: Admin downloaded customer profile CSV export (`username:no_of_download_rec`)
 
 ### 5.3 Data Synchronization & PDF Generation
 * **Nightly Batch:** Runs via node-cron. Scans for records with complete tax info but no PDF, then generates them in bulk. Records `CRON_GEN_PDF`.
@@ -103,11 +134,13 @@ Auditing mechanism recording 7 distinct types of system events (format: `action|
 ## 6. Technical Stack
 * **Backend:** Node.js (Express.js for API, Admin Web Portal with Authentication)
 * **Frontend (Admin):** HTML5, CSS3, JavaScript (for Login, CSV Upload/Download, Customer Search & Edit, and Activity Log Viewer webpages)
-* **Frontend (Customer):** LIFF (Line Frontend Framework)
+* **Frontend (Customer):** LIFF (Line Frontend Framework) — Thai Sarabun font, mobile-first design
 * **Database:** MySQL
 * **PDF Engine:** Puppeteer (HTML-to-PDF)
 * **Scheduler:** Node-cron
-* **Email Engine:** Nodemailer (or equivalent SMTP client)
+* **Email Engine:** Nodemailer with Gmail OAuth2
+* **HTTP Client:** Axios (used for LINE Messaging API push calls from Node.js backend)
+* **LINE Messaging:** LINE Messaging API v2 — Push Message with Flex Message type for PDF link delivery
 
 ## 7. Database Schema
 
@@ -133,15 +166,17 @@ USE ftr_db;
 
 -- 1. Invoice Header (Parent Table - One record per Invoice)
 CREATE TABLE `invoices` (
-    `tax_rec_id` VARCHAR(50) NOT NULL,            -- e.g. RF2605-01109 (Single source of truth) link to invoices_rec
-    `tax_id` VARCHAR(13) DEFAULT NULL,		-- Link to customer_profile
-    `customer_branch` VARCHAR(50) DEFAULT NULL,   -- e.g. สำนักงานใหญ่, 00004
-    `container_num` TEXT DEFAULT NULL,            -- Container number filled in by customer
-    `service_date` DATE DEFAULT NULL,             -- format: YYYY-MM-DD
-    `status` ENUM('pending', 'ready', 'failed') DEFAULT 'pending', -- Tracks PDF status
-    `is_accounting_exported` BOOLEAN DEFAULT FALSE, -- Flags if newly added tax data's been downloaded
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `tax_rec_id`                VARCHAR(50)  NOT NULL,            -- e.g. RF2605-01109 (Single source of truth)
+    `tax_id`                    VARCHAR(13)  DEFAULT NULL,         -- Link to customer_profile
+    `customer_branch`           VARCHAR(50)  DEFAULT NULL,         -- e.g. สำนักงานใหญ่, 00004
+    `container_num`             TEXT         DEFAULT NULL,         -- Container number filled in by customer
+    `service_date`              DATE         DEFAULT NULL,         -- format: YYYY-MM-DD
+    `status`                    ENUM('pending','ready','failed') DEFAULT 'pending', -- Tracks PDF generation status
+    `is_accounting_exported`    BOOLEAN      DEFAULT FALSE,        -- TRUE once accounting CSV has been downloaded
+    `is_customer_data_updated`  BOOLEAN      DEFAULT FALSE,        -- [CR#2] 1-time lock: customer submitted data via Rich Menu LIFF
+    `is_pdf_sent_from_richmenu` BOOLEAN      DEFAULT FALSE,        -- [CR#2] 1-time lock: PDF generated & sent via Rich Menu LIFF
+    `created_at`                TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`                TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`tax_rec_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -173,17 +208,18 @@ CREATE TABLE `invoices_rec` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `customer_profile` (
-    `id` INT AUTO_INCREMENT NOT NULL, 
-    `tax_id` VARCHAR(13) NOT NULL,		-- e.g. 0107547001032
-    `customer_num` VARCHAR(50) DEFAULT NULL,     	-- e.g. CUS-00098
-    `customer_name` TEXT DEFAULT NULL,
-    `customer_addr` TEXT DEFAULT NULL,
-    `customer_email` VARCHAR(50) DEFAULT NULL,
-    `customer_phone` VARCHAR(20) DEFAULT NULL,
-    `customer_branch` VARCHAR(50) DEFAULT NULL,	-- e.g. สำนักงานใหญ่, 00004, 00009
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
-    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (`id`) 
+    `id`                      INT          AUTO_INCREMENT NOT NULL,
+    `tax_id`                  VARCHAR(13)  NOT NULL,             -- e.g. 0107547001032
+    `customer_num`            VARCHAR(50)  DEFAULT NULL,         -- e.g. CUS-00098 ("TMP-00000" for manual entry)
+    `customer_name`           TEXT         DEFAULT NULL,
+    `customer_addr`           TEXT         DEFAULT NULL,
+    `customer_email`          VARCHAR(50)  DEFAULT NULL,
+    `customer_phone`          VARCHAR(20)  DEFAULT NULL,
+    `customer_branch`         VARCHAR(50)  DEFAULT NULL,         -- e.g. สำนักงานใหญ่, 00004, 00009
+    `is_accounting_exported`  BOOLEAN      DEFAULT FALSE,        -- TRUE once this customer's profile data has been downloaded by accounting
+    `created_at`              TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`              TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Generated Documents (Child Table - One PDF per consolidated Invoice)
@@ -209,6 +245,7 @@ CREATE TABLE activity_logs (
     log_id INT AUTO_INCREMENT NOT NULL, 
     log_action VARCHAR(100) NOT NULL, 
     log_datetime VARCHAR(20) NOT NULL, 
+    username VARCHAR(50) DEFAULT NULL, 
     log_values TEXT DEFAULT NULL, 
     PRIMARY KEY (log_id) 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -231,23 +268,58 @@ To ensure a robust implementation, the detailed technical logic for each module 
 * **Timezone:** All activity logs will format the `datetime` column strictly using the local timezone (e.g., Asia/Bangkok +07:00) to ensure accurate auditing.
 * **Log Constraint:** The logging function executes asynchronously but must not block the main API response. If logging fails, the error is written to system logs but the user request still succeeds.
 
-#### Module 2 & 3: LIFF Front-End
-* **Profile Verification on Load:** When the user opens the "Adding Missing Info" LIFF form, the frontend will silently call a backend API to check if their data is already filled. If it is, the form is disabled to enforce the "one-time submission" rule.
-* **Dynamic User ID:** The `line_user_id` is fetched natively via `liff.getProfile()` and silently passed to the backend for every request.
+#### Module 2 & 3: LIFF Front-End — Adding Customer Data (`missing-info.html`)
+* **State Machine:** The page uses a 7-state machine (INITIAL → SEARCHING → NO_RECORD / PROFILE_FOUND / MANUAL_ENTRY → PROFILE_SELECTED → LOCKED). State is managed in JavaScript; no page reload occurs between transitions.
+* **Locked State on Load:** The page checks the `is_customer_data_updated` flag via the `/lookup-branches` API (which returns `code: 'LOCKED'` if already submitted). If locked, the entire form is disabled and an error banner is displayed immediately.
+* **Line User ID:** `line_user_id` is captured via `liff.getProfile()` on page load, stored in a JS variable, and passed in the request body when the customer chooses LINE delivery. It is **never stored in the database**.
+* **Customer Selection Bottom Sheet:** A slide-up modal rendered from API data. Rows display: Customer Name (bold), Address (2-line clamp, 0.74rem), Branch badge. Radio selection pattern; OK/Cancel buttons.
+* **Manual Entry Mode:** Activated when Tax ID is not found in `customer_profile` OR when the customer explicitly clicks the ✏️ button. Customer Number is pre-filled with `TMP-00000` (read-only). Branch, Name, Address are freely editable. Save & Send button activates when all three are non-empty.
+* **Save & Send Modal:** Bottom-sheet popup with email input + Send Email button grouped together, followed by a separate Send LINE button, and a Cancel button.
+* **Font:** Thai **Sarabun** (Google Fonts) replaces Inter for better Thai character rendering on mobile.
 
 #### Module 4: Customer-Facing APIs
-* **`/lookup-branches` Logic:**
-  - **Function:** Receives a 13-digit `tax_id` query parameter and queries the master `customer_profile` table.
-  - **Response:** Returns a list of matching profiles including branch details (`customer_branch`), customer names, addresses, and customer numbers to populate the UI dropdown.
-* **`/update-profile` Logic:**
-  - **Pre-CDMS Submission Constraint:** If a customer submits missing info *before* the Admin uploads the CDMS data (meaning the `tax_rec_id` does not exist), the API will reject the request with the message: "Your Tax Record is not ready yet, please do it again next day".
-  - **One-Time Constraint:** If the database already has a `company_name` for the provided `tax_rec_id`, the API returns a 403 Forbidden error.
-  - **Container Update:** Customers can submit container number information alongside the update profile payload, which is saved to the invoice record.
-* **`/request-invoice` Logic:**
-  - **Data Readiness:** The API checks if the `tax_rec_id` exists in the database. *Crucially, it does NOT strictly validate that the input `tax_id` matches the database.* This ensures users aren't blocked by typos. If they input the wrong `tax_id`, the PDF will generate with the typo and they must contact the Admin for a manual correction.
-  - **Incomplete Profile:** Checks if `company_name`, `address`, or `tax_id` are missing. If so, returns "Some missing data: company name, address, tax id".
-  - **PDF On-The-Fly (Async):** If data is complete but the PDF is not yet generated, the API immediately returns the success message: `ใบกำกับภาษี จะส่งให้คุณทางอีเมล์ <email_sending> ภายใน 10-15 นาที`. The PDF generation and email dispatch happen in the background so the user doesn't wait.
-  - **PDF Already Exists:** If the PDF is already generated, the API immediately returns the success message: `ใบกำกับภาษี จะส่งให้คุณทางอีเมล์ <email_sending>` and dispatches the email in the background.
+* **`GET /lookup-branches` Logic (updated):**
+  - **Required params:** `tax_rec_id` AND `tax_id` (both required).
+  - **Check 1 — Tax Rec ID existence:** Queries `invoices` table. If `tax_rec_id` not found → `{ success: false, code: 'NO_RECORD', message: 'ไม่มีใบกำกับภาษีของหมายเลขนี้' }`.
+  - **Check 2 — One-time lock:** If `is_customer_data_updated = TRUE` → `{ success: false, code: 'LOCKED', message: 'ไม่สามารถแก้ไขข้อมูลลูกค้าได้มากกว่า 1 ครั้ง โปรดติดต่อ admin' }`.
+  - **Check 3 — Branch lookup:** Queries `customer_profile` by `tax_id`. Returns branches array (may be empty — frontend treats empty array as trigger for manual entry mode).
+* **`POST /update-profile` Logic (updated):**
+  - **Lock check:** If `is_customer_data_updated = TRUE` → reject with Thai 1-time message.
+  - **Profile validation:** Validates `tax_id` + `customer_branch` combo exists in `customer_profile`. Rejects if not found.
+  - **On success:** Sets `is_customer_data_updated = TRUE` and `is_accounting_exported = FALSE` in `invoices` (invoice re-queued for accounting export). Also resets `is_accounting_exported = FALSE` on the matching `customer_profile` row (customer master data re-queued for export).
+  - **Accepts additional fields:** `customer_name`, `customer_num` (for manual entry case).
+* **`POST /save-and-send` Logic (new):**
+  - **Combined endpoint** that handles: save customer data + generate PDF on-the-fly + dispatch via email or LINE — in a single request.
+  - **Lock check 1:** `is_customer_data_updated = TRUE` → reject (`DATA_LOCKED`).
+  - **Lock check 2:** `is_pdf_sent_from_richmenu = TRUE` → reject (`PDF_LOCKED`).
+  - **Save to `invoices`:** Updates `tax_id`, `customer_branch`, `container_num`, sets `is_customer_data_updated = TRUE` and `is_accounting_exported = FALSE` (so this invoice record is picked up in the next accounting CSV export).
+  - **Save to `customer_profile`:**
+    - *New customer (not yet in DB):* Inserts a new row with `is_accounting_exported = FALSE` (so this new customer profile is picked up in the next customer profile export).
+    - *Existing customer:* Updates `customer_name`, `customer_addr`, `customer_num`, and resets `is_accounting_exported = FALSE` (so updated profile data is re-exported).
+  - **Dual-flag meaning:** `invoices.is_accounting_exported` tracks invoice-level data export. `customer_profile.is_accounting_exported` tracks customer master data export. Both are reset independently and consumed independently.
+  - **Immediate response:** Returns success + Thai confirmation message before PDF generation begins (async background).
+  - **Background (async):** Generates PDF via `pdfService`, sets `is_pdf_sent_from_richmenu = TRUE`, then dispatches via email (`sendInvoiceEmail`) or LINE push (`axios POST` to LINE Messaging API).
+  - **LINE Flex Message:** Sends a branded card containing invoice number, company name, and a `"📄 เปิด/ดาวโหลด ใบกำกับภาษี (PDF)"` button. Button URL = `{BASE_URL}/storage/pdfs/FTR_{tax_rec_id}.pdf`. Requires `BASE_URL` env var.
+  - **Admin bypass:** These lock flags are only set/checked in customer-facing endpoints. Admin portal endpoints are unaffected.
+* **`GET /check-invoice` Logic (new):**
+  - **Required params:** `tax_rec_id` and `tax_id`.
+  - **Invoice existence:** Checks if `tax_rec_id` exists. If not found, returns `404` with code `NO_RECORD` and message `"ไม่มีใบกำกับภาษีของหมายเลขนี้"`.
+  - **Unlinked Invoice checks (Scenario 1 & 2):** If `invoices.tax_id` is empty:
+    - If typed `tax_id` exists in `customer_profile`, returns `400` with code `UNLINKED_CUSTOMER_EXISTS` and message `"กรุณาเพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"`.
+    - If typed `tax_id` does NOT exist in `customer_profile`, returns `400` with code `UNLINKED_CUSTOMER_NEW` and message `"กรุณาสร้างลูกค้าใหม่ และ เพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"`.
+  - **Tax ID Match check:** If `invoices.tax_id` is set but does not match typed `tax_id`, returns `400` with code `TAX_ID_MISMATCH` and message `"หมายเลขประจำตัวผู้เสียภาษีไม่ตรงกับใบกำกับภาษีนี้"`.
+  - **Profile completeness:** Checks that customer profile name/address are not empty. If they are, returns `400` with code `UNLINKED_CUSTOMER_EXISTS`.
+  - **PDF state check:** Returns `200` with `pdf_state: 'ready'` if PDF exists (invoice status is 'ready' and has a row in `generated_documents`), otherwise returns `pdf_state: 'no_pdf'`.
+* **`POST /request-invoice` Logic (updated):**
+  - **Verification:** Runs the same validation logic as `/check-invoice`.
+  - **Delivery selection:** Accepts `send_method` (`'email'` or `'line'`) and `line_user_id` / `email_sending`.
+  - **Immediate response & Background execution:**
+    - If PDF already exists:
+      - Returns success immediately with message `"โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที"` (for email) or `"โปรดรอสักครู่ กำลังส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด"` (for LINE).
+      - Triggers email or LINE push dispatch in the background.
+    - If PDF does NOT exist yet:
+      - Returns success immediately with message `"โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที"` (for email) or `"โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด"` (for LINE).
+      - Generates PDF on-the-fly, updates status/documents tables, and triggers email or LINE push dispatch in the background.
 
 #### Module 5 & 6: PDF & Email Engine
 * **PDF Storage:** Generated PDFs will be saved to `/storage/pdfs/FTR_[tax_rec_id].pdf`.
@@ -263,16 +335,21 @@ To ensure a robust implementation, the detailed technical logic for each module 
 * **Access & Routing:** The root URL (e.g., `http://localhost:3000` or the live domain) redirects standard browser traffic directly to the Admin Dashboard (`/admin/dashboard.html`), which triggers a login check and redirects to `/admin/login.html` if the user is unauthenticated. Users do not need to manually type `/admin` or `/admin/login.html` to access the portal. For LINE OA users, the root router handles incoming LIFF queries (`?target=...`) and redirects them to the customer LIFF forms.
 * **Auth-Ready Architecture:** The admin backend routes and UI endpoints will be cleanly grouped (e.g., under a `/admin/*` prefix). This guarantees that adding username/password authentication later will only require wrapping the prefix with a security middleware, completely avoiding any redesign of the internal logic.
 * **Mobile-Responsive UI:** The entire admin web portal (CSV Upload/Download, Search & Edit, Activity Logs) is built with a responsive layout. Sizing boundaries on desktop (`max-width: calc(100% - 260px)` and `min-width: 0`) and mobile ensure content scales fluidly to fit the screen, with horizontal scrollbars (`overflow-x: auto`) automatically provided on tabular containers (`.table-responsive`) to navigate overflowing columns cleanly.
-* **Activity Logs Viewer:** Displays a maximum of 500 recent records across 10 pages (50 records/page), ordered by newest first. Includes Search Filters for `Activity Name` (Dropdown) and `Date Range` (Calendar).
+* **Activity Logs Viewer:** Displays a maximum of 500 recent records across 10 pages (50 records/page), ordered by newest first. Includes Search Filters for `Activity Name` (Dropdown) and `Date Range` (Calendar). Displays the `Username` of the administrator who performed each logged action. Includes an **Export Logs (CSV)** button which downloads the last N records (configurable via `EXPORT_LOGS_LIMIT` in `.env`, defaults to 200) as a pipe-delimited (`|`) CSV file.
 * **CDMS CSV Upload & Customer Profile Preview:** After selecting a file, the UI provides a preview. For Customer Profiles, the UI filters and displays only target schema columns (`Tax ID`, `Customer Num`, `Customer Name`, `Customer Addr`, `Customer Email`, `Customer Phone`, `Customer Branch`), automatically filters out records without a Tax ID from the preview, and displays statistics of valid vs. skipped records so the admin knows exactly what will be imported before clicking confirm.
-* **Accounting CSV Download:** The system strictly downloads records where `is_accounting_exported = FALSE`. Once downloaded, this flag is set to TRUE. If a customer or Admin subsequently edits a profile, the flag resets to FALSE so it is captured in the next download. Output includes: `customer_name`, `address`, and `tax_id`.
-* **Customer Search & Edit:** Includes Search Filters for `tax_rec_id` (partial match, e.g., 'RF') and `Date Range`. Only `company_name`, `address`, and `tax_id` can be edited by the Admin.
+* **Accounting CSV Download:** The system strictly downloads records where `invoices.is_accounting_exported = FALSE`. Once downloaded, `invoices.is_accounting_exported` is set to `TRUE` for those invoice records. **Separately, `customer_profile.is_accounting_exported`** tracks whether the customer master profile has been exported — this flag is reset to `FALSE` whenever customer data is created or updated (via LIFF or Admin portal), ensuring that updated customer master data is always captured in the next export cycle. If a customer or Admin subsequently edits a profile, **both** flags reset to `FALSE` so the changes are captured in the next accounting export. Output includes: `tax_rec_id`, `customer_code`, `company_name`, `address`, `tax_id`.
+* **Customer Profile CSV Exporter:** In the Customer Profile database webpage, admins can click the **Export Results to CSV** button to download all customer profiles matching the filter criteria that have not been exported yet (where `customer_profile.is_accounting_exported = FALSE` by default). Once exported, `is_accounting_exported` is set to `TRUE` for those profile records inside a database transaction. The exported CSV file utilizes the pipe-delimited (`|`) format, with a UTF-8 BOM prepended.
+* **Customer Search & Edit (Invoice Data):** Includes Search Filters for `tax_rec_id` (partial match, e.g., 'RF'), Customer Name, Address, Tax ID, Date Range, and Accounting Export Status. When the admin edits an invoice:
+  - The edit requires that the specified `tax_id` and `customer_branch` already exist in the database (it does **not** auto-create customer profiles).
+  - Saving the changes updates the matching profile's `customer_name` and `customer_addr` in `customer_profile`, and resets `is_accounting_exported = FALSE` on the profile.
+  - It also updates the invoice's `tax_id`, `customer_branch`, and `container_num`, resets the PDF status to `'pending'`, and resets `is_accounting_exported = FALSE` on the invoice.
 * **Manage PDF:** Search filters matching Customer Search page. Action buttons are styled with modern hover colors, custom SVG icons, CSS tooltips (`[data-tooltip]`), and dynamic disabled states depending on profile completeness and PDF readiness.
   - *Generate PDF* (`POST /api/admin/customers/:tax_rec_id/generate-pdf`): Regenerates/overwrites PDF on-the-fly, updates `generated_at = CURRENT_TIMESTAMP`, and sets invoice status to `'ready'` in database. Disabled if profile is incomplete or PDF is already generated.
   - *Download PDF* (`GET /api/admin/customers/:tax_rec_id/download-pdf`): Streams file from local relative path using `res.download()`. Disabled if PDF is not ready.
   - *Send Email* (`POST /api/admin/customers/:tax_rec_id/send-email`): Dispatches generated PDF invoices to specified recipient emails natively using standard OAuth2 (Option A) or Gmail App Passwords (Option C) fallback.
 * **Customer Profile CSV Import Rules:**
   - **Duplicate Handling:** If a record with the same `tax_id` and `customer_branch` already exists, it is skipped (the existing database record is not updated/overwritten).
+  - **Export Flag Default:** When customer profiles are uploaded via the CSV upload interface, their export status is set to `is_accounting_exported = TRUE` (do not export) since they represent already-existing system profiles.
   - **Result Messaging & Feedback:**
     - If zero new records are saved (i.e. all uploaded records are duplicates or invalid), the API responds with a `400` status and the message `"All records fail to save"`.
     - If only some records are successfully saved and others are skipped as duplicates, the API responds with a `200` status and the message `"Can be saved some records"`.
@@ -661,19 +738,21 @@ Amount = amount
 ---
 
 ### Phase 9 — Admin Portal: Activity Logs Viewer (Module 8)
-**Goal:** Build the activity log viewer with pagination and filtering.
+**Goal:** Build the activity log viewer with pagination, filtering, auditing, and export features.
 
 **Tasks:**
 1. **Create `src/api/admin/logs.js`:**
-   - `GET /admin/logs` (protected) — accepts query params: `action` (filter), `date_from`, `date_to`, `page` (default 1)
-   - Returns paginated results: 50 records/page, max 500 total, ordered by `log_id DESC`
+   - `GET /api/admin/logs` (protected) — accepts query params: `action` (filter), `date_from`, `date_to`, `page` (default 1).
+   - Returns paginated results: 50 records/page, max 500 total, ordered by `log_id DESC`. Includes the login administrator's `username` for each log row.
+   - `GET /api/admin/logs/export` (protected) — exports the last N activity logs (where N is configurable via the `EXPORT_LOGS_LIMIT` environment variable, defaulting to 200) as a pipe-delimited (`|`) CSV format, prepended with a UTF-8 BOM for Excel compatibility.
 
 2. **Create `public/admin/logs.html`:**
-   - Filter controls: `Activity Name` dropdown (the 7 action types) + Date Range calendar
-   - Table displaying: `log_id`, `action`, `datetime`, `values`
-   - Pagination controls (previous/next, page indicator)
+   - Filter controls: `Activity Name` dropdown (the 8 action types) + Date Range calendar.
+   - Table displaying: `log_id`, `action`, `datetime`, `username` (new), `values`.
+   - Export button: An "Export Logs (CSV)" button that triggers the export API endpoint.
+   - Pagination controls (previous/next, page indicator).
 
-**Deliverables:** Admin can browse and filter all system activity logs with pagination.
+**Deliverables:** Admin can browse, filter, and export all system activity logs with pagination and admin username auditing.
 
 ---
 

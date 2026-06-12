@@ -146,7 +146,10 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
+                        <button type="button" class="btn btn-secondary" id="exportBtn" onclick="handleExportLogs()">
+                            Export Logs (CSV)
+                        </button>
                         <button type="submit" class="btn" id="filterBtn">
                             Filter Logs
                         </button>
@@ -168,12 +171,13 @@
                                 <th style="width: 80px;">Log ID</th>
                                 <th style="width: 180px;">Activity Name</th>
                                 <th style="width: 150px;">Timestamp</th>
+                                <th style="width: 120px;">Username</th>
                                 <th>Details / Parameters</th>
                             </tr>
                         </thead>
                         <tbody id="logsTableBody">
                             <tr class="no-data">
-                                <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
+                                <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
                                     Loading activity logs...
                                 </td>
                             </tr>
@@ -248,7 +252,7 @@
             if (!logs || logs.length === 0) {
                 body.innerHTML = `
                     <tr class="no-data">
-                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
+                        <td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 2.5rem;">
                             No matching system activity logs found.
                         </td>
                     </tr>
@@ -282,6 +286,7 @@
                     <td style="font-family: monospace; color: var(--text-secondary);">${log.log_id}</td>
                     <td><span class="badge ${badgeClass}">${log.log_action}</span></td>
                     <td style="font-size: 0.85rem; white-space: nowrap;">${log.log_datetime}</td>
+                    <td style="font-size: 0.85rem; white-space: nowrap; font-weight: 500;">${log.username || '-'}</td>
                     <td style="line-height: 1.8; vertical-align: middle;">${valuesFormatted}</td>
                 `;
                 body.appendChild(tr);
@@ -336,6 +341,10 @@
             alertContainer.innerText = message;
             alertContainer.style.display = 'block';
             alertContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function handleExportLogs() {
+            window.location.href = '/api/admin/logs/export';
         }
     </script>
 </body>

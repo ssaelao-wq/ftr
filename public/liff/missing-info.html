@@ -1,386 +1,1412 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Tax Info - FTR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>กรอกข้อมูลลูกค้า - FTR</title>
     <link rel="preconnect" href="https://static.line-scdn.net" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ============================================================
+           CSS VARIABLES & RESET
+        ============================================================ */
         :root {
-            --primary-color: #00B900; /* Line Green */
-            --secondary-color: #009900;
-            --bg-color: #f4f7f6;
-            --text-color: #333;
-            --border-radius: 12px;
-            --input-border: #dcdcdc;
-            --glass-bg: rgba(255, 255, 255, 0.95);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            --green: #00B900;
+            --green-dark: #008f00;
+            --green-light: #e6f9e6;
+            --green-bg: linear-gradient(150deg, #00B900 0%, #007a00 100%);
+            --grey-100: #f8f9fa;
+            --grey-200: #e9ecef;
+            --grey-300: #dee2e6;
+            --grey-400: #ced4da;
+            --grey-500: #adb5bd;
+            --grey-600: #6c757d;
+            --grey-700: #495057;
+            --grey-800: #343a40;
+            --text: #1a1a2e;
+            --text-light: #6c757d;
+            --white: #ffffff;
+            --danger: #dc3545;
+            --danger-light: #fff5f5;
+            --warning: #ff9800;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 40px rgba(0,0,0,0.18);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
         }
 
-        * {
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        body {
-            background: linear-gradient(135deg, #e0f2f1 0%, #ffffff 100%);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        html, body {
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--grey-100);
+            color: var(--text);
             min-height: 100vh;
-            padding: 20px;
+            font-size: 15px;
+            line-height: 1.5;
         }
 
-        .container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: var(--glass-shadow);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            transform: translateY(0);
-            transition: transform 0.3s ease;
+        /* ============================================================
+           PAGE HEADER
+        ============================================================ */
+        .page-header {
+            background: var(--green-bg);
+            color: white;
+            padding: 20px 16px 32px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 150px; height: 150px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
         }
 
-        .header h1 {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            margin-bottom: 5px;
+        .page-header::after {
+            content: '';
+            position: absolute;
+            bottom: -20px; left: -20px;
+            width: 100px; height: 100px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 50%;
         }
 
-        .header p {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
+        .header-icon {
+            font-size: 2rem;
+            margin-bottom: 6px;
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #444;
         }
 
-        .form-control {
+        .page-header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .page-header p {
+            font-size: 0.82rem;
+            opacity: 0.85;
+            font-weight: 400;
+        }
+
+        /* ============================================================
+           MAIN CARD
+        ============================================================ */
+        .main-card {
+            background: white;
+            margin: -16px 12px 16px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-body {
+            padding: 20px 16px 16px;
+        }
+
+        /* ============================================================
+           FORM FIELDS
+        ============================================================ */
+        .field-group {
+            margin-bottom: 14px;
+        }
+
+        .field-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--grey-700);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .field-label .req {
+            color: var(--danger);
+            font-size: 0.9em;
+        }
+
+        .field-label .lock-icon {
+            color: var(--grey-400);
+            font-size: 0.75rem;
+        }
+
+        .field-input {
             width: 100%;
-            padding: 12px 15px;
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-            background-color: #fafafa;
+            padding: 11px 13px;
+            border: 1.5px solid var(--grey-300);
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-family: inherit;
+            color: var(--text);
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            -webkit-appearance: none;
         }
 
-        .form-control:focus {
+        .field-input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 185, 0, 0.15);
-            background-color: #fff;
+            border-color: var(--green);
+            box-shadow: 0 0 0 3px rgba(0,185,0,0.12);
         }
 
-        textarea.form-control {
-            resize: vertical;
-            min-height: 80px;
+        .field-input.disabled,
+        .field-input:disabled,
+        .field-input[readonly]:not(.editable-readonly) {
+            background: var(--grey-100);
+            border-color: var(--grey-200);
+            color: var(--grey-500);
+            cursor: not-allowed;
+        }
+
+        textarea.field-input {
+            resize: none;
+            min-height: 70px;
+            line-height: 1.4;
+        }
+
+        /* Tax ID row: input + buttons */
+        .tax-id-row {
+            display: flex;
+            gap: 6px;
+            align-items: stretch;
+        }
+
+        .tax-id-row .field-input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .icon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.15s, filter 0.15s;
+            flex-shrink: 0;
+            font-family: inherit;
+        }
+
+        .icon-btn:active { transform: scale(0.93); }
+        .icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .btn-search {
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-search:hover:not(:disabled) { background: var(--green-dark); }
+
+        .btn-manual {
+            background: var(--grey-700);
+            color: white;
+        }
+
+        .btn-manual:hover:not(:disabled) { background: var(--grey-800); }
+
+        /* ============================================================
+           SECTION DIVIDER
+        ============================================================ */
+        .section-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 18px 0 14px;
+        }
+
+        .section-divider .divider-line {
+            flex: 1;
+            height: 1px;
+            background: var(--grey-200);
+        }
+
+        .section-divider .divider-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--grey-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        /* ============================================================
+           BOTTOM ACTION BAR
+        ============================================================ */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            padding: 14px 16px;
+            border-top: 1px solid var(--grey-200);
+            background: white;
         }
 
         .btn {
+            flex: 1;
+            padding: 13px 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn:active { transform: scale(0.97); }
+
+        .btn-save {
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-save:hover:not(:disabled) { background: var(--green-dark); }
+
+        .btn-save:disabled {
+            background: var(--grey-300);
+            color: var(--grey-500);
+            cursor: not-allowed;
+        }
+
+        .btn-cancel {
+            background: var(--grey-200);
+            color: var(--grey-700);
+            flex: 0.55;
+        }
+
+        .btn-cancel:hover { background: var(--grey-300); }
+
+        /* ============================================================
+           STATUS BANNER (locked / error)
+        ============================================================ */
+        .status-banner {
+            display: none;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 14px;
+        }
+
+        .status-banner.error {
+            background: var(--danger-light);
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-banner.warning {
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            color: #5d4037;
+        }
+
+        .status-banner.success {
+            background: var(--green-light);
+            border: 1px solid #b2dfdb;
+            color: #1b5e20;
+        }
+
+        /* Searching indicator */
+        .searching-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.82rem;
+            color: var(--grey-600);
+            padding: 6px 0 2px;
+        }
+
+        .mini-spinner {
+            width: 14px; height: 14px;
+            border: 2px solid rgba(0,185,0,0.3);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============================================================
+           CUSTOMER SELECTION BOTTOM SHEET
+        ============================================================ */
+        .overlay-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            backdrop-filter: blur(2px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .bottom-sheet {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+            z-index: 101;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+
+        .bottom-sheet.open { transform: translateY(0); }
+
+        .sheet-header {
+            padding: 16px 16px 10px;
+            border-bottom: 1px solid var(--grey-200);
+            flex-shrink: 0;
+        }
+
+        .sheet-drag-handle {
+            width: 36px; height: 4px;
+            background: var(--grey-300);
+            border-radius: 2px;
+            margin: 0 auto 12px;
+        }
+
+        .sheet-header h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .sheet-header p {
+            font-size: 0.78rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        .customer-table-wrap {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .customer-row {
+            display: flex;
+            align-items: flex-start;
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--grey-100);
+            cursor: pointer;
+            transition: background 0.15s;
+            gap: 10px;
+        }
+
+        .customer-row:active { background: var(--grey-100); }
+        .customer-row.selected { background: var(--green-light); }
+
+        .row-radio {
+            width: 18px; height: 18px;
+            border: 2px solid var(--grey-300);
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: border-color 0.15s, background 0.15s;
+            position: relative;
+        }
+
+        .customer-row.selected .row-radio {
+            border-color: var(--green);
+            background: var(--green);
+        }
+
+        .customer-row.selected .row-radio::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px; height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .row-info { flex: 1; min-width: 0; }
+
+        .row-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .row-addr {
+            font-size: 0.74rem;
+            color: var(--text-light);
+            margin-top: 2px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .row-branch {
+            display: inline-block;
+            margin-top: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            background: var(--green-light);
+            color: var(--green-dark);
+            border-radius: 20px;
+        }
+
+        .sheet-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--grey-200);
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .sheet-footer .btn-ok {
+            flex: 1;
+            padding: 13px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.15s, background 0.2s;
+        }
+
+        .sheet-footer .btn-ok:active { transform: scale(0.97); }
+        .sheet-footer .btn-ok:hover { background: var(--green-dark); }
+        .sheet-footer .btn-ok:disabled { background: var(--grey-300); color: var(--grey-500); cursor: not-allowed; }
+
+        .sheet-footer .btn-sheet-cancel {
+            flex: 0.5;
+            padding: 13px;
+            background: var(--grey-200);
+            color: var(--grey-700);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .sheet-footer .btn-sheet-cancel:hover { background: var(--grey-300); }
+
+        /* ============================================================
+           SEND MODAL (email / line popup)
+        ============================================================ */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 200;
+            backdrop-filter: blur(3px);
+        }
+
+        .send-modal {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: white;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+            z-index: 201;
+            padding: 24px 20px 32px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+        }
+
+        .send-modal.open { transform: translateY(0); }
+
+        .modal-drag { width: 36px; height: 4px; background: var(--grey-300); border-radius: 2px; margin: 0 auto 18px; }
+
+        .send-modal h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .send-modal .modal-sub {
+            font-size: 0.8rem;
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        /* Email block */
+        .email-block {
+            background: var(--grey-100);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .email-block label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--grey-700);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 7px;
+        }
+
+        .email-input-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .email-input-row .field-input {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+        }
+
+        .btn-send-email {
+            padding: 10px 14px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.15s;
+            flex-shrink: 0;
+        }
+
+        .btn-send-email:active { transform: scale(0.96); }
+        .btn-send-email:hover { background: var(--green-dark); }
+
+        .modal-or {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 14px 0;
+        }
+
+        .modal-or .line { flex: 1; height: 1px; background: var(--grey-200); }
+        .modal-or span { font-size: 0.75rem; color: var(--grey-500); font-weight: 600; }
+
+        .btn-send-line {
             width: 100%;
             padding: 14px;
-            border: none;
-            border-radius: 8px;
-            background-color: var(--primary-color);
+            background: #00B900;
             color: white;
-            font-size: 1rem;
-            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: inherit;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s, transform 0.15s;
+            margin-bottom: 10px;
         }
 
-        .btn:hover {
-            background-color: var(--secondary-color);
-        }
+        .btn-send-line:active { transform: scale(0.97); }
+        .btn-send-line:hover { background: var(--green-dark); }
 
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-
-        .loader {
-            display: none;
-            text-align: center;
-            margin-top: 15px;
-        }
-
-        .spinner {
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(0,185,0,0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary-color);
-            animation: spin 1s ease-in-out infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        #message-box {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
+        .btn-modal-cancel {
+            width: 100%;
+            padding: 12px;
+            background: var(--grey-100);
+            color: var(--grey-600);
+            border: none;
+            border-radius: var(--radius-sm);
             font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-modal-cancel:hover { background: var(--grey-200); }
+
+        /* ============================================================
+           TOAST NOTIFICATION
+        ============================================================ */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: rgba(30,30,30,0.92);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 500;
+            white-space: nowrap;
+            max-width: calc(100vw - 32px);
+            white-space: normal;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { background: rgba(0, 130, 0, 0.95); }
+        .toast.error { background: rgba(185, 0, 0, 0.95); }
+
+        /* ============================================================
+           LOADING OVERLAY
+        ============================================================ */
+        .loading-overlay {
             display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.75);
+            z-index: 400;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .message-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .loading-overlay.show { display: flex; }
+
+        .big-spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(0,185,0,0.25);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
         }
 
-        .message-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .loading-overlay p {
+            font-size: 0.85rem;
+            color: var(--grey-600);
         }
 
-        .form-control:read-only {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
-            border-color: #e5e7eb;
-        }
-        .form-control:disabled {
-            background-color: #f3f4f6;
-            color: #9ca3af;
-            cursor: not-allowed;
-            border-color: #e5e7eb;
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Update Tax Info</h1>
-            <p>Please provide your company details to generate the Full Tax Invoice.</p>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+    <span class="header-icon">🧾</span>
+    <h1>กรอกข้อมูลลูกค้า</h1>
+    <p>กรอกข้อมูลเพื่อออกใบกำกับภาษีเต็ม</p>
+</div>
+
+<!-- MAIN FORM CARD -->
+<div class="main-card">
+    <div class="card-body">
+        <!-- Status banner (locked / error messages) -->
+        <div class="status-banner" id="statusBanner"></div>
+
+        <!-- Tax Record ID -->
+        <div class="field-group">
+            <div class="field-label">Tax Record ID <span class="req">*</span></div>
+            <input type="text" id="taxRecId" class="field-input" placeholder="เช่น RF2605-00123"
+                   autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
         </div>
 
-        <form id="missingInfoForm">
-            <div class="form-group">
-                <label for="tax_rec_id">Tax Record ID</label>
-                <input type="text" id="tax_rec_id" class="form-control" placeholder="e.g. RF2605-00123" required>
+        <!-- Tax ID + Search / Manual buttons -->
+        <div class="field-group">
+            <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
+            <div class="tax-id-row">
+                <input type="text" id="taxId" class="field-input" placeholder="13 หลัก"
+                       maxlength="13" inputmode="numeric" pattern="\d{13}"
+                       autocomplete="off" autocorrect="off">
+                <button class="icon-btn btn-search" id="btnSearch" type="button" title="ค้นหา">🔍</button>
+                <button class="icon-btn btn-manual" id="btnManual" type="button" title="กรอกเอง">✏️</button>
             </div>
-            
-            <div class="form-group">
-                <label for="tax_id">Tax Identification Number</label>
-                <input type="text" id="tax_id" class="form-control" placeholder="13-digit Tax ID" pattern="\d{13}" title="Please enter exactly 13 digits" required oninput="handleTaxIdInput()">
+            <!-- Searching indicator -->
+            <div class="searching-indicator" id="searchingIndicator">
+                <div class="mini-spinner"></div>
+                <span>กำลังค้นหา...</span>
             </div>
-
-            <div class="form-group">
-                <label for="customer_branch">Customer Branch</label>
-                <select id="customer_branch" class="form-control" disabled required onchange="handleBranchSelect()">
-                    <option value="">-- Enter Tax ID first --</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="customer_num">Customer Number</label>
-                <input type="text" id="customer_num" class="form-control" placeholder="Customer Number" readonly>
-            </div>
-
-            <div class="form-group">
-                <label for="company_name">Customer Name</label>
-                <input type="text" id="company_name" class="form-control" placeholder="Customer Name" readonly>
-            </div>
-
-            <div class="form-group">
-                <label for="address">Address</label>
-                <textarea id="address" class="form-control" placeholder="e.g. 88/228 Bagplee..." required></textarea>
-            </div>
-
-            <div class="form-group">
-                <label for="container_num">Container Number</label>
-                <textarea id="container_num" rows="2" class="form-control" placeholder="e.g. TCNU1234567"></textarea>
-            </div>
-
-            <button type="submit" class="btn" id="submitBtn" disabled>Update Information</button>
-        </form>
-
-        <div class="loader" id="loader" style="display: none;">
-            <div class="spinner"></div>
-            <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Updating profile...</p>
         </div>
 
-        <div id="message-box"></div>
+        <!-- Section divider -->
+        <div class="section-divider">
+            <div class="divider-line"></div>
+            <span class="divider-label">📋 ข้อมูลลูกค้า</span>
+            <div class="divider-line"></div>
+        </div>
+
+        <!-- Customer Branch -->
+        <div class="field-group">
+            <div class="field-label">
+                สาขา (Customer Branch)
+                <span class="lock-icon" id="lockBranch">🔒</span>
+            </div>
+            <input type="text" id="customerBranch" class="field-input" placeholder="—" disabled autocomplete="off">
+        </div>
+
+        <!-- Customer Number -->
+        <div class="field-group">
+            <div class="field-label">
+                รหัสลูกค้า (Customer Number)
+                <span class="lock-icon" id="lockNum">🔒</span>
+            </div>
+            <input type="text" id="customerNum" class="field-input" placeholder="—" disabled>
+        </div>
+
+        <!-- Customer Name -->
+        <div class="field-group">
+            <div class="field-label">
+                ชื่อบริษัท (Customer Name)
+                <span class="lock-icon" id="lockName">🔒</span>
+            </div>
+            <input type="text" id="customerName" class="field-input" placeholder="—" disabled autocomplete="off">
+        </div>
+
+        <!-- Address -->
+        <div class="field-group">
+            <div class="field-label">
+                ที่อยู่ (Address)
+                <span class="lock-icon" id="lockAddr">🔒</span>
+            </div>
+            <textarea id="address" class="field-input" placeholder="—" disabled rows="3"></textarea>
+        </div>
+
+        <!-- Container Number (always editable once data is filled) -->
+        <div class="field-group">
+            <div class="field-label">หมายเลขตู้ (Container Number)</div>
+            <textarea id="containerNum" class="field-input" placeholder="เช่น TCNU1234567" rows="2" disabled></textarea>
+        </div>
+
+    </div><!-- /.card-body -->
+
+    <!-- BOTTOM ACTION BAR -->
+    <div class="action-bar">
+        <button class="btn btn-save" id="btnSaveSend" disabled type="button">
+            💾 Save &amp; Send
+        </button>
+        <button class="btn btn-cancel" id="btnCancel" type="button">✕ ยกเลิก</button>
+    </div>
+</div><!-- /.main-card -->
+
+<!-- ============================================================
+     CUSTOMER SELECTION BOTTOM SHEET
+============================================================ -->
+<div class="overlay-backdrop" id="overlayBackdrop"></div>
+<div class="bottom-sheet" id="customerSheet">
+    <div class="sheet-header">
+        <div class="sheet-drag-handle"></div>
+        <h2>เลือกข้อมูลบริษัท</h2>
+        <p>กรุณาเลือกสาขาที่ตรงกับใบกำกับภาษีของคุณ</p>
+    </div>
+    <div class="customer-table-wrap" id="customerTableWrap">
+        <!-- Rows populated by JS -->
+    </div>
+    <div class="sheet-footer">
+        <button class="btn-ok" id="btnSheetOk" disabled>✓ ตกลง</button>
+        <button class="btn-sheet-cancel" id="btnSheetCancel">ยกเลิก</button>
+    </div>
+</div>
+
+<!-- ============================================================
+     SEND MODAL (email / LINE)
+============================================================ -->
+<div class="modal-backdrop" id="modalBackdrop"></div>
+<div class="send-modal" id="sendModal">
+    <div class="modal-drag"></div>
+    <h2>📤 ส่งใบกำกับภาษี</h2>
+    <p class="modal-sub">เลือกวิธีการรับใบกำกับภาษี PDF ของคุณ</p>
+
+    <!-- Email block -->
+    <div class="email-block">
+        <label for="emailInput">📧 ส่งทางอีเมล์</label>
+        <div class="email-input-row">
+            <input type="email" id="emailInput" class="field-input"
+                   placeholder="กรอกอีเมล์ของคุณ" inputmode="email" autocomplete="email">
+            <button class="btn-send-email" id="btnSendEmail" type="button">📨 ส่ง</button>
+        </div>
     </div>
 
-    <!-- LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <script>
-        let lineUserId = null;
-        let branchProfiles = [];
+    <!-- OR -->
+    <div class="modal-or">
+        <div class="line"></div>
+        <span>หรือ</span>
+        <div class="line"></div>
+    </div>
 
-        async function initializeLiff() {
-            try {
-                await liff.init({ liffId: "2010196890-kJW56aX3" });  // Your active LIFF ID
-                if (!liff.isLoggedIn()) {
-                    liff.login();
-                } else {
-                    const profile = await liff.getProfile();
-                    lineUserId = profile.userId;
-                    console.log("LIFF initialized. Line User ID:", lineUserId);
-                }
-            } catch (err) {
-                console.error('LIFF Initialization failed', err);
-            }
+    <!-- LINE button -->
+    <button class="btn-send-line" id="btnSendLine" type="button">
+        💚 ส่งทาง LINE
+    </button>
+
+    <button class="btn-modal-cancel" id="btnModalCancel" type="button">ยกเลิก</button>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="big-spinner"></div>
+    <p>กำลังดำเนินการ...</p>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const STATE = {
+    INITIAL:          'INITIAL',
+    LOCKED:           'LOCKED',
+    SEARCHING:        'SEARCHING',
+    NO_RECORD:        'NO_RECORD',
+    PROFILE_FOUND:    'PROFILE_FOUND',
+    PROFILE_SELECTED: 'PROFILE_SELECTED',
+    MANUAL_ENTRY:     'MANUAL_ENTRY',
+    READY:            'READY'
+};
+
+let currentState = STATE.INITIAL;
+let lineUserId = null;
+let branchProfiles = [];      // array of customer_profile rows from API
+let selectedProfileIdx = -1;  // index into branchProfiles
+
+// ============================================================
+// ELEMENT REFS
+// ============================================================
+const $ = id => document.getElementById(id);
+const el = {
+    taxRecId:          $('taxRecId'),
+    taxId:             $('taxId'),
+    btnSearch:         $('btnSearch'),
+    btnManual:         $('btnManual'),
+    searchIndicator:   $('searchingIndicator'),
+    statusBanner:      $('statusBanner'),
+    customerBranch:    $('customerBranch'),
+    customerNum:       $('customerNum'),
+    customerName:      $('customerName'),
+    address:           $('address'),
+    containerNum:      $('containerNum'),
+    lockBranch:        $('lockBranch'),
+    lockNum:           $('lockNum'),
+    lockName:          $('lockName'),
+    lockAddr:          $('lockAddr'),
+    btnSaveSend:       $('btnSaveSend'),
+    btnCancel:         $('btnCancel'),
+    // Sheet
+    overlayBackdrop:   $('overlayBackdrop'),
+    customerSheet:     $('customerSheet'),
+    customerTableWrap: $('customerTableWrap'),
+    btnSheetOk:        $('btnSheetOk'),
+    btnSheetCancel:    $('btnSheetCancel'),
+    // Send modal
+    modalBackdrop:     $('modalBackdrop'),
+    sendModal:         $('sendModal'),
+    emailInput:        $('emailInput'),
+    btnSendEmail:      $('btnSendEmail'),
+    btnSendLine:       $('btnSendLine'),
+    btnModalCancel:    $('btnModalCancel'),
+    // Loading & toast
+    loadingOverlay:    $('loadingOverlay'),
+    toast:             $('toast')
+};
+
+// ============================================================
+// LIFF INIT
+// ============================================================
+async function initializeLiff() {
+    try {
+        await liff.init({ liffId: '2010196890-kJW56aX3' });
+        if (!liff.isLoggedIn()) {
+            liff.login();
+        } else {
+            const profile = await liff.getProfile();
+            lineUserId = profile.userId;
+            console.log('LIFF ready. Line User ID:', lineUserId);
         }
+    } catch (err) {
+        console.error('LIFF init failed:', err);
+    }
+}
 
-        document.addEventListener('DOMContentLoaded', initializeLiff);
+document.addEventListener('DOMContentLoaded', initializeLiff);
 
-        // Fetch registered branches when Tax ID reaches 13 digits
-        async function handleTaxIdInput() {
-            const taxIdVal = document.getElementById('tax_id').value.trim();
-            const branchSelect = document.getElementById('customer_branch');
-            const submitBtn = document.getElementById('submitBtn');
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer = null;
+function showToast(msg, type = 'default', duration = 4000) {
+    clearTimeout(toastTimer);
+    el.toast.textContent = msg;
+    el.toast.className = `toast ${type} show`;
+    toastTimer = setTimeout(() => {
+        el.toast.classList.remove('show');
+    }, duration);
+}
 
-            // Reset fields
-            branchSelect.innerHTML = '<option value="">-- Enter Tax ID first --</option>';
-            branchSelect.disabled = true;
-            document.getElementById('customer_num').value = '';
-            document.getElementById('company_name').value = '';
-            document.getElementById('address').value = '';
-            submitBtn.disabled = true;
+// ============================================================
+// STATUS BANNER
+// ============================================================
+function showBanner(msg, type = 'error') {
+    el.statusBanner.textContent = msg;
+    el.statusBanner.className = `status-banner ${type}`;
+    el.statusBanner.style.display = 'block';
+}
 
-            const msgBox = document.getElementById('message-box');
-            msgBox.style.display = 'none';
+function hideBanner() {
+    el.statusBanner.style.display = 'none';
+}
 
-            if (taxIdVal.length === 13) {
-                branchSelect.innerHTML = '<option value="">Searching branches...</option>';
-                try {
-                    const response = await fetch(`/api/customer/lookup-branches?tax_id=${taxIdVal}`);
-                    const data = await response.json();
+// ============================================================
+// FIELD STATE HELPERS
+// ============================================================
+function setFieldLocked(inputEl, locked) {
+    inputEl.disabled = locked;
+    if (locked) {
+        inputEl.value = '';
+        inputEl.classList.add('disabled');
+    } else {
+        inputEl.classList.remove('disabled');
+    }
+}
 
-                    if (response.ok && data.success && data.branches.length > 0) {
-                        branchProfiles = data.branches;
-                        
-                        branchSelect.innerHTML = '<option value="">-- Select Branch --</option>';
-                        branchProfiles.forEach((prof, idx) => {
-                            const option = document.createElement('option');
-                            option.value = idx;
-                            option.textContent = prof.customer_branch || 'สำนักงานใหญ่';
-                            branchSelect.appendChild(option);
-                        });
-                        branchSelect.disabled = false;
-                    } else {
-                        branchSelect.innerHTML = '<option value="">No branch profile found</option>';
-                        msgBox.className = 'message-error';
-                        msgBox.style.display = 'block';
-                        msgBox.innerText = 'ไม่พบข้อมูลผู้เสียภาษีนี้ในระบบ กรุณาติดต่อเจ้าหน้าที่ (No registered profile found. Please contact staff.)';
-                    }
-                } catch (err) {
-                    console.error('Error fetching branches:', err);
-                    branchSelect.innerHTML = '<option value="">Error loading branches</option>';
-                }
-            }
-        }
+function setFieldReadonly(inputEl, isReadonly) {
+    inputEl.readOnly = isReadonly;
+    if (isReadonly) {
+        inputEl.classList.remove('disabled');
+    }
+}
 
-        // Populate details on selecting branch
-        function handleBranchSelect() {
-            const branchSelect = document.getElementById('customer_branch');
-            const selectedIdx = branchSelect.value;
-            const submitBtn = document.getElementById('submitBtn');
+function applyState(state) {
+    currentState = state;
+    hideBanner();
 
-            if (selectedIdx !== "") {
-                const profile = branchProfiles[selectedIdx];
-                document.getElementById('customer_num').value = profile.customer_num || '';
-                document.getElementById('company_name').value = profile.customer_name || '';
-                document.getElementById('address').value = profile.customer_addr || '';
-                submitBtn.disabled = false;
+    // Reset lock icons
+    el.lockBranch.style.display = '';
+    el.lockNum.style.display    = '';
+    el.lockName.style.display   = '';
+    el.lockAddr.style.display   = '';
+
+    switch (state) {
+
+        case STATE.INITIAL:
+            // Top fields active; all customer fields locked
+            el.taxRecId.disabled = false;
+            el.taxId.disabled    = false;
+            el.btnSearch.disabled = false;
+            el.btnManual.disabled = false;
+            el.customerBranch.value = '';
+            el.customerNum.value    = '';
+            el.customerName.value   = '';
+            el.address.value        = '';
+            el.containerNum.value   = '';
+            [el.customerBranch, el.customerNum, el.customerName, el.address, el.containerNum]
+                .forEach(f => { f.disabled = true; f.readOnly = false; });
+            el.btnSaveSend.disabled = true;
+            el.btnCancel.style.display = '';
+            break;
+
+        case STATE.LOCKED:
+            // Everything locked; top fields read-only too
+            [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
+             el.customerName, el.address, el.containerNum]
+                .forEach(f => { f.disabled = true; });
+            el.btnSearch.disabled = true;
+            el.btnManual.disabled = true;
+            el.btnSaveSend.disabled = true;
+            break;
+
+        case STATE.SEARCHING:
+            el.taxRecId.disabled = true;
+            el.taxId.disabled    = true;
+            el.btnSearch.disabled = true;
+            el.btnManual.disabled = true;
+            el.searchIndicator.style.display = 'flex';
+            break;
+
+        case STATE.PROFILE_SELECTED:
+            // Customer data read-only; container editable
+            el.taxRecId.disabled = false;
+            el.taxId.disabled    = false;
+            el.btnSearch.disabled = false;
+            el.btnManual.disabled = false;
+            el.searchIndicator.style.display = 'none';
+            el.customerBranch.disabled = false; el.customerBranch.readOnly = true;
+            el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
+            el.customerName.disabled   = false; el.customerName.readOnly   = true;
+            el.address.disabled        = false; el.address.readOnly        = true;
+            el.containerNum.disabled   = false; el.containerNum.readOnly   = false;
+            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+                .forEach(ic => ic.style.display = 'none');
+            el.btnSaveSend.disabled = false;
+            break;
+
+        case STATE.MANUAL_ENTRY:
+            // Branch, Name, Address editable; Num = TMP-00000 (readonly)
+            el.taxRecId.disabled = false;
+            el.taxId.disabled    = false;
+            el.btnSearch.disabled = false;
+            el.btnManual.disabled = false;
+            el.searchIndicator.style.display = 'none';
+            el.customerBranch.disabled = false; el.customerBranch.readOnly = false;
+            el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
+            el.customerNum.value       = 'TMP-00000';
+            el.customerName.disabled   = false; el.customerName.readOnly   = false;
+            el.address.disabled        = false; el.address.readOnly        = false;
+            el.containerNum.disabled   = false; el.containerNum.readOnly   = false;
+            [el.lockBranch, el.lockName, el.lockAddr, el.lockNum]
+                .forEach(ic => ic.style.display = 'none');
+            el.lockNum.style.display = ''; // keep lock on num
+            checkManualReadiness();
+            break;
+
+        case STATE.READY:
+            el.btnSaveSend.disabled = false;
+            break;
+    }
+
+    // Stop searching indicator unless actively searching
+    if (state !== STATE.SEARCHING) {
+        el.searchIndicator.style.display = 'none';
+    }
+}
+
+// ============================================================
+// MANUAL ENTRY: enable Save&Send when required fields filled
+// ============================================================
+function checkManualReadiness() {
+    const allFilled =
+        el.customerBranch.value.trim() &&
+        el.customerName.value.trim() &&
+        el.address.value.trim();
+    el.btnSaveSend.disabled = !allFilled;
+}
+
+['customerBranch', 'customerName', 'address'].forEach(id => {
+    const inp = $(id);
+    if (inp) inp.addEventListener('input', () => {
+        if (currentState === STATE.MANUAL_ENTRY) checkManualReadiness();
+    });
+});
+
+// ============================================================
+// SEARCH / MANUAL BUTTON LOGIC
+// ============================================================
+async function doLookup(forceManual = false) {
+    const taxRecIdVal = el.taxRecId.value.trim();
+    const taxIdVal    = el.taxId.value.trim();
+
+    if (!taxRecIdVal) {
+        showToast('กรุณากรอก Tax Record ID ก่อน', 'error');
+        el.taxRecId.focus();
+        return;
+    }
+
+    if (!forceManual && !taxIdVal) {
+        showToast('กรุณากรอก Tax ID ก่อน', 'error');
+        el.taxId.focus();
+        return;
+    }
+
+    if (!forceManual && taxIdVal.length !== 13) {
+        showToast('Tax ID ต้องมี 13 หลัก', 'error');
+        el.taxId.focus();
+        return;
+    }
+
+    applyState(STATE.SEARCHING);
+
+    try {
+        const url = `/api/customer/lookup-branches?tax_rec_id=${encodeURIComponent(taxRecIdVal)}&tax_id=${encodeURIComponent(taxIdVal)}`;
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        if (!resp.ok || !data.success) {
+            // Distinguish error codes
+            if (data.code === 'LOCKED') {
+                applyState(STATE.LOCKED);
+                showBanner('⚠️ ' + data.message, 'error');
             } else {
-                document.getElementById('customer_num').value = '';
-                document.getElementById('company_name').value = '';
-                document.getElementById('address').value = '';
-                submitBtn.disabled = true;
+                applyState(STATE.INITIAL);
+                showBanner('❌ ' + (data.message || 'ไม่พบข้อมูล'), 'error');
             }
+            return;
         }
 
-        document.getElementById('missingInfoForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const btn = document.getElementById('submitBtn');
-            const loader = document.getElementById('loader');
-            const msgBox = document.getElementById('message-box');
-            const selectedIdx = document.getElementById('customer_branch').value;
-            
-            if (selectedIdx === "") return;
-            const profile = branchProfiles[selectedIdx];
+        hideBanner();
 
-            btn.style.display = 'none';
-            loader.style.display = 'block';
-            msgBox.style.display = 'none';
+        if (forceManual) {
+            // Manual entry — skip profile check
+            applyState(STATE.MANUAL_ENTRY);
+            return;
+        }
 
-            const payload = {
-                line_user_id: lineUserId || 'mock_user_id_for_dev',
-                tax_rec_id: document.getElementById('tax_rec_id').value.trim(),
-                tax_id: document.getElementById('tax_id').value.trim(),
-                customer_branch: profile.customer_branch || 'สำนักงานใหญ่',
-                address: document.getElementById('address').value.trim(),
-                container_num: document.getElementById('container_num').value.trim()
-            };
+        if (data.branches && data.branches.length > 0) {
+            // Profile found — show selection sheet
+            branchProfiles = data.branches;
+            selectedProfileIdx = -1;
+            buildCustomerSheet(branchProfiles);
+            openSheet();
+        } else {
+            // No profile for this Tax ID — switch to manual entry
+            applyState(STATE.MANUAL_ENTRY);
+            showToast('ไม่พบข้อมูลสำหรับ Tax ID นี้ กรุณากรอกข้อมูลเอง', 'default', 3500);
+        }
 
-            try {
-                const response = await fetch('/api/customer/update-profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+    } catch (err) {
+        console.error('Lookup error:', err);
+        applyState(STATE.INITIAL);
+        showBanner('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+    }
+}
 
-                const data = await response.json();
+el.btnSearch.addEventListener('click', () => doLookup(false));
+el.btnManual.addEventListener('click', () => doLookup(true));
 
-                loader.style.display = 'none';
-                msgBox.style.display = 'block';
-                
-                if (response.ok) {
-                    msgBox.className = 'message-success';
-                    msgBox.innerText = 'Success! Your information has been updated. You can now request the Full Tax Invoice.';
-                    setTimeout(() => liff.closeWindow(), 3000);
-                } else {
-                    msgBox.className = 'message-error';
-                    msgBox.innerText = data.message || 'An error occurred. Please try again.';
-                    btn.style.display = 'block';
-                }
-            } catch (err) {
-                loader.style.display = 'none';
-                msgBox.style.display = 'block';
-                msgBox.className = 'message-error';
-                msgBox.innerText = 'Network error. Please try again.';
-                btn.style.display = 'block';
-            }
+// ============================================================
+// CUSTOMER SELECTION SHEET
+// ============================================================
+function buildCustomerSheet(profiles) {
+    el.customerTableWrap.innerHTML = '';
+    profiles.forEach((p, idx) => {
+        const row = document.createElement('div');
+        row.className = 'customer-row';
+        row.dataset.idx = idx;
+        row.innerHTML = `
+            <div class="row-radio"></div>
+            <div class="row-info">
+                <div class="row-name">${escHtml(p.customer_name || '—')}</div>
+                <div class="row-addr">${escHtml(p.customer_addr || '—')}</div>
+                <span class="row-branch">${escHtml(p.customer_branch || 'สำนักงานใหญ่')}</span>
+            </div>`;
+        row.addEventListener('click', () => selectSheetRow(idx));
+        el.customerTableWrap.appendChild(row);
+    });
+    el.btnSheetOk.disabled = true;
+}
+
+function selectSheetRow(idx) {
+    // Deselect all
+    document.querySelectorAll('.customer-row').forEach(r => r.classList.remove('selected'));
+    // Select clicked
+    const row = el.customerTableWrap.querySelector(`[data-idx="${idx}"]`);
+    if (row) row.classList.add('selected');
+    selectedProfileIdx = idx;
+    el.btnSheetOk.disabled = false;
+}
+
+function openSheet() {
+    el.overlayBackdrop.style.display = 'block';
+    requestAnimationFrame(() => {
+        el.customerSheet.classList.add('open');
+        applyState(STATE.PROFILE_FOUND);
+    });
+}
+
+function closeSheet() {
+    el.customerSheet.classList.remove('open');
+    el.overlayBackdrop.style.display = 'none';
+}
+
+el.overlayBackdrop.addEventListener('click', () => {
+    closeSheet();
+    if (currentState === STATE.PROFILE_FOUND) applyState(STATE.INITIAL);
+});
+
+el.btnSheetCancel.addEventListener('click', () => {
+    closeSheet();
+    applyState(STATE.INITIAL);
+});
+
+el.btnSheetOk.addEventListener('click', () => {
+    if (selectedProfileIdx < 0) return;
+    const profile = branchProfiles[selectedProfileIdx];
+    el.customerBranch.value = profile.customer_branch || 'สำนักงานใหญ่';
+    el.customerNum.value    = profile.customer_num    || '';
+    el.customerName.value   = profile.customer_name   || '';
+    el.address.value        = profile.customer_addr   || '';
+    closeSheet();
+    applyState(STATE.PROFILE_SELECTED);
+});
+
+// ============================================================
+// CANCEL BUTTON — reset form
+// ============================================================
+el.btnCancel.addEventListener('click', () => {
+    applyState(STATE.INITIAL);
+    el.taxRecId.value = '';
+    el.taxId.value    = '';
+    hideBanner();
+});
+
+// ============================================================
+// SAVE & SEND BUTTON — open send modal
+// ============================================================
+el.btnSaveSend.addEventListener('click', () => {
+    if (el.btnSaveSend.disabled) return;
+    // Validate required fields
+    if (!el.taxRecId.value.trim() || !el.taxId.value.trim() ||
+        !el.customerBranch.value.trim() || !el.customerName.value.trim() ||
+        !el.address.value.trim()) {
+        showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+        return;
+    }
+    openSendModal();
+});
+
+// ============================================================
+// SEND MODAL
+// ============================================================
+function openSendModal() {
+    el.modalBackdrop.style.display = 'block';
+    requestAnimationFrame(() => el.sendModal.classList.add('open'));
+}
+
+function closeSendModal() {
+    el.sendModal.classList.remove('open');
+    el.modalBackdrop.style.display = 'none';
+}
+
+el.modalBackdrop.addEventListener('click', closeSendModal);
+el.btnModalCancel.addEventListener('click', closeSendModal);
+
+// Send Email
+el.btnSendEmail.addEventListener('click', async () => {
+    const email = el.emailInput.value.trim();
+    if (!email || !email.includes('@')) {
+        showToast('กรุณากรอกอีเมล์ให้ถูกต้อง', 'error');
+        el.emailInput.focus();
+        return;
+    }
+    closeSendModal();
+    await doSaveAndSend('email', email);
+});
+
+// Send LINE
+el.btnSendLine.addEventListener('click', async () => {
+    if (!lineUserId) {
+        showToast('ไม่สามารถระบุ LINE User ID ได้ กรุณาเปิดผ่าน LINE', 'error');
+        return;
+    }
+    closeSendModal();
+    await doSaveAndSend('line', null);
+});
+
+// ============================================================
+// SAVE-AND-SEND API CALL
+// ============================================================
+async function doSaveAndSend(sendMethod, emailAddress) {
+    el.loadingOverlay.classList.add('show');
+
+    const payload = {
+        line_user_id:    lineUserId || 'mock_user_id_for_dev',
+        tax_rec_id:      el.taxRecId.value.trim(),
+        tax_id:          el.taxId.value.trim(),
+        customer_branch: el.customerBranch.value.trim(),
+        customer_num:    el.customerNum.value.trim(),
+        customer_name:   el.customerName.value.trim(),
+        address:         el.address.value.trim(),
+        container_num:   el.containerNum.value.trim(),
+        send_method:     sendMethod,
+        email_address:   emailAddress || ''
+    };
+
+    try {
+        const resp = await fetch('/api/customer/save-and-send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-    </script>
+        const data = await resp.json();
+
+        el.loadingOverlay.classList.remove('show');
+
+        if (resp.ok && data.success) {
+            const msg = sendMethod === 'email'
+                ? 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที'
+                : 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
+            showToast(msg, 'success', 5000);
+            el.btnSaveSend.disabled = true;
+            el.btnCancel.style.display = 'none';
+            // Disable all fields — done
+            [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
+             el.customerName, el.address, el.containerNum]
+                .forEach(f => { f.disabled = true; });
+            el.btnSearch.disabled = true;
+            el.btnManual.disabled = true;
+            // Close LIFF after 5s
+            setTimeout(() => {
+                try { liff.closeWindow(); } catch(e) {}
+            }, 5500);
+        } else {
+            // Handle specific lock errors
+            if (data.code === 'DATA_LOCKED') {
+                applyState(STATE.LOCKED);
+                showBanner('⚠️ ' + data.message, 'error');
+            } else if (data.code === 'PDF_LOCKED') {
+                showBanner('⚠️ ' + data.message, 'warning');
+            } else {
+                showToast('❌ ' + (data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่'), 'error', 5000);
+            }
+        }
+    } catch (err) {
+        el.loadingOverlay.classList.remove('show');
+        console.error('Save-and-send error:', err);
+        showToast('❌ เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่', 'error', 4000);
+    }
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+</script>
 </body>
 </html>

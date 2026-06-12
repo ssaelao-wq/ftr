@@ -158,7 +158,7 @@ router.post('/cdms', upload.single('file'), async (req, res) => {
             connection.release();
         }
 
-        await logActivity('REQ_UPLOAD_CDMS', `${username}:${invoicesGroupMap.size}`);
+        await logActivity('REQ_UPLOAD_CDMS', `${username}:${invoicesGroupMap.size}`, username);
 
         res.json({
             success: true,
@@ -291,8 +291,8 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
                 } else {
                     await connection.execute(`
                         INSERT INTO customer_profile 
-                        (tax_id, customer_num, customer_name, customer_addr, customer_email, customer_phone, customer_branch)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        (tax_id, customer_num, customer_name, customer_addr, customer_email, customer_phone, customer_branch, is_accounting_exported)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)
                     `, [taxId, customerNum, customerName, address, email, phone, customerBranch]);
                     importCount++;
                 }
@@ -306,7 +306,7 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
             connection.release();
         }
 
-        await logActivity('REQ_UPLOAD_CUSTOMER', `${username}:${importCount}`);
+        await logActivity('REQ_UPLOAD_CUSTOMER', `${username}:${importCount}`, username);
 
         if (importCount === 0) {
             return res.status(400).json({

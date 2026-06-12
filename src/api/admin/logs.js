@@ -50,7 +50,7 @@ router.get('/', async (req, res) => {
 
         // Fetch paginated logs
         const selectQuery = `
-            SELECT log_id, log_action, log_datetime, log_values 
+            SELECT log_id, log_action, log_datetime, log_values, username 
             FROM activity_logs 
             ${whereClause} 
             ORDER BY log_id DESC 
@@ -75,6 +75,46 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Activity logs query error:', error);
         res.status(500).json({ success: false, message: 'Internal server error during activity log retrieval.' });
+    }
+});
+
+// GET /api/admin/logs/export
+// Exports last N activity logs in a pipe-delimited CSV format
+router.get('/export', async (req, res) => {
+    try {
+        const limit = parseInt(process.env.EXPORT_LOGS_LIMIT, 10) || 200;
+
+        const [rows] = await db.query(
+            'SELECT log_id, log_action, log_datetime, log_values, username FROM activity_logs ORDER BY log_id DESC LIMIT ?',
+            [limit]
+        );
+
+        // UTF-8 BOM to avoid corruption of Thai characters in Excel
+        let csvContent = '\uFEFF';
+        csvContent += 'log_id|log_action|log_datetime|log_values|username\r\n';
+
+        for (const row of rows) {
+            const logId = row.log_id;
+            const logAction = row.log_action || '';
+            const logDatetime = row.log_datetime || '';
+            const logValues = row.log_values || '';
+            const username = row.username || '';
+
+            // Strip out newlines or pipes from content to maintain structural integrity
+            const cleanValues = logValues.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
+            const cleanUsername = username.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
+
+            csvContent += `${logId}|${logAction}|${logDatetime}|${cleanValues}|${cleanUsername}\r\n`;
+        }
+
+        const filename = `activity_logs_export_${Date.now()}.csv`;
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.status(200).send(csvContent);
+
+    } catch (error) {
+        console.error('Activity logs export error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error during activity log export.' });
     }
 });
 
