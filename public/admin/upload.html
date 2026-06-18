@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Upload CDMS CSV - FTR System</title>
+    <title>Upload Data - FTR System</title>
     <link rel="stylesheet" href="admin.css">
     <style>
         .preview-container {
@@ -44,7 +44,7 @@
                 <li>
                     <a href="upload.html" class="sidebar-link active">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        Upload CDMS CSV
+                        Upload Data
                     </a>
                 </li>
                 <li>
@@ -56,7 +56,7 @@
                 <li>
                     <a href="customer-profiles.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        Customer Profile
+                        Customer Data
                     </a>
                 </li>
                 <li>
@@ -68,7 +68,7 @@
                 <li>
                     <a href="logs.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        System Activity Logs
+                        Activity Logs
                     </a>
                 </li>
 
@@ -87,8 +87,8 @@
                     <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
                 </div>
                 <div class="page-title">
-                    <h1>Upload CDMS CSV</h1>
-                    <p>Import the daily transaction records export file from the CDMS system.</p>
+                    <h1>Upload Data</h1>
+                    <p>Upload CDMS invoice files and Customer Profile data.</p>
                 </div>
             </div>
 
@@ -101,6 +101,8 @@
                     <select id="uploadType" class="form-control" style="width: auto; display: inline-block; padding: 0.5rem; border-radius: 4px; border: 1px solid #ccc;">
                         <option value="cdms">CDMS File</option>
                         <option value="customer">Customer Profile File</option>
+                        <option value="gate-in">Gate-In file</option>
+                        <option value="gate-out">Gate-Out file</option>
                     </select>
                 </div>
 
@@ -256,32 +258,34 @@
             } else if (uploadType === 'customer') {
                 requiredColumns = ['เลขประจำตัวผู้เสียภาษี', 'รหัสลูกค้า', 'ชื่อลูกค้า', 'ที่อยู่', 'email', 'โทรศัพท์', 'ประเภทสาขา', 'สาขา'];
             }
+            // Gate-In and Gate-Out files: no required column validation (fixed format)
             
-            // Flexible matching for headers
-            const missing = [];
-            
-            for (const col of requiredColumns) {
-                let found = false;
-                if (col === 'email') {
-                    // Check for email, Email, E-mail, e-mail
-                    const idx = headers.findIndex(h => h.toLowerCase().replace('-', '') === 'email');
-                    if (idx !== -1) {
-                        found = true;
+            // Flexible matching for headers (only for cdms/customer)
+            if (requiredColumns.length > 0) {
+                const missing = [];
+                
+                for (const col of requiredColumns) {
+                    let found = false;
+                    if (col === 'email') {
+                        const idx = headers.findIndex(h => h.toLowerCase().replace('-', '') === 'email');
+                        if (idx !== -1) {
+                            found = true;
+                        }
+                    } else {
+                        const idx = headers.indexOf(col);
+                        if (idx !== -1) {
+                            found = true;
+                        }
                     }
-                } else {
-                    const idx = headers.indexOf(col);
-                    if (idx !== -1) {
-                        found = true;
+                    if (!found) {
+                        missing.push(col);
                     }
                 }
-                if (!found) {
-                    missing.push(col);
-                }
-            }
 
-            if (missing.length > 0) {
-                showAlert('danger', `Invalid CSV columns for ${uploadType === 'cdms' ? 'CDMS' : 'Customer Profile'}. Missing required column(s): ${missing.join(', ')}`);
-                return;
+                if (missing.length > 0) {
+                    showAlert('danger', `Invalid CSV columns for ${uploadType === 'cdms' ? 'CDMS' : 'Customer Profile'}. Missing required column(s): ${missing.join(', ')}`);
+                    return;
+                }
             }
 
             const headerRow = document.getElementById('previewHeaders');
@@ -300,7 +304,7 @@
                 const idxBranchVal = headers.indexOf('สาขา');
 
                 // Render mapped table headers
-                const targetHeaders = ['Tax ID', 'Customer Num', 'Customer Name', 'Customer Addr', 'Customer Email', 'Customer Phone', 'Customer Branch'];
+                const targetHeaders = ['Customer Num', 'Tax ID', 'Customer Name', 'Customer Addr', 'Customer Email', 'Customer Phone', 'Customer Branch'];
                 targetHeaders.forEach(h => {
                     const th = document.createElement('th');
                     th.innerText = h;
@@ -314,8 +318,8 @@
                     const cols = splitCsvLine(lines[i], delimiter);
                     if (cols.length === 0 || (cols.length === 1 && cols[0] === '')) continue;
                     
-                    const taxId = cols[idxTaxId] || '';
-                    if (!taxId) {
+                    const taxId = (cols[idxTaxId] || '').trim();
+                    if (!taxId || taxId.length !== 13 || !/^\d+$/.test(taxId)) {
                         skippedCount++;
                         continue;
                     }
@@ -335,7 +339,7 @@
                         customerBranch = branchType;
                     }
 
-                    validRows.push([taxId, customerNum, customerName, customerAddr, customerEmail, customerPhone, customerBranch]);
+                    validRows.push([customerNum, taxId, customerName, customerAddr, customerEmail, customerPhone, customerBranch]);
                 }
 
                 // Render first 10 valid preview rows
@@ -350,10 +354,10 @@
                     body.appendChild(tr);
                 });
 
-                document.getElementById('previewMeta').innerText = `Total Valid Records to Add: ${validRows.length} (Skipped ${skippedCount} rows without Tax ID) | Showing first 10 rows for verification.`;
+                document.getElementById('previewMeta').innerText = `Total Valid Records to Add: ${validRows.length} (Skipped ${skippedCount} rows with missing or invalid 13-digit Tax ID) | Showing first 10 rows for verification.`;
 
             } else {
-                // CDMS preview
+                // CDMS / Gate-In / Gate-Out preview
                 headers.forEach(h => {
                     const th = document.createElement('th');
                     th.innerText = h;
@@ -372,7 +376,10 @@
                     body.appendChild(tr);
                 });
 
-                document.getElementById('previewMeta').innerText = `Total Rows: ${lines.length - 1} | Showing first 10 rows for verification.`;
+                let label = 'CDMS';
+                if (uploadType === 'gate-in') label = 'Gate-In';
+                else if (uploadType === 'gate-out') label = 'Gate-Out';
+                document.getElementById('previewMeta').innerText = `${label} | Total Rows: ${lines.length - 1} | Showing first 10 rows for verification.`;
             }
 
             dropArea.style.display = 'none';
@@ -384,6 +391,16 @@
             fileInput.value = '';
             dropArea.style.display = 'block';
             previewPanel.style.display = 'none';
+            
+            const confirmBtn = document.getElementById('confirmBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerText = 'Confirm & Import';
+            }
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+            }
         }
 
         async function submitCsvFile() {
@@ -398,7 +415,10 @@
             const formData = new FormData();
             formData.append('file', selectedFile);
             const uploadType = document.getElementById('uploadType').value;
-            const endpoint = uploadType === 'cdms' ? '/api/admin/upload/cdms' : '/api/admin/upload/customer-profile';
+            let endpoint = '/api/admin/upload/cdms';
+            if (uploadType === 'customer') endpoint = '/api/admin/upload/customer-profile';
+            else if (uploadType === 'gate-in') endpoint = '/api/admin/upload/gate-in';
+            else if (uploadType === 'gate-out') endpoint = '/api/admin/upload/gate-out';
 
             try {
                 const response = await fetch(endpoint, {
@@ -428,6 +448,7 @@
 
         function showAlert(type, message) {
             alertContainer.className = `alert alert-${type}`;
+            alertContainer.style.whiteSpace = 'pre-wrap';
             alertContainer.innerText = message;
             alertContainer.style.display = 'block';
             alertContainer.scrollIntoView({ behavior: 'smooth' });

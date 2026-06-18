@@ -27,19 +27,27 @@ async function resetDatabase() {
     }
 }
 
+let spawnedProcess = null;
+
 function startServer() {
     return new Promise((resolve, reject) => {
         console.log('🚀 Starting Express server on port 3001...');
         
+        const testEnv = { ...process.env };
+        for (const key of Object.keys(testEnv)) {
+            if (key.toUpperCase() === 'PORT') {
+                delete testEnv[key];
+            }
+        }
+        testEnv.PORT = '3001';
+        testEnv.NODE_ENV = 'test';
+        testEnv.DB_HOST = '127.0.0.1';
+
         const server = spawn('node', ['src/index.js'], {
-            env: {
-                ...process.env,
-                PORT: '3001',
-                NODE_ENV: 'test',
-                DB_HOST: '127.0.0.1'
-            },
+            env: testEnv,
             cwd: __dirname
         });
+        spawnedProcess = server;
 
         server.stdout.on('data', (data) => {
             const output = data.toString();
@@ -59,8 +67,8 @@ function startServer() {
 
         // Set a timeout in case the port is blocked or doesn't start
         setTimeout(() => {
-            reject(new Error('Server start timed out after 15 seconds'));
-        }, 15000);
+            reject(new Error('Server start timed out after 30 seconds'));
+        }, 30000);
     });
 }
 
@@ -72,7 +80,8 @@ async function runTests() {
         server = await startServer();
     } catch (err) {
         console.error('❌ Failed to start server:', err);
-        return;
+        if (spawnedProcess) spawnedProcess.kill();
+        process.exit(1);
     }
 
     const baseUrl = 'http://127.0.0.1:3001';
@@ -102,7 +111,7 @@ async function runTests() {
         const profileCsv = [
             'เลขประจำตัวผู้เสียภาษี|รหัสลูกค้า|ชื่อลูกค้า|ที่อยู่|email|โทรศัพท์|ประเภทสาขา|สาขา',
             '1234567890123|CUS-00001|Unicon Head Office|123 Rama 9 Rd, Bangkok|info@unicon.com|021234567|สำนักงานใหญ่|',
-            '1234567890123|CUS-00001|Unicon Laem Chabang Branch|456 Harbor Rd, Chonburi|lcb@unicon.com|038123456|สาขาย่อย|00001'
+            '1234567890123|CUS-00002|Unicon Laem Chabang Branch|456 Harbor Rd, Chonburi|lcb@unicon.com|038123456|สาขาย่อย|00001'
         ].join('\n');
 
         const profileBlob = new Blob([profileCsv], { type: 'text/csv' });
@@ -141,7 +150,7 @@ async function runTests() {
 
         // 4. Test Customer LIFF branch lookup endpoint
         console.log('\n--- Step 4: LIFF Branch Lookup ---');
-        const lookupRes = await fetch(`${baseUrl}/api/customer/lookup-branches?tax_id=1234567890123`);
+        const lookupRes = await fetch(`${baseUrl}/api/customer/lookup-branches?tax_id=1234567890123&tax_rec_id=RF2605-01109`);
         const lookupData = await lookupRes.json();
         console.log('Lookup Status:', lookupRes.status);
         console.log('Branches returned:', lookupData.branches);
@@ -214,6 +223,7 @@ async function runTests() {
     } finally {
         console.log('\n🛑 Stopping Express server...');
         if (server) server.kill();
+        if (spawnedProcess) spawnedProcess.kill();
         // Force exit to close any open database connection pools or handles
         setTimeout(() => {
             process.exit(0);

@@ -44,6 +44,28 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+        .page-select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 2rem 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f3f4f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1rem;
+            width: auto;
+        }
+        .page-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
         /* Mobile responsive adjustments */
         @media (max-width: 576px) {
             .pagination-container {
@@ -70,7 +92,7 @@
                 <li>
                     <a href="upload.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        Upload CDMS CSV
+                        Upload Data
                     </a>
                 </li>
                 <li>
@@ -82,7 +104,7 @@
                 <li>
                     <a href="customer-profiles.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        Customer Profile
+                        Customer Data
                     </a>
                 </li>
                 <li>
@@ -94,7 +116,7 @@
                 <li>
                     <a href="logs.html" class="sidebar-link active">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        System Activity Logs
+                        Activity Logs
                     </a>
                 </li>
             </ul>
@@ -112,7 +134,7 @@
                     <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
                 </div>
                 <div class="page-title">
-                    <h1>System Activity Logs</h1>
+                    <h1>Activity Logs</h1>
                     <p>Track audit logs for CSV imports, downloads, PDF processing, and emails.</p>
                 </div>
             </div>
@@ -148,7 +170,10 @@
 
                     <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1rem;">
                         <button type="button" class="btn btn-secondary" id="exportBtn" onclick="handleExportLogs()">
-                            Export Logs (CSV)
+                            Export
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSearch()">
+                            Clear Search
                         </button>
                         <button type="submit" class="btn" id="filterBtn">
                             Filter Logs
@@ -188,9 +213,13 @@
                 <!-- Pagination Footer -->
                 <div class="pagination-container" id="paginationContainer" style="display: none;">
                     <div style="font-size: 0.85rem; color: var(--text-muted);" id="paginationMeta">
-                        Page 1 of 1
+                        Showing 0 - 0 of 0 records
                     </div>
-                    <div class="pagination-buttons" id="paginationButtons"></div>
+                    <div class="pagination-buttons">
+                        <button type="button" class="page-btn" id="prevBtn">Prev</button>
+                        <select class="page-select" id="pageSelect"></select>
+                        <button type="button" class="page-btn" id="nextBtn">Next</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -206,6 +235,13 @@
 
         function handleFilterSubmit(e) {
             e.preventDefault();
+            loadLogs(1);
+        }
+
+        function clearSearch() {
+            document.getElementById('filterAction').value = 'all';
+            document.getElementById('date_from').value = '';
+            document.getElementById('date_to').value = '';
             loadLogs(1);
         }
 
@@ -296,7 +332,9 @@
         function renderPagination(pageData) {
             const container = document.getElementById('paginationContainer');
             const meta = document.getElementById('paginationMeta');
-            const buttonsDiv = document.getElementById('paginationButtons');
+            const select = document.getElementById('pageSelect');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
 
             if (!pageData || pageData.totalLogs === 0) {
                 container.style.display = 'none';
@@ -306,33 +344,38 @@
             container.style.display = 'flex';
             document.getElementById('logsSummaryMeta').innerText = `Showing logs ${((pageData.currentPage - 1) * pageData.limit) + 1} - ${Math.min(pageData.currentPage * pageData.limit, pageData.totalLogs)} of ${pageData.totalLogs} matching events (Capped at 500 recent events).`;
 
-            meta.innerText = `Page ${pageData.currentPage} of ${pageData.totalPages}`;
-            buttonsDiv.innerHTML = '';
+            const startIdx = ((pageData.currentPage - 1) * pageData.limit) + 1;
+            const endIdx = Math.min(pageData.currentPage * pageData.limit, pageData.totalLogs);
+            meta.innerText = `Showing ${startIdx} - ${endIdx} of ${pageData.totalLogs} records`;
 
-            // Previous Button
-            const prevBtn = document.createElement('button');
-            prevBtn.className = 'page-btn';
-            prevBtn.innerText = 'Prev';
-            prevBtn.disabled = pageData.currentPage === 1;
-            prevBtn.onclick = () => loadLogs(pageData.currentPage - 1);
-            buttonsDiv.appendChild(prevBtn);
-
-            // Page Number Buttons
+            select.innerHTML = '';
             for (let i = 1; i <= pageData.totalPages; i++) {
-                const btn = document.createElement('button');
-                btn.className = `page-btn ${pageData.currentPage === i ? 'active' : ''}`;
-                btn.innerText = i;
-                btn.onclick = () => loadLogs(i);
-                buttonsDiv.appendChild(btn);
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Page ${i} of ${pageData.totalPages}`;
+                if (i === pageData.currentPage) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
             }
 
-            // Next Button
-            const nextBtn = document.createElement('button');
-            nextBtn.className = 'page-btn';
-            nextBtn.innerText = 'Next';
+            select.onchange = (e) => {
+                loadLogs(parseInt(e.target.value, 10));
+            };
+
+            prevBtn.disabled = pageData.currentPage === 1;
+            prevBtn.onclick = () => {
+                if (pageData.currentPage > 1) {
+                    loadLogs(pageData.currentPage - 1);
+                }
+            };
+
             nextBtn.disabled = pageData.currentPage === pageData.totalPages;
-            nextBtn.onclick = () => loadLogs(pageData.currentPage + 1);
-            buttonsDiv.appendChild(nextBtn);
+            nextBtn.onclick = () => {
+                if (pageData.currentPage < pageData.totalPages) {
+                    loadLogs(pageData.currentPage + 1);
+                }
+            };
         }
 
         function showAlert(type, message) {

@@ -46,39 +46,6 @@ function formatQty(value) {
     return Number(value).toFixed(2);
 }
 
-/**
- * Wraps container numbers into multiple lines of max character limit
- * @param {string} containerStr 
- * @param {number} maxLineChars 
- * @returns {string[]}
- */
-function wrapContainerNumbers(containerStr, maxLineChars = 40) {
-    if (!containerStr) return [];
-    const rawTokens = containerStr.split(/[\s,;\n\r/]+/);
-    const containers = rawTokens.map(t => t.trim()).filter(t => t.length > 0);
-    
-    const lines = [];
-    let currentLine = [];
-    let currentLength = 0;
-    
-    for (const container of containers) {
-        const addedLength = container.length + (currentLine.length > 0 ? 2 : 0);
-        if (currentLength + addedLength <= maxLineChars) {
-            currentLine.push(container);
-            currentLength += addedLength;
-        } else {
-            if (currentLine.length > 0) {
-                lines.push(currentLine.join(', '));
-            }
-            currentLine = [container];
-            currentLength = container.length;
-        }
-    }
-    if (currentLine.length > 0) {
-        lines.push(currentLine.join(', '));
-    }
-    return lines;
-}
 
 /**
  * Core function to generate PDF from database record
@@ -88,10 +55,10 @@ function wrapContainerNumbers(containerStr, maxLineChars = 40) {
 async function generatePdf(taxRecId) {
     // 1. Fetch Header Info with joined customer profile details
     const [headerRows] = await db.execute(`
-        SELECT i.tax_rec_id, i.tax_id, i.customer_branch, i.container_num, i.service_date, i.status,
+        SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.container_num, i.booking_num, i.service_date, i.status,
                p.customer_num, p.customer_name, p.customer_addr
         FROM invoices i
-        LEFT JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
+        LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
         WHERE i.tax_rec_id = ?
     `, [taxRecId]);
     if (headerRows.length === 0) {
@@ -126,14 +93,19 @@ async function generatePdf(taxRecId) {
         rowCount++;
     });
 
-    // 2. Add container number rows (if present and space permits)
-    const containerLines = wrapContainerNumbers(header.container_num || '', 40);
-    containerLines.forEach(line => {
+    // 2. Add BKG and CNTR rows (if either has a value)
+    const bookingNum = (header.booking_num || '').trim();
+    const containerNum = (header.container_num || '').trim();
+    const hasBkg = bookingNum.length > 0;
+    const hasCntr = containerNum.length > 0;
+
+    if (hasBkg || hasCntr) {
+        // BKG line
         if (rowCount < TOTAL_ROWS) {
             itemsHtml += `
                 <tr style="height: 22px;">
                     <td class="text-center">&nbsp;</td>
-                    <td class="text-left" style="padding-left: 20px;">${line}</td>
+                    <td class="text-left" style="padding-left: 20px;">BKG: ${bookingNum}</td>
                     <td class="text-center"></td>
                     <td class="text-center"></td>
                     <td class="text-right"></td>
@@ -142,7 +114,21 @@ async function generatePdf(taxRecId) {
             `;
             rowCount++;
         }
-    });
+        // CNTR line
+        if (rowCount < TOTAL_ROWS) {
+            itemsHtml += `
+                <tr style="height: 22px;">
+                    <td class="text-center">&nbsp;</td>
+                    <td class="text-left" style="padding-left: 20px;">CNTR: ${containerNum}</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
+                </tr>
+            `;
+            rowCount++;
+        }
+    }
 
     // 3. Add empty padding rows to reach TOTAL_ROWS
     while (rowCount < TOTAL_ROWS) {

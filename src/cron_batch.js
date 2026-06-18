@@ -17,11 +17,11 @@ async function runCronBatch() {
         const selectQuery = `
             SELECT i.tax_rec_id 
             FROM invoices i
-            JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
+            JOIN customer_profile p ON i.customer_num = p.customer_num
             WHERE i.status = 'pending' 
               AND p.customer_name IS NOT NULL 
               AND p.customer_addr IS NOT NULL 
-              AND i.tax_id IS NOT NULL
+              AND p.tax_id IS NOT NULL
         `;
         const [rows] = await db.query(selectQuery);
 

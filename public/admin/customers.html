@@ -40,6 +40,61 @@
         .form-row-side .form-group {
             flex: 1;
         }
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .page-btn {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .page-btn:hover:not(:disabled) {
+            background-color: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .page-select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 2rem 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f3f4f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1rem;
+            width: auto;
+        }
+        .page-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
     </style>
 </head>
 <body>
@@ -59,7 +114,7 @@
                 <li>
                     <a href="upload.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        Upload CDMS CSV
+                        Upload Data
                     </a>
                 </li>
                 <li>
@@ -71,7 +126,7 @@
                 <li>
                     <a href="customer-profiles.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        Customer Profile
+                        Customer Data
                     </a>
                 </li>
                 <li>
@@ -83,7 +138,7 @@
                 <li>
                     <a href="logs.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        System Activity Logs
+                        Activity Logs
                     </a>
                 </li>
             </ul>
@@ -153,7 +208,10 @@
                         </div>
                         <div style="display: flex; gap: 1rem;">
                             <button type="button" class="btn btn-secondary" onclick="exportFilteredCsv()" id="exportBtn">
-                                Export Results to CSV
+                                Export
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearSearch()">
+                                Clear Search
                             </button>
                             <button type="submit" class="btn" id="searchBtn">
                                 Search Records
@@ -190,6 +248,17 @@
                         </tbody>
                     </table>
                 </div>
+                <!-- Pagination Footer -->
+                <div class="pagination-container" id="paginationContainer" style="display: none;">
+                    <div style="font-size: 0.85rem; color: var(--text-muted);" id="paginationMeta">
+                        Showing 0 - 0 of 0 records
+                    </div>
+                    <div class="pagination-buttons">
+                        <button type="button" class="page-btn" id="prevBtn">Prev</button>
+                        <select class="page-select" id="pageSelect"></select>
+                        <button type="button" class="page-btn" id="nextBtn">Next</button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -203,9 +272,11 @@
             </div>
             
             <form id="editForm" onsubmit="handleEditSubmit(event)">
+                <div id="modalAlert" style="display: none; padding: 10px 12px; margin-bottom: 1rem; border-radius: 4px; font-size: 0.85rem; font-weight: 500;"></div>
                 <div class="form-group">
                     <label>Tax Record ID (Read-only)</label>
                     <input type="text" id="editTaxRecId" class="form-control" style="opacity: 0.7;" readonly>
+                    <input type="hidden" id="editCustomerNum">
                 </div>
 
                 <!-- Side-by-side Tax ID and Branch -->
@@ -243,7 +314,7 @@
 
     <!-- Branch Selector Popup Modal Overlay -->
     <div class="modal-overlay" id="branchSelectorModal">
-        <div class="modal-container" style="max-width: 600px;">
+        <div class="modal-container" style="max-width: 800px;">
             <div class="modal-header">
                 <h2>Select Customer Profile Branch</h2>
                 <button class="modal-close" onclick="closeBranchSelector()">&times;</button>
@@ -252,10 +323,11 @@
                 <table class="table-custom">
                     <thead>
                         <tr>
+                            <th>Action</th>
                             <th>Branch</th>
                             <th>Cust Num</th>
                             <th>Name</th>
-                            <th>Action</th>
+                            <th>Address</th>
                         </tr>
                     </thead>
                     <tbody id="branchSelectorBody">
@@ -271,14 +343,27 @@
         let currentInvoices = [];
         let branchProfiles = [];
 
+        let currentPage = 1;
+
         window.addEventListener('load', () => {
             // Trigger default search on page load
-            performSearch();
+            performSearch(1);
         });
 
         function handleSearchSubmit(e) {
             e.preventDefault();
-            performSearch();
+            performSearch(1);
+        }
+
+        function clearSearch() {
+            document.getElementById('tax_rec_id').value = '';
+            document.getElementById('customer').value = '';
+            document.getElementById('address').value = '';
+            document.getElementById('tax_id').value = '';
+            document.getElementById('date_from').value = '';
+            document.getElementById('date_to').value = '';
+            document.getElementById('is_accounting_exported').value = 'false';
+            performSearch(1);
         }
 
         function getFilters() {
@@ -296,12 +381,14 @@
             };
         }
 
-        async function performSearch() {
+        async function performSearch(page = currentPage) {
+            currentPage = page;
             const btn = document.getElementById('searchBtn');
             btn.disabled = true;
             btn.innerText = 'Searching...';
 
             const filters = getFilters();
+            filters.page = page;
             const queryString = new URLSearchParams(filters).toString();
 
             try {
@@ -311,6 +398,10 @@
                 if (response.ok) {
                     currentInvoices = data.customers;
                     renderTable(data.customers);
+                    if (data.pagination) {
+                        document.getElementById('resCount').innerText = data.pagination.totalCustomers;
+                        renderPagination(data.pagination);
+                    }
                 } else {
                     showAlert('danger', data.message || 'Failed to query records.');
                 }
@@ -321,6 +412,54 @@
                 btn.disabled = false;
                 btn.innerText = 'Search Records';
             }
+        }
+
+        function renderPagination(pageData) {
+            const container = document.getElementById('paginationContainer');
+            const meta = document.getElementById('paginationMeta');
+            const select = document.getElementById('pageSelect');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (!pageData || pageData.totalCustomers === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            
+            const startIdx = ((pageData.currentPage - 1) * pageData.limit) + 1;
+            const endIdx = Math.min(pageData.currentPage * pageData.limit, pageData.totalCustomers);
+            meta.innerText = `Showing ${startIdx} - ${endIdx} of ${pageData.totalCustomers} records`;
+
+            select.innerHTML = '';
+            for (let i = 1; i <= pageData.totalPages; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Page ${i} of ${pageData.totalPages}`;
+                if (i === pageData.currentPage) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            }
+
+            select.onchange = (e) => {
+                performSearch(parseInt(e.target.value, 10));
+            };
+
+            prevBtn.disabled = pageData.currentPage === 1;
+            prevBtn.onclick = () => {
+                if (pageData.currentPage > 1) {
+                    performSearch(pageData.currentPage - 1);
+                }
+            };
+
+            nextBtn.disabled = pageData.currentPage === pageData.totalPages;
+            nextBtn.onclick = () => {
+                if (pageData.currentPage < pageData.totalPages) {
+                    performSearch(pageData.currentPage + 1);
+                }
+            };
         }
 
         function formatDate(dateString) {
@@ -361,10 +500,24 @@
                     : '<span class="badge badge-pending">Pending</span>';
 
                 // PDF generation status badge
+                let pdfStatusText = inv.status;
                 let pdfBadgeClass = 'badge-pending';
-                if (inv.status === 'ready') pdfBadgeClass = 'badge-ready';
-                if (inv.status === 'failed') pdfBadgeClass = 'badge-failed';
-                const pdfBadge = `<span class="badge ${pdfBadgeClass}">${inv.status}</span>`;
+                if (inv.status === 'ready') {
+                    pdfBadgeClass = 'badge-ready';
+                    pdfStatusText = 'Ready';
+                } else if (inv.status === 'failed') {
+                    pdfBadgeClass = 'badge-failed';
+                    pdfStatusText = 'Failed';
+                } else if (inv.status === 'pending') {
+                    if (isComplete) {
+                        pdfBadgeClass = 'badge-pending';
+                        pdfStatusText = 'Pending';
+                    } else {
+                        pdfBadgeClass = 'badge-failed';
+                        pdfStatusText = 'Incomplete';
+                    }
+                }
+                const pdfBadge = `<span class="badge ${pdfBadgeClass}">${pdfStatusText}</span>`;
 
                 tr.innerHTML = `
                     <td style="font-weight: 600; font-family: monospace;">${inv.tax_rec_id}</td>
@@ -433,12 +586,40 @@
                 showAlert('danger', 'Network error. Failed to export accounting CSV.');
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Export Results to CSV';
+                btn.innerText = 'Export';
             }
         }
 
-        // Modal Operations
+        // Modal Operations Helpers
+        function showModalAlert(type, message) {
+            const el = document.getElementById('modalAlert');
+            if (!el) return;
+            el.innerText = message;
+            el.style.display = 'block';
+            if (type === 'danger') {
+                el.style.backgroundColor = '#f8d7da';
+                el.style.color = '#721c24';
+                el.style.border = '1px solid #f5c6cb';
+            } else if (type === 'warning') {
+                el.style.backgroundColor = '#fff3cd';
+                el.style.color = '#856404';
+                el.style.border = '1px solid #ffeeba';
+            } else if (type === 'success') {
+                el.style.backgroundColor = '#d4edda';
+                el.style.color = '#155724';
+                el.style.border = '1px solid #c3e6cb';
+            }
+        }
+
+        function hideModalAlert() {
+            const el = document.getElementById('modalAlert');
+            if (el) {
+                el.style.display = 'none';
+            }
+        }
+
         function openEditModal(taxRecId) {
+            hideModalAlert();
             const invoice = currentInvoices.find(inv => inv.tax_rec_id === taxRecId);
             if (!invoice) return;
 
@@ -448,18 +629,26 @@
             document.getElementById('editCustomer').value = invoice.customer || '';
             document.getElementById('editAddress').value = invoice.customer_addr || '';
             document.getElementById('editContainerNum').value = invoice.container_num || '';
+            document.getElementById('editCustomerNum').value = invoice.customer_code || '';
 
             document.getElementById('editModal').classList.add('active');
+            checkTaxIdLookup(true);
         }
 
         function closeEditModal() {
+            hideModalAlert();
             document.getElementById('editModal').classList.remove('active');
             document.getElementById('editForm').reset();
+            document.getElementById('editCustomerNum').value = '';
             branchProfiles = [];
         }
 
         // Lookup profile dynamic trigger
-        async function checkTaxIdLookup() {
+        async function checkTaxIdLookup(onOpen = false) {
+            const isOnOpen = onOpen === true;
+            if (!isOnOpen) {
+                document.getElementById('editCustomerNum').value = '';
+            }
             const taxIdVal = document.getElementById('editTaxId').value.trim();
             const branchVal = document.getElementById('editCustomerBranch').value.trim();
             
@@ -471,27 +660,30 @@
                     if (response.ok && data.success) {
                         branchProfiles = data.profiles;
                         if (branchProfiles.length === 0) {
-                            // Clear fields since profile doesn't exist
-                            document.getElementById('editCustomer').value = '';
-                            document.getElementById('editAddress').value = '';
-                            showAlert('danger', 'No Customer Profile found for this Tax ID. Please upload the profile first.');
-                        } else if (branchProfiles.length === 1) {
-                            // Auto select
-                            selectBranch(0);
+                            // No profiles found for this Tax ID. User can input manually.
+                            showModalAlert('warning', 'No Customer Profile found for this Tax ID. You can enter the customer name and address manually.');
                         } else {
-                            // Multiple profiles, check if one matches the typed branch
-                            const exactMatchIdx = branchProfiles.findIndex(p => p.customer_branch.trim() === branchVal);
-                            if (exactMatchIdx !== -1) {
-                                selectBranch(exactMatchIdx);
+                            if (isOnOpen) {
+                                // Just show success status that matching profiles exist, don't overwrite user's fields
+                                showModalAlert('success', 'Customer Profile found and loaded.');
                             } else {
-                                // Show branch selector popup
-                                openBranchSelector();
+                                // Normal manual input flow: auto-select or open popup selector
+                                if (branchProfiles.length === 1) {
+                                    selectBranch(0);
+                                    showModalAlert('success', 'Customer Profile found and loaded.');
+                                } else {
+                                    // Multiple profiles exist - always show branch selector popup modal
+                                    hideModalAlert();
+                                    openBranchSelector();
+                                }
                             }
                         }
                     }
                 } catch (err) {
                     console.error('Lookup error:', err);
                 }
+            } else {
+                hideModalAlert();
             }
         }
 
@@ -502,12 +694,13 @@
             branchProfiles.forEach((prof, idx) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><strong>${prof.customer_branch || 'สำนักงานใหญ่'}</strong></td>
-                    <td>${prof.customer_num || '-'}</td>
-                    <td>${prof.customer_name || '-'}</td>
                     <td>
                         <button type="button" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="selectBranch(${idx})">Select</button>
                     </td>
+                    <td><strong>${prof.customer_branch || 'สำนักงานใหญ่'}</strong></td>
+                    <td>${prof.customer_num || '-'}</td>
+                    <td>${prof.customer_name || '-'}</td>
+                    <td>${prof.customer_addr || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -526,7 +719,9 @@
             document.getElementById('editCustomerBranch').value = profile.customer_branch || 'สำนักงานใหญ่';
             document.getElementById('editCustomer').value = profile.customer_name || '';
             document.getElementById('editAddress').value = profile.customer_addr || '';
+            document.getElementById('editCustomerNum').value = profile.customer_num || '';
             
+            showModalAlert('success', `Loaded customer profile for branch "${profile.customer_branch || 'สำนักงานใหญ่'}"`);
             closeBranchSelector();
         }
 
@@ -544,7 +739,8 @@
                 tax_id: document.getElementById('editTaxId').value,
                 customer_branch: document.getElementById('editCustomerBranch').value,
                 address: document.getElementById('editAddress').value,
-                container_num: document.getElementById('editContainerNum').value
+                container_num: document.getElementById('editContainerNum').value,
+                customer_num: document.getElementById('editCustomerNum').value
             };
 
             try {

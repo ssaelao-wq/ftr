@@ -181,7 +181,10 @@ router.post('/update-profile', async (req, res) => {
     try {
         // Fetch invoice to make sure it exists
         const [rows] = await db.execute(
-            'SELECT tax_id, is_customer_data_updated FROM invoices WHERE tax_rec_id = ?',
+            `SELECT p.tax_id, i.is_customer_data_updated 
+             FROM invoices i
+             LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
+             WHERE i.tax_rec_id = ?`,
             [tax_rec_id]
         );
 
@@ -197,11 +200,21 @@ router.post('/update-profile', async (req, res) => {
             });
         }
 
-        // Validate that customer profile exists for this tax_id & branch
-        const [profiles] = await db.execute(
-            'SELECT customer_name FROM customer_profile WHERE tax_id = ? AND customer_branch = ?',
-            [tax_id.trim(), customer_branch.trim()]
-        );
+        // Validate that customer profile exists
+        let profiles = [];
+        if (customer_num && customer_num.trim()) {
+            const [rows] = await db.execute(
+                'SELECT customer_num, customer_name FROM customer_profile WHERE customer_num = ?',
+                [customer_num.trim()]
+            );
+            profiles = rows;
+        } else {
+            const [rows] = await db.execute(
+                'SELECT customer_num, customer_name FROM customer_profile WHERE tax_id = ? AND customer_branch = ?',
+                [tax_id.trim(), customer_branch.trim()]
+            );
+            profiles = rows;
+        }
         if (profiles.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -210,20 +223,21 @@ router.post('/update-profile', async (req, res) => {
         }
 
         const profileName = profiles[0].customer_name;
+        const profileCustNum = profiles[0].customer_num;
 
         // Update customer_addr in master profile; reset accounting export flag so it's picked up next time
         await db.execute(
-            'UPDATE customer_profile SET customer_addr = ?, is_accounting_exported = FALSE WHERE tax_id = ? AND customer_branch = ?',
-            [address.trim(), tax_id.trim(), customer_branch.trim()]
+            'UPDATE customer_profile SET customer_addr = ?, is_accounting_exported = FALSE WHERE customer_num = ?',
+            [address.trim(), profileCustNum]
         );
 
         // Link the invoice, mark as updated
         await db.execute(
             `UPDATE invoices
-             SET tax_id = ?, customer_branch = ?, container_num = ?,
+             SET customer_num = ?, container_num = ?,
                  is_accounting_exported = FALSE, is_customer_data_updated = TRUE, status = 'pending'
              WHERE tax_rec_id = ?`,
-            [tax_id.trim(), customer_branch.trim(), container_num ? container_num.trim() : null, tax_rec_id]
+            [profileCustNum, container_num ? container_num.trim() : null, tax_rec_id]
         );
 
         logActivity('REQ_MISS_DATA', `${profileName}:${address}:${tax_rec_id}`);
@@ -294,96 +308,116 @@ router.post('/save-and-send', async (req, res) => {
             });
         }
 
-        // --- Save customer data to invoices ---
-        await db.execute(
-            `UPDATE invoices
-             SET tax_id = ?, customer_branch = ?, container_num = ?,
-                 is_accounting_exported = FALSE,
-                 is_customer_data_updated = TRUE,
-                 status = 'pending'
-             WHERE tax_rec_id = ?`,
-            [
-                tax_id.trim(),
-                customer_branch.trim(),
-                container_num ? container_num.trim() : null,
-                tax_rec_id
-            ]
-        );
+        // If Tax ID was found in customer_profile, get its customer_num
+        let existingProfile = [];
+        if (customer_num && customer_num.trim()) {
+            const [rows] = await db.execute(
+                'SELECT customer_num FROM customer_profile WHERE customer_num = ?',
+                [customer_num.trim()]
+            );
+            existingProfile = rows;
+        } else {
+            const [rows] = await db.execute(
+                'SELECT customer_num FROM customer_profile WHERE tax_id = ? AND customer_branch = ?',
+                [tax_id.trim(), customer_branch.trim()]
+            );
+            existingProfile = rows;
+        }
 
-        // If Tax ID was NOT found in customer_profile (manual entry), insert a new profile row
-        const [existingProfile] = await db.execute(
-            'SELECT id FROM customer_profile WHERE tax_id = ? AND customer_branch = ?',
-            [tax_id.trim(), customer_branch.trim()]
-        );
+        let activeCustomerNum = customer_num ? customer_num.trim() : null;
+
         if (existingProfile.length === 0) {
             // New profile row (manual entry or first-time customer)
-            // is_accounting_exported defaults to FALSE — will be picked up in next accounting export
+            if (!activeCustomerNum || activeCustomerNum === 'TMP-00000') {
+                activeCustomerNum = 'TMP-' + Date.now();
+            }
             await db.execute(
                 `INSERT INTO customer_profile (tax_id, customer_num, customer_name, customer_addr, customer_branch, is_accounting_exported)
                  VALUES (?, ?, ?, ?, ?, FALSE)`,
                 [
                     tax_id.trim(),
-                    customer_num ? customer_num.trim() : 'TMP-00000',
+                    activeCustomerNum,
                     customer_name.trim(),
                     address.trim(),
                     customer_branch.trim()
                 ]
             );
         } else {
-            // Update existing profile; reset accounting export flag so updated data is re-exported
+            // Update existing profile
+            activeCustomerNum = existingProfile[0].customer_num || activeCustomerNum || ('TMP-' + Date.now());
             await db.execute(
-                'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, customer_num = ?, is_accounting_exported = FALSE WHERE tax_id = ? AND customer_branch = ?',
-                [customer_name.trim(), address.trim(), customer_num ? customer_num.trim() : null, tax_id.trim(), customer_branch.trim()]
+                'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, customer_num = ?, is_accounting_exported = FALSE WHERE customer_num = ?',
+                [customer_name.trim(), address.trim(), activeCustomerNum, activeCustomerNum]
             );
         }
+
+        // --- Save customer data to invoices ---
+        await db.execute(
+            `UPDATE invoices
+             SET customer_num = ?, container_num = ?,
+                 is_accounting_exported = FALSE,
+                 is_customer_data_updated = TRUE,
+                 status = 'pending'
+             WHERE tax_rec_id = ?`,
+            [
+                activeCustomerNum,
+                container_num ? container_num.trim() : null,
+                tax_rec_id
+            ]
+        );
 
         logActivity('REQ_MISS_DATA', `${customer_name}:${address}:${tax_rec_id}`);
 
         // --- Return immediate response so the UI doesn't hang ---
-        const confirmMessage = send_method === 'email'
-            ? 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที'
-            : 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
+        let confirmMessage = 'ได้บันทึกรายการแล้ว';
+        if (send_method === 'email') {
+            confirmMessage = 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที';
+        } else if (send_method === 'line') {
+            confirmMessage = 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
+        }
 
         res.json({ success: true, message: confirmMessage });
 
-        // --- Background: Generate PDF + Dispatch ---
-        (async () => {
-            try {
-                const generatedPdfPath = await generatePdf(tax_rec_id);
+        // --- Background: Generate PDF + Dispatch (Only if email or line method requested) ---
+        if (send_method === 'email' || send_method === 'line') {
+            (async () => {
+                try {
+                    const generatedPdfPath = await generatePdf(tax_rec_id);
 
-                // Mark PDF as sent from rich menu (1-time lock)
-                await db.execute(
-                    'UPDATE invoices SET is_pdf_sent_from_richmenu = TRUE WHERE tax_rec_id = ?',
-                    [tax_rec_id]
-                );
+                    // Mark PDF as sent from rich menu (1-time lock)
+                    await db.execute(
+                        'UPDATE invoices SET is_pdf_sent_from_richmenu = TRUE WHERE tax_rec_id = ?',
+                        [tax_rec_id]
+                    );
 
-                logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${tax_id}:${send_method}:${generatedPdfPath}`);
+                    logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${tax_id}:${send_method}:${generatedPdfPath}`);
 
-                if (send_method === 'email') {
-                    try {
-                        await sendInvoiceEmail(email_address, tax_rec_id, tax_id, generatedPdfPath);
-                        logActivity('SENDING_EMAIL', `${email_address}:${generatedPdfPath}`);
-                    } catch (emailErr) {
-                        console.error('[save-and-send] Email dispatch failed:', emailErr.message);
+                    if (send_method === 'email') {
+                        try {
+                            await sendInvoiceEmail(email_address, tax_rec_id, tax_id, generatedPdfPath);
+                            logActivity('SENDING_EMAIL', `${email_address}:${generatedPdfPath}`);
+                        } catch (emailErr) {
+                            console.error('[save-and-send] Email dispatch failed:', emailErr.message);
+                        }
+                    } else if (send_method === 'line') {
+                        try {
+                            // Build public PDF URL from the storage path using dynamic base URL helper
+                            const baseUrl = getBaseUrl(req);
+                            const pdfFileName = `FTR_${tax_rec_id}.pdf`;
+                            const pdfPublicUrl = `${baseUrl}/storage/pdfs/${pdfFileName}`;
+
+                            await sendLinePdfLink(line_user_id, tax_rec_id, customer_name, pdfPublicUrl);
+                            logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`);
+                        } catch (lineErr) {
+                            console.error('[save-and-send] LINE push failed:', lineErr.message);
+                        }
                     }
-                } else if (send_method === 'line') {
-                    try {
-                        // Build public PDF URL from the storage path
-                        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-                        const pdfFileName = `FTR_${tax_rec_id}.pdf`;
-                        const pdfPublicUrl = `${baseUrl}/storage/pdfs/${pdfFileName}`;
 
-                        await sendLinePdfLink(line_user_id, tax_rec_id, customer_name, pdfPublicUrl);
-                        logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`);
-                    } catch (lineErr) {
-                        console.error('[save-and-send] LINE push failed:', lineErr.message);
-                    }
+                } catch (err) {
+                    console.error('[save-and-send] Background PDF generation failed:', err);
                 }
-
-            } catch (err) {
-                console.error('[save-and-send] Background PDF generation failed:', err);
-            }
-        })();
+            })();
+        }
 
     } catch (error) {
         console.error('Error in save-and-send:', error);
@@ -391,6 +425,154 @@ router.post('/save-and-send', async (req, res) => {
         if (!res.headersSent) {
             res.status(500).json({ success: false, message: 'Internal server error' });
         }
+    }
+});
+
+// ---------------------------------------------------------------------------
+// Helper: Send LINE Flex Message (Multi-PDF download links)
+// ---------------------------------------------------------------------------
+async function sendLineMultiPdfLink(lineUserId, taxId, customerName, invoiceLinks) {
+    const channelToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    if (!channelToken) {
+        throw new Error('LINE_CHANNEL_ACCESS_TOKEN not configured in .env');
+    }
+
+    const textLinks = invoiceLinks.map(link => ({
+        type: 'box',
+        layout: 'horizontal',
+        spacing: 'sm',
+        margin: 'sm',
+        contents: [
+            {
+                type: 'text',
+                text: link.taxRecId,
+                action: {
+                    type: 'uri',
+                    uri: link.pdfUrl
+                },
+                color: '#00B900',
+                decoration: 'underline',
+                size: 'sm',
+                weight: 'bold',
+                flex: 4
+            },
+            {
+                type: 'text',
+                text: link.companyName || '-',
+                size: 'sm',
+                color: '#555555',
+                flex: 6,
+                wrap: true
+            }
+        ]
+    }));
+
+    const flexMessage = {
+        to: lineUserId,
+        messages: [
+            {
+                type: 'flex',
+                altText: `ใบกำกับภาษีแบบเต็ม (${invoiceLinks.length} รายการ)`,
+                contents: {
+                    type: 'bubble',
+                    size: 'mega',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: `Tax ID: ${taxId}`,
+                                weight: 'bold',
+                                size: 'md',
+                                color: '#ffffff'
+                            }
+                        ],
+                        backgroundColor: '#00B900',
+                        paddingAll: '16px'
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'sm',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: 'กดที่หมายเลขเอกสารด้านล่างเพื่อดาวน์โหลด PDF:',
+                                size: 'xs',
+                                color: '#888888',
+                                wrap: true,
+                                margin: 'sm'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'horizontal',
+                                spacing: 'sm',
+                                margin: 'md',
+                                contents: [
+                                    { type: 'text', text: 'เลขที่เอกสาร', size: 'xs', color: '#888888', weight: 'bold', flex: 4 },
+                                    { type: 'text', text: 'ชื่อบริษัท', size: 'xs', color: '#888888', weight: 'bold', flex: 6 }
+                                ]
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'xs'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'xs',
+                                contents: textLinks
+                            }
+                        ],
+                        paddingAll: '16px'
+                    }
+                }
+            }
+        ]
+    };
+
+    const response = await axios.post(
+        'https://api.line.me/v2/bot/message/push',
+        flexMessage,
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${channelToken}`
+            }
+        }
+    );
+    return response.data;
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/customer/search-invoices
+// Pre-filtered search to find valid invoices matching tax_id in the last 14 days
+// ---------------------------------------------------------------------------
+router.get('/search-invoices', async (req, res) => {
+    const { tax_id } = req.query;
+
+    if (!tax_id || !tax_id.trim()) {
+        return res.status(400).json({ success: false, message: 'Tax ID is required.' });
+    }
+
+    try {
+        const [rows] = await db.execute(`
+            SELECT i.tax_rec_id, i.service_date, i.status, p.customer_name
+            FROM invoices i
+            INNER JOIN customer_profile p ON i.customer_num = p.customer_num
+            WHERE p.tax_id = ?
+              AND i.created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+            ORDER BY i.created_at DESC
+        `, [tax_id.trim()]);
+
+        return res.json({
+            success: true,
+            invoices: rows
+        });
+    } catch (error) {
+        console.error('Error in search-invoices:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error during invoice search.' });
     }
 });
 
@@ -409,81 +591,86 @@ router.get('/check-invoice', async (req, res) => {
     }
 
     try {
-        // Look up invoice
-        const [invoiceRows] = await db.execute(
-            'SELECT tax_rec_id, tax_id, customer_branch, status FROM invoices WHERE tax_rec_id = ?',
-            [tax_rec_id.trim()]
-        );
+        const taxRecIds = tax_rec_id.split(',').map(id => id.trim()).filter(Boolean);
+        const uniqueTaxRecIds = [...new Set(taxRecIds)];
 
-        if (invoiceRows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                code: 'NO_RECORD',
-                message: 'ไม่มีใบกำกับภาษีของหมายเลขนี้'
-            });
+        if (uniqueTaxRecIds.length === 0) {
+            return res.status(400).json({ success: false, code: 'MISSING_PARAM', message: 'No valid Tax Record IDs found.' });
         }
 
-        const invoice = invoiceRows[0];
+        const placeholders = uniqueTaxRecIds.map(() => '?').join(',');
+        const [invoiceRows] = await db.execute(`
+            SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.status, p.customer_name, p.customer_addr
+            FROM invoices i
+            LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
+            WHERE i.tax_rec_id IN (${placeholders})
+        `, uniqueTaxRecIds);
 
-        // Check if invoice has customer (tax_id) assigned
-        if (!invoice.tax_id) {
-            // Check if entered tax_id exists in customer_profile
-            const [profileRows] = await db.execute(
-                'SELECT id FROM customer_profile WHERE tax_id = ? LIMIT 1',
-                [tax_id.trim()]
-            );
+        const invoiceMap = new Map();
+        invoiceRows.forEach(row => {
+            invoiceMap.set(row.tax_rec_id, row);
+        });
 
-            if (profileRows.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    code: 'UNLINKED_CUSTOMER_EXISTS',
-                    message: "กรุณาเพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"
-                });
-            } else {
-                return res.status(400).json({
-                    success: false,
-                    code: 'UNLINKED_CUSTOMER_NEW',
-                    message: "กรุณาสร้างลูกค้าใหม่ และ เพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"
-                });
+        const valid = [];
+        const excluded = [];
+        let customerName = '';
+
+        for (const id of uniqueTaxRecIds) {
+            const invoice = invoiceMap.get(id);
+            if (!invoice) {
+                excluded.push({ id, reason: 'ไม่พบหมายเลขใบกำกับภาษีนี้' });
+                continue;
+            }
+
+            if (!invoice.tax_id) {
+                excluded.push({ id, reason: 'ใบกำกับภาษียังไม่ได้ผูกข้อมูลลูกค้า' });
+                continue;
+            }
+
+            if (invoice.tax_id !== tax_id.trim()) {
+                excluded.push({ id, reason: 'หมายเลขประจำตัวผู้เสียภาษีไม่ตรงกัน' });
+                continue;
+            }
+
+            if (!invoice.customer_name || !invoice.customer_addr) {
+                excluded.push({ id, reason: 'ข้อมูลที่อยู่ลูกค้ายังไม่สมบูรณ์' });
+                continue;
+            }
+
+            // All checks passed
+            valid.push(invoice);
+            if (!customerName) {
+                customerName = invoice.customer_name;
             }
         }
 
-        // Check if the typed tax_id matches the assigned tax_id
-        if (invoice.tax_id !== tax_id.trim()) {
+        if (valid.length === 0) {
+            const reasons = excluded.map(item => `${item.id}: ${item.reason}`).join(', ');
             return res.status(400).json({
                 success: false,
-                code: 'TAX_ID_MISMATCH',
-                message: 'หมายเลขประจำตัวผู้เสียภาษีไม่ตรงกับใบกำกับภาษีนี้'
+                code: 'NO_VALID_INVOICES',
+                message: `ไม่มีใบกำกับภาษีที่ถูกต้องสำหรับการดำเนินการนี้ (${reasons})`,
+                excluded: excluded.map(item => item.id)
             });
         }
 
-        // Look up customer profile to make sure name and address exist
-        const [profileRows] = await db.execute(
-            'SELECT customer_name, customer_addr FROM customer_profile WHERE tax_id = ? AND customer_branch = ?',
-            [invoice.tax_id, invoice.customer_branch]
-        );
+        // Check PDF generation state for all valid ones
+        const validTaxRecIds = valid.map(v => v.tax_rec_id);
+        const pdfPlaceholders = validTaxRecIds.map(() => '?').join(',');
+        const [pdfRows] = await db.execute(`
+            SELECT tax_rec_id FROM generated_documents WHERE tax_rec_id IN (${pdfPlaceholders})
+        `, validTaxRecIds);
 
-        if (profileRows.length === 0 || !profileRows[0].customer_name || !profileRows[0].customer_addr) {
-            return res.status(400).json({
-                success: false,
-                code: 'UNLINKED_CUSTOMER_EXISTS',
-                message: "กรุณาเพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'"
-            });
-        }
+        const pdfExistsMap = new Set(pdfRows.map(r => r.tax_rec_id));
+        const allHavePdf = valid.every(v => v.status === 'ready' && pdfExistsMap.has(v.tax_rec_id));
 
-        // Check if PDF already exists
-        const [pdfRows] = await db.execute(
-            'SELECT pdf_folder FROM generated_documents WHERE tax_rec_id = ?',
-            [tax_rec_id.trim()]
-        );
-
-        const pdfExists = invoice.status === 'ready' && pdfRows.length > 0;
-        
         return res.json({
             success: true,
-            code: pdfExists ? 'READY_WITH_PDF' : 'READY_NO_PDF',
-            pdf_state: pdfExists ? 'ready' : 'no_pdf',
-            customer_name: profileRows[0].customer_name
+            code: allHavePdf ? 'READY_WITH_PDF' : 'READY_NO_PDF',
+            pdf_state: allHavePdf ? 'ready' : 'no_pdf',
+            customer_name: customerName,
+            valid: validTaxRecIds,
+            excluded: excluded.map(item => `${item.id} (${item.reason})`)
         });
 
     } catch (error) {
@@ -497,9 +684,11 @@ router.get('/check-invoice', async (req, res) => {
 // (Updated endpoint to support 2-step verification and LINE/Email delivery)
 // ---------------------------------------------------------------------------
 router.post('/request-invoice', async (req, res) => {
-    const { line_user_id, tax_rec_id, tax_id, send_method, email_sending } = req.body;
+    const { line_user_id, line_display_name, tax_rec_id, tax_id, send_method, email_sending } = req.body;
 
     const method = send_method || 'email'; // fallback for backward compatibility
+    const fullLineId = line_display_name ? `${line_user_id}:${line_display_name}` : line_user_id;
+    const lineUsername = line_display_name ? `[c]${line_display_name}` : '[c]Customer';
 
     if (!tax_rec_id || !tax_id) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -514,104 +703,131 @@ router.post('/request-invoice', async (req, res) => {
     }
 
     try {
-        logActivity('REQ_FULL_TAX', `${tax_rec_id}:${tax_id}:${method === 'email' ? email_sending : 'LINE'}`);
+        logActivity('REQ_FULL_TAX', `${tax_rec_id}:${tax_id}:${method === 'email' ? email_sending : fullLineId}`, lineUsername);
 
+        const taxRecIds = tax_rec_id.split(',').map(id => id.trim()).filter(Boolean);
+        const uniqueTaxRecIds = [...new Set(taxRecIds)];
+
+        if (uniqueTaxRecIds.length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid Tax Record IDs provided' });
+        }
+
+        const placeholders = uniqueTaxRecIds.map(() => '?').join(',');
         const [rows] = await db.execute(`
-            SELECT i.tax_rec_id, i.tax_id, i.customer_branch, i.status,
+            SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.status,
                    p.customer_name AS customer, p.customer_addr AS customer_addr
             FROM invoices i
-            LEFT JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
-            WHERE i.tax_rec_id = ?
-        `, [tax_rec_id.trim()]);
+            LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
+            WHERE i.tax_rec_id IN (${placeholders})
+        `, uniqueTaxRecIds);
 
-        if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'ไม่มีใบกำกับภาษีของหมายเลขนี้' });
+        const validInvoices = rows.filter(record => 
+            record.tax_id &&
+            record.tax_id === tax_id.trim() &&
+            record.customer &&
+            record.customer_addr
+        );
+
+        if (validInvoices.length === 0) {
+            return res.status(400).json({ success: false, message: 'ไม่มีใบกำกับภาษีที่ถูกต้องตรงตามเงื่อนไขเพื่อส่งข้อมูล' });
         }
 
-        const record = rows[0];
+        const validTaxRecIds = validInvoices.map(v => v.tax_rec_id);
+        const customerName = validInvoices[0].customer;
 
-        // Validation checks matching check-invoice logic
-        if (!record.tax_id) {
-            const [profileRows] = await db.execute(
-                'SELECT id FROM customer_profile WHERE tax_id = ? LIMIT 1',
-                [tax_id.trim()]
-            );
+        // Query PDF existence for valid invoices
+        const pdfPlaceholders = validTaxRecIds.map(() => '?').join(',');
+        const [pdfRows] = await db.execute(`
+            SELECT tax_rec_id, pdf_folder FROM generated_documents WHERE tax_rec_id IN (${pdfPlaceholders})
+        `, validTaxRecIds);
 
-            if (profileRows.length > 0) {
-                return res.status(400).json({ success: false, message: "กรุณาเพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'" });
-            } else {
-                return res.status(400).json({ success: false, message: "กรุณาสร้างลูกค้าใหม่ และ เพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'" });
+        const pdfMap = new Map();
+        pdfRows.forEach(r => pdfMap.set(r.tax_rec_id, r.pdf_folder));
+
+        const allHavePdf = validInvoices.every(v => v.status === 'ready' && pdfMap.has(v.tax_rec_id));
+
+        // Background PDF generation and dispatch
+        (async () => {
+            try {
+                const pdfData = [];
+                for (const record of validInvoices) {
+                    let pdfPath = record.status === 'ready' ? pdfMap.get(record.tax_rec_id) : null;
+                    if (!pdfPath) {
+                        pdfPath = await generatePdf(record.tax_rec_id);
+                        await logActivity('ONTHEFLY_GEN_PDF', `${record.tax_rec_id}:${tax_id}:${method}:${pdfPath}`, lineUsername);
+                    }
+                    const baseUrl = getBaseUrl(req);
+                    const pdfPublicUrl = `${baseUrl}${pdfPath}`;
+                    pdfData.push({
+                        taxRecId: record.tax_rec_id,
+                        pdfRelPath: pdfPath,
+                        pdfUrl: pdfPublicUrl,
+                        companyName: record.customer
+                    });
+                }
+
+                if (method === 'email') {
+                    await sendInvoiceEmail(email_sending, tax_id, pdfData);
+                    await logActivity('SENDING_EMAIL_MULTI', `${email_sending}:${validTaxRecIds.join(',')}`, lineUsername);
+                } else if (method === 'line') {
+                    await sendLineMultiPdfLink(line_user_id, tax_id, customerName, pdfData);
+                    await logActivity('SENDING_LINE_MULTI', `${validTaxRecIds.join(',')}:${fullLineId}`, lineUsername);
+                }
+            } catch (dispatchErr) {
+                console.error('[customer] Request invoice dispatch failed:', dispatchErr);
             }
-        }
+        })();
 
-        if (record.tax_id !== tax_id.trim()) {
-            return res.status(400).json({ success: false, message: 'หมายเลขประจำตัวผู้เสียภาษีไม่ตรงกับใบกำกับภาษีนี้' });
-        }
+        const returnMsg = method === 'email'
+            ? 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที'
+            : (allHavePdf 
+                ? 'โปรดรอสักครู่ กำลังส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด' 
+                : 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด');
 
-        if (!record.customer || !record.customer_addr) {
-            return res.status(400).json({ success: false, message: "กรุณาเพิ่มข้อมูลลูกค้าใน invoice จากเมนู 'เพิ่มข้อมูลลูกค้า'" });
-        }
-
-        // Check PDF existence
-        const [pdfRows] = await db.execute('SELECT pdf_folder FROM generated_documents WHERE tax_rec_id = ?', [tax_rec_id.trim()]);
-        const pdfExists = record.status === 'ready' && pdfRows.length > 0;
-
-        if (pdfExists) {
-            const existingPdfUrl = pdfRows[0].pdf_folder;
-            const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-            const pdfPublicUrl = `${baseUrl}${existingPdfUrl}`;
-
-            (async () => {
-                try {
-                    if (method === 'email') {
-                        await sendInvoiceEmail(email_sending, tax_rec_id, record.tax_id, existingPdfUrl);
-                        await logActivity('SENDING_EMAIL', `${email_sending}:${existingPdfUrl}`);
-                    } else if (method === 'line') {
-                        await sendLinePdfLink(line_user_id, tax_rec_id, record.customer, pdfPublicUrl);
-                        await logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`);
-                    }
-                } catch (dispatchErr) {
-                    console.error('[customer] Request invoice dispatch failed (existing PDF):', dispatchErr.message);
-                }
-            })();
-
-            const returnMsg = method === 'email'
-                ? 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที'
-                : 'โปรดรอสักครู่ กำลังส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
-
-            return res.json({ success: true, message: returnMsg });
-        } else {
-            (async () => {
-                try {
-                    const generatedPdfPath = await generatePdf(tax_rec_id);
-                    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-                    const pdfPublicUrl = `${baseUrl}${generatedPdfPath}`;
-
-                    await logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${tax_id}:${method}:${generatedPdfPath}`);
-
-                    if (method === 'email') {
-                        await sendInvoiceEmail(email_sending, tax_rec_id, tax_id, generatedPdfPath);
-                        await logActivity('SENDING_EMAIL', `${email_sending}:${generatedPdfPath}`);
-                    } else if (method === 'line') {
-                        await sendLinePdfLink(line_user_id, tax_rec_id, record.customer, pdfPublicUrl);
-                        await logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`);
-                    }
-                } catch (err) {
-                    console.error('[customer] Request invoice background generation/dispatch failed:', err);
-                }
-            })();
-
-            const returnMsg = method === 'email'
-                ? 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที'
-                : 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
-
-            return res.json({ success: true, message: returnMsg });
-        }
+        return res.json({ success: true, message: returnMsg });
 
     } catch (error) {
         console.error('Error requesting invoice:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
 });
+
+function getBaseUrl(req) {
+    if (req) {
+        // 1. Try to get origin from Referer header (the page URL loaded on phone/PC)
+        const referer = req.get('referer');
+        if (referer) {
+            try {
+                const parsed = new URL(referer);
+                if (parsed.origin && !parsed.origin.includes('your-domain.com')) {
+                    return parsed.origin;
+                }
+            } catch (e) {
+                // Ignore parsing errors
+            }
+        }
+
+        // 2. Try Origin header
+        const origin = req.get('origin');
+        if (origin && !origin.includes('your-domain.com')) {
+            return origin;
+        }
+
+        // 3. Try request protocol and host headers (resolved via 'trust proxy')
+        const host = req.get('host');
+        if (host && !host.includes('your-domain.com')) {
+            return `${req.protocol}://${host}`;
+        }
+    }
+
+    // 4. Fallback to process.env.BASE_URL if it is not the placeholder
+    const envUrl = process.env.BASE_URL;
+    if (envUrl && !envUrl.includes('your-domain.com')) {
+        return envUrl;
+    }
+
+    // 5. Hard fallback
+    return `http://localhost:${process.env.PORT || 3000}`;
+}
 
 module.exports = router;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Customer Profiles - FTR System</title>
+    <title>Customer Data - FTR System</title>
     <link rel="stylesheet" href="admin.css">
     <style>
         /* Table highlight row */
@@ -33,6 +33,61 @@
             font-weight: 700;
             color: var(--accent);
         }
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .page-btn {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: var(--transition);
+        }
+        .page-btn:hover:not(:disabled) {
+            background-color: var(--accent-glow);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .page-select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.4rem 2rem 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f3f4f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1rem;
+            width: auto;
+        }
+        .page-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
     </style>
 </head>
 <body>
@@ -52,7 +107,7 @@
                 <li>
                     <a href="upload.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        Upload CDMS CSV
+                        Upload Data
                     </a>
                 </li>
                 <li>
@@ -64,7 +119,7 @@
                 <li>
                     <a href="customer-profiles.html" class="sidebar-link active">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        Customer Profile
+                        Customer Data
                     </a>
                 </li>
                 <li>
@@ -76,7 +131,7 @@
                 <li>
                     <a href="logs.html" class="sidebar-link">
                         <svg style="width: 1.25rem; height: 1.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        System Activity Logs
+                        Activity Logs
                     </a>
                 </li>
             </ul>
@@ -94,7 +149,7 @@
                     <button class="mobile-nav-toggle" id="mobileToggle">&#9776;</button>
                 </div>
                 <div class="page-title">
-                    <h1>Customer Profile Database</h1>
+                    <h1>Customer Data</h1>
                     <p>Search and manage customer profiles uploaded manually.</p>
                 </div>
             </div>
@@ -133,7 +188,10 @@
                         </div>
                         <div style="display: flex; gap: 1rem;">
                             <button type="button" class="btn btn-secondary" onclick="exportFilteredProfilesCsv()" id="exportBtn">
-                                Export Results to CSV
+                                Export
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="clearSearch()">
+                                Clear Search
                             </button>
                             <button type="submit" class="btn" id="searchBtn">
                                 Search Profiles
@@ -149,8 +207,8 @@
                     <table class="table-custom">
                         <thead>
                             <tr>
-                                <th>Tax ID</th>
                                 <th>Cust Num</th>
+                                <th>Tax ID</th>
                                 <th>Cust Name</th>
                                 <th>Cust Address</th>
                                 <th>Cust Email</th>
@@ -159,17 +217,28 @@
                                 <th>Accounting Export</th>
                                 <th>Created At</th>
                                 <th>Updated At</th>
-                                <th class="action-cell">Action</th>
+                                <th class="action-cell" style="display: none;">Action</th>
                             </tr>
                         </thead>
                         <tbody id="resultsTableBody">
                             <tr class="no-data">
-                                <td colspan="11" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                                <td colspan="10" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
                                     Use the filters above to search for profiles.
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <!-- Pagination Footer -->
+                <div class="pagination-container" id="paginationContainer" style="display: none;">
+                    <div style="font-size: 0.85rem; color: var(--text-muted);" id="paginationMeta">
+                        Showing 0 - 0 of 0 records
+                    </div>
+                    <div class="pagination-buttons">
+                        <button type="button" class="page-btn" id="prevBtn">Prev</button>
+                        <select class="page-select" id="pageSelect"></select>
+                        <button type="button" class="page-btn" id="nextBtn">Next</button>
+                    </div>
                 </div>
             </div>
         </main>
@@ -225,17 +294,27 @@
     <script src="admin.js"></script>
     <script>
         let currentProfiles = [];
+        let currentPage = 1;
 
         window.addEventListener('load', () => {
-            performSearch();
+            performSearch(1);
         });
 
         function handleSearchSubmit(e) {
             e.preventDefault();
-            performSearch();
+            performSearch(1);
         }
 
-        async function performSearch() {
+        function clearSearch() {
+            document.getElementById('searchTaxId').value = '';
+            document.getElementById('searchCustomerNum').value = '';
+            document.getElementById('searchCustomerName').value = '';
+            document.getElementById('searchExportStatus').value = 'false';
+            performSearch(1);
+        }
+
+        async function performSearch(page = currentPage) {
+            currentPage = page;
             const btn = document.getElementById('searchBtn');
             btn.disabled = true;
             btn.innerText = 'Searching...';
@@ -245,7 +324,7 @@
             const customer_name = document.getElementById('searchCustomerName').value;
             const is_accounting_exported = document.getElementById('searchExportStatus').value;
             
-            const queryString = new URLSearchParams({ tax_id, customer_num, customer_name, is_accounting_exported }).toString();
+            const queryString = new URLSearchParams({ tax_id, customer_num, customer_name, is_accounting_exported, page }).toString();
 
             try {
                 const response = await fetch(`/api/admin/customer-profiles/search?${queryString}`);
@@ -263,6 +342,10 @@
                 const data = await response.json();
                 currentProfiles = data.profiles;
                 renderTable(data.profiles);
+                if (data.pagination) {
+                    document.getElementById('resCount').innerText = data.pagination.totalProfiles;
+                    renderPagination(data.pagination);
+                }
             } catch (err) {
                 console.error(err);
                 showAlert('danger', 'Network error. Failed to retrieve records.');
@@ -270,6 +353,54 @@
                 btn.disabled = false;
                 btn.innerText = 'Search Profiles';
             }
+        }
+
+        function renderPagination(pageData) {
+            const container = document.getElementById('paginationContainer');
+            const meta = document.getElementById('paginationMeta');
+            const select = document.getElementById('pageSelect');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+
+            if (!pageData || pageData.totalProfiles === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+            
+            const startIdx = ((pageData.currentPage - 1) * pageData.limit) + 1;
+            const endIdx = Math.min(pageData.currentPage * pageData.limit, pageData.totalProfiles);
+            meta.innerText = `Showing ${startIdx} - ${endIdx} of ${pageData.totalProfiles} records`;
+
+            select.innerHTML = '';
+            for (let i = 1; i <= pageData.totalPages; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = `Page ${i} of ${pageData.totalPages}`;
+                if (i === pageData.currentPage) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            }
+
+            select.onchange = (e) => {
+                performSearch(parseInt(e.target.value, 10));
+            };
+
+            prevBtn.disabled = pageData.currentPage === 1;
+            prevBtn.onclick = () => {
+                if (pageData.currentPage > 1) {
+                    performSearch(pageData.currentPage - 1);
+                }
+            };
+
+            nextBtn.disabled = pageData.currentPage === pageData.totalPages;
+            nextBtn.onclick = () => {
+                if (pageData.currentPage < pageData.totalPages) {
+                    performSearch(pageData.currentPage + 1);
+                }
+            };
         }
 
         function formatDateTime(dateString) {
@@ -302,8 +433,8 @@
                     : '<span class="badge badge-pending">Pending</span>';
 
                 tr.innerHTML = `
-                    <td>${prof.tax_id || '-'}</td>
                     <td>${prof.customer_num || '-'}</td>
+                    <td>${prof.tax_id || '-'}</td>
                     <td>${prof.customer_name || '-'}</td>
                     <td>${prof.customer_addr || '-'}</td>
                     <td>${prof.customer_email || '-'}</td>
@@ -312,7 +443,7 @@
                     <td>${exportBadge}</td>
                     <td>${formatDateTime(prof.created_at)}</td>
                     <td>${formatDateTime(prof.updated_at)}</td>
-                    <td class="action-cell">
+                    <td class="action-cell" style="display: none;">
                         <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="openEditModal('${prof.id}')">
                             Edit
                         </button>
@@ -371,7 +502,7 @@
                 showAlert('danger', 'Network error. Failed to export Customer Profile CSV.');
             } finally {
                 btn.disabled = false;
-                btn.innerText = 'Export Results to CSV';
+                btn.innerText = 'Export';
             }
         }
 

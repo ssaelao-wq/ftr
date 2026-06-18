@@ -77,42 +77,60 @@ async function createTransporter() {
  * @param {string} pdfRelPath    — Relative path to the PDF file (e.g. /storage/pdfs/FTR_RF2605-00589.pdf)
  * @returns {Promise<object>}    — nodemailer info object on success
  */
-async function sendInvoiceEmail(emailSending, taxRecId, taxId, pdfRelPath) {
-    // Resolve absolute path from project root (this file lives at src/services/)
-    const projectRoot  = path.join(__dirname, '../../');
-    const absolutePath = path.join(projectRoot, pdfRelPath);
+async function sendInvoiceEmail(emailSending, arg2, arg3, arg4) {
+    let taxId;
+    let invoicesData = [];
 
-    if (!fs.existsSync(absolutePath)) {
-        throw new Error(`PDF file not found at path: ${absolutePath}`);
+    if (Array.isArray(arg3)) {
+        // New signature: sendInvoiceEmail(emailSending, taxId, invoicesData)
+        taxId = arg2;
+        invoicesData = arg3;
+    } else {
+        // Old signature: sendInvoiceEmail(emailSending, taxRecId, taxId, pdfRelPath)
+        const taxRecId = arg2;
+        taxId = arg3;
+        const pdfRelPath = arg4;
+        invoicesData = [{ taxRecId, pdfRelPath }];
     }
 
+    // Resolve absolute path from project root (this file lives at src/services/)
+    const projectRoot  = path.join(__dirname, '../../');
     const transporter = await createTransporter();
+
+    const attachments = invoicesData.map(item => {
+        const itemTaxRecId = item.taxRecId || item.tax_rec_id;
+        const absolutePath = path.join(projectRoot, item.pdfRelPath);
+        if (!fs.existsSync(absolutePath)) {
+            throw new Error(`PDF file not found at path: ${absolutePath}`);
+        }
+        return {
+            filename:    `FTR_${itemTaxRecId}.pdf`,
+            path:        absolutePath,
+            contentType: 'application/pdf'
+        };
+    });
+
+    const taxRecIdsStr = invoicesData.map(item => item.taxRecId || item.tax_rec_id).join(', ');
 
     const mailOptions = {
         from:    `"FTR Invoice System" <${process.env.EMAIL_USER}>`,
         to:      emailSending,
-        subject: `ใบกำกับภาษีแบบเต็ม ${taxRecId}`,
-        text:    `ใบกำกับภาษีแบบเต็มของ ${taxRecId} สำหรับภาษีหมายเลข ${taxId}\n\nกรุณาดูไฟล์แนบ`,
+        subject: `ใบกำกับภาษีแบบเต็ม สำหรับเลขประจำตัวผู้เสียภาษี: ${taxId}`,
+        text:    `ใบกำกับภาษีแบบเต็มของหมายเลขเอกสาร: ${taxRecIdsStr}\nสำหรับเลขประจำตัวผู้เสียภาษี: ${taxId}\n\nกรุณาดูไฟล์แนบ`,
         html: `
             <div style="font-family: sans-serif; font-size: 14px; color: #333;">
                 <p>เรียนลูกค้า,</p>
-                <p>ใบกำกับภาษีแบบเต็มของหมายเลขเอกสาร <strong>${taxRecId}</strong> สำหรับเลขประจำตัวผู้เสียภาษี <strong>${taxId}</strong> ได้ถูกแนบมาพร้อมกับอีเมล์ฉบับนี้แล้ว</p>
+                <p>ใบกำกับภาษีแบบเต็มของหมายเลขเอกสาร <strong>${taxRecIdsStr}</strong> สำหรับเลขประจำตัวผู้เสียภาษี <strong>${taxId}</strong> ได้ถูกแนบมาพร้อมกับอีเมล์ฉบับนี้แล้ว</p>
                 <p>หากมีคำถามใดๆ กรุณาติดต่อเจ้าหน้าที่</p>
                 <br>
                 <p style="color: #999; font-size: 12px;">อีเมล์นี้ถูกส่งโดยระบบอัตโนมัติ กรุณาอย่าตอบกลับ</p>
             </div>
         `,
-        attachments: [
-            {
-                filename:    `FTR_${taxRecId}.pdf`,
-                path:        absolutePath,
-                contentType: 'application/pdf'
-            }
-        ]
+        attachments: attachments
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[emailService] Email sent to ${emailSending} for ${taxRecId} — MessageId: ${info.messageId}`);
+    console.log(`[emailService] Email sent to ${emailSending} for ${taxRecIdsStr} — MessageId: ${info.messageId}`);
     return info;
 }
 

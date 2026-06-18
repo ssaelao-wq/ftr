@@ -33,11 +33,33 @@ function buildProfileQuery(queryParams) {
 // GET /api/admin/customer-profiles/search
 // Search customer profiles with filters
 router.get('/search', async (req, res) => {
+    let page = parseInt(req.query.page, 10) || 1;
+    if (page < 1) page = 1;
+    const limit = 50;
+    const offset = (page - 1) * limit;
+
     try {
         const { sql, params } = buildProfileQuery(req.query);
-        const orderSql = `${sql} ORDER BY updated_at DESC, id DESC`;
-        const [rows] = await db.query(orderSql, params);
-        res.json({ success: true, profiles: rows });
+
+        // Count total matching profiles
+        const countSql = `SELECT COUNT(*) AS count FROM (${sql}) AS temp_count`;
+        const [countRows] = await db.query(countSql, params);
+        const totalProfiles = countRows[0].count;
+        const totalPages = Math.ceil(totalProfiles / limit);
+
+        const orderSql = `${sql} ORDER BY updated_at DESC, id DESC LIMIT ? OFFSET ?`;
+        const [rows] = await db.query(orderSql, [...params, limit, offset]);
+
+        res.json({
+            success: true,
+            profiles: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages || 1,
+                totalProfiles: totalProfiles,
+                limit: limit
+            }
+        });
     } catch (error) {
         console.error('Customer profile search error:', error);
         res.status(500).json({ success: false, message: 'Internal server error during profile search.' });
@@ -55,7 +77,7 @@ router.get('/lookup', async (req, res) => {
 
     try {
         const [rows] = await db.execute(
-            'SELECT id, tax_id, customer_num, customer_name, customer_addr, customer_branch, customer_email, customer_phone, is_accounting_exported FROM customer_profile WHERE tax_id = ? ORDER BY customer_branch = \'สำนักงานใหญ่\' DESC, customer_branch ASC',
+            'SELECT id, tax_id, customer_num, customer_name, customer_addr, customer_branch, customer_email, customer_phone, is_accounting_exported FROM customer_profile WHERE tax_id = ? ORDER BY customer_branch = \'สำนักงานใหญ่\' DESC, customer_branch ASC, id DESC',
             [tax_id.trim()]
         );
         res.json({ success: true, profiles: rows });
@@ -78,33 +100,21 @@ router.put('/:id', async (req, res) => {
 
     try {
         // Validate record exists
-        const [existing] = await db.execute('SELECT tax_id, customer_branch FROM customer_profile WHERE id = ?', [id]);
+        const [existing] = await db.execute('SELECT tax_id, customer_num, customer_branch FROM customer_profile WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ success: false, message: 'Customer profile not found.' });
         }
 
         const oldProfile = existing[0];
-        const oldBranch = oldProfile.customer_branch;
-        const newBranch = customer_branch ? customer_branch.trim() : null;
-
-        // Check if updating the branch conflicts with another record of the same tax_id
-        if (newBranch && newBranch !== oldBranch) {
-            const [conflict] = await db.execute(
-                'SELECT id FROM customer_profile WHERE tax_id = ? AND customer_branch = ? AND id != ?',
-                [oldProfile.tax_id, newBranch, id]
-            );
-            if (conflict.length > 0) {
-                return res.status(400).json({ 
-                    success: false, 
-                    message: `A profile for Tax ID "${oldProfile.tax_id}" with branch "${newBranch}" already exists.` 
-                });
-            }
-        }
+        const newBranch = customer_branch ? customer_branch.trim() : oldProfile.customer_branch;
 
         // Perform updates inside a transaction to ensure consistency
         const connection = await db.getConnection();
-        await connection.beginTransaction();
+        let transactionStarted = false;
         try {
+            await connection.beginTransaction();
+            transactionStarted = true;
+
             // 1. Update the customer profile, setting is_accounting_exported = FALSE
             await connection.execute(`
                 UPDATE customer_profile 
@@ -112,24 +122,18 @@ router.put('/:id', async (req, res) => {
                 WHERE id = ?
             `, [customer_name.trim(), customer_addr.trim(), customer_email ? customer_email.trim() : null, customer_phone ? customer_phone.trim() : null, newBranch, id]);
 
-            // 2. Propagate updates to matching invoices (branch code change, resetting status = pending and is_accounting_exported = FALSE)
-            if (newBranch !== oldBranch) {
-                await connection.execute(`
-                    UPDATE invoices 
-                    SET customer_branch = ?, status = 'pending', is_accounting_exported = FALSE 
-                    WHERE tax_id = ? AND customer_branch = ?
-                `, [newBranch, oldProfile.tax_id, oldBranch]);
-            } else {
-                await connection.execute(`
-                    UPDATE invoices 
-                    SET status = 'pending', is_accounting_exported = FALSE 
-                    WHERE tax_id = ? AND customer_branch = ?
-                `, [oldProfile.tax_id, oldBranch]);
-            }
+            // 2. Propagate updates to matching invoices via customer_num
+            await connection.execute(`
+                UPDATE invoices 
+                SET customer_branch = ?, status = 'pending', is_accounting_exported = FALSE 
+                WHERE customer_num = ?
+            `, [newBranch, oldProfile.customer_num]);
 
             await connection.commit();
         } catch (txErr) {
-            await connection.rollback();
+            if (transactionStarted) {
+                await connection.rollback().catch(() => {});
+            }
             throw txErr;
         } finally {
             connection.release();
@@ -178,15 +182,19 @@ router.post('/export', async (req, res) => {
         // Update the database flags is_accounting_exported = TRUE in a transaction
         const profileIds = rows.map(r => r.id);
         const connection = await db.getConnection();
-        await connection.beginTransaction();
+        let transactionStarted = false;
         try {
+            await connection.beginTransaction();
+            transactionStarted = true;
             await connection.query(
                 'UPDATE customer_profile SET is_accounting_exported = TRUE WHERE id IN (?)',
                 [profileIds]
             );
             await connection.commit();
         } catch (txErr) {
-            await connection.rollback();
+            if (transactionStarted) {
+                await connection.rollback().catch(() => {});
+            }
             throw txErr;
         } finally {
             connection.release();

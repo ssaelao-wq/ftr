@@ -62,7 +62,7 @@
         .page-header {
             background: var(--green-bg);
             color: white;
-            padding: 20px 16px 32px;
+            padding: 16px 16px 24px;
             position: relative;
             overflow: hidden;
         }
@@ -85,22 +85,35 @@
             border-radius: 50%;
         }
 
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
         .header-icon {
             font-size: 2rem;
-            margin-bottom: 6px;
+            margin-bottom: 0;
             display: block;
+        }
+
+        .header-text {
+            flex: 1;
         }
 
         .page-header h1 {
             font-size: 1.25rem;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .page-header p {
             font-size: 0.82rem;
             opacity: 0.85;
             font-weight: 400;
+            margin-bottom: 0;
         }
 
         /* ============================================================
@@ -219,13 +232,6 @@
 
         .btn-search:hover:not(:disabled) { background: var(--green-dark); }
 
-        .btn-manual {
-            background: var(--grey-700);
-            color: white;
-        }
-
-        .btn-manual:hover:not(:disabled) { background: var(--grey-800); }
-
         /* ============================================================
            SECTION DIVIDER
         ============================================================ */
@@ -256,7 +262,7 @@
         ============================================================ */
         .action-bar {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             padding: 14px 16px;
             border-top: 1px solid var(--grey-200);
             background: white;
@@ -264,10 +270,10 @@
 
         .btn {
             flex: 1;
-            padding: 13px 10px;
+            padding: 12px 6px;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 0.92rem;
+            font-size: 0.85rem;
             font-weight: 600;
             font-family: inherit;
             cursor: pointer;
@@ -275,10 +281,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .btn:active { transform: scale(0.97); }
+
+        .btn-save-only {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-save-only:hover:not(:disabled) { background: #0056b3; }
+
+        .btn-save-only:disabled {
+            background: var(--grey-300);
+            color: var(--grey-500);
+            cursor: not-allowed;
+        }
 
         .btn-save {
             background: var(--green);
@@ -296,7 +315,7 @@
         .btn-cancel {
             background: var(--grey-200);
             color: var(--grey-700);
-            flex: 0.55;
+            flex: 0.6;
         }
 
         .btn-cancel:hover { background: var(--grey-300); }
@@ -733,9 +752,13 @@
 
 <!-- PAGE HEADER -->
 <div class="page-header">
-    <span class="header-icon">🧾</span>
-    <h1>กรอกข้อมูลลูกค้า</h1>
-    <p>กรอกข้อมูลเพื่อออกใบกำกับภาษีเต็ม</p>
+    <div class="header-content">
+        <span class="header-icon">🧾</span>
+        <div class="header-text">
+            <h1>กรอกข้อมูลลูกค้า</h1>
+            <p>กรอกข้อมูลเพื่อออกใบกำกับภาษีเต็ม</p>
+        </div>
+    </div>
 </div>
 
 <!-- MAIN FORM CARD -->
@@ -751,7 +774,7 @@
                    autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
         </div>
 
-        <!-- Tax ID + Search / Manual buttons -->
+        <!-- Tax ID + Search button -->
         <div class="field-group">
             <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
             <div class="tax-id-row">
@@ -759,7 +782,7 @@
                        maxlength="13" inputmode="numeric" pattern="\d{13}"
                        autocomplete="off" autocorrect="off">
                 <button class="icon-btn btn-search" id="btnSearch" type="button" title="ค้นหา">🔍</button>
-                <button class="icon-btn btn-manual" id="btnManual" type="button" title="กรอกเอง">✏️</button>
+                <button class="btn btn-cancel" id="btnManual" type="button" style="width: auto; padding: 0 12px; height: 44px; flex: initial; font-size: 0.9rem;" title="ป้อนข้อมูล">ป้อนข้อมูล</button>
             </div>
             <!-- Searching indicator -->
             <div class="searching-indicator" id="searchingIndicator">
@@ -811,8 +834,8 @@
             <textarea id="address" class="field-input" placeholder="—" disabled rows="3"></textarea>
         </div>
 
-        <!-- Container Number (always editable once data is filled) -->
-        <div class="field-group">
+        <!-- Container Number (hidden — now managed via Gate-In/Gate-Out uploads) -->
+        <div class="field-group" style="display: none;">
             <div class="field-label">หมายเลขตู้ (Container Number)</div>
             <textarea id="containerNum" class="field-input" placeholder="เช่น TCNU1234567" rows="2" disabled></textarea>
         </div>
@@ -821,8 +844,11 @@
 
     <!-- BOTTOM ACTION BAR -->
     <div class="action-bar">
+        <button class="btn btn-save-only" id="btnSaveOnly" disabled type="button">
+            💾 บันทึก
+        </button>
         <button class="btn btn-save" id="btnSaveSend" disabled type="button">
-            💾 Save &amp; Send
+            📨 บันทึกและส่ง
         </button>
         <button class="btn btn-cancel" id="btnCancel" type="button">✕ ยกเลิก</button>
     </div>
@@ -899,6 +925,7 @@
 const STATE = {
     INITIAL:          'INITIAL',
     LOCKED:           'LOCKED',
+    READONLY_LOCKED:  'READONLY_LOCKED',
     SEARCHING:        'SEARCHING',
     NO_RECORD:        'NO_RECORD',
     PROFILE_FOUND:    'PROFILE_FOUND',
@@ -909,8 +936,10 @@ const STATE = {
 
 let currentState = STATE.INITIAL;
 let lineUserId = null;
+let lineDisplayName = null;
 let branchProfiles = [];      // array of customer_profile rows from API
 let selectedProfileIdx = -1;  // index into branchProfiles
+let isLockedRecord = false;
 
 // ============================================================
 // ELEMENT REFS
@@ -932,6 +961,7 @@ const el = {
     lockNum:           $('lockNum'),
     lockName:          $('lockName'),
     lockAddr:          $('lockAddr'),
+    btnSaveOnly:       $('btnSaveOnly'),
     btnSaveSend:       $('btnSaveSend'),
     btnCancel:         $('btnCancel'),
     // Sheet
@@ -963,7 +993,8 @@ async function initializeLiff() {
         } else {
             const profile = await liff.getProfile();
             lineUserId = profile.userId;
-            console.log('LIFF ready. Line User ID:', lineUserId);
+            lineDisplayName = profile.displayName;
+            console.log('LIFF ready. Line User ID:', lineUserId, 'Name:', lineDisplayName);
         }
     } catch (err) {
         console.error('LIFF init failed:', err);
@@ -1043,6 +1074,7 @@ function applyState(state) {
             el.containerNum.value   = '';
             [el.customerBranch, el.customerNum, el.customerName, el.address, el.containerNum]
                 .forEach(f => { f.disabled = true; f.readOnly = false; });
+            el.btnSaveOnly.disabled = true;
             el.btnSaveSend.disabled = true;
             el.btnCancel.style.display = '';
             break;
@@ -1054,6 +1086,25 @@ function applyState(state) {
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;
             el.btnManual.disabled = true;
+            el.btnSaveOnly.disabled = true;
+            el.btnSaveSend.disabled = true;
+            break;
+
+        case STATE.READONLY_LOCKED:
+            // Everything locked
+            el.taxRecId.disabled = true;
+            el.taxId.disabled    = true;
+            el.btnSearch.disabled = true;
+            el.btnManual.disabled = false;
+            el.searchIndicator.style.display = 'none';
+            el.customerBranch.disabled = true; 
+            el.customerNum.disabled    = true; 
+            el.customerName.disabled   = true; 
+            el.address.disabled        = true; 
+            el.containerNum.disabled   = true; 
+            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+                .forEach(ic => ic.style.display = 'none');
+            el.btnSaveOnly.disabled = true;
             el.btnSaveSend.disabled = true;
             break;
 
@@ -1079,6 +1130,7 @@ function applyState(state) {
             el.containerNum.disabled   = false; el.containerNum.readOnly   = false;
             [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = 'none');
+            el.btnSaveOnly.disabled = false;
             el.btnSaveSend.disabled = false;
             break;
 
@@ -1091,7 +1143,15 @@ function applyState(state) {
             el.searchIndicator.style.display = 'none';
             el.customerBranch.disabled = false; el.customerBranch.readOnly = false;
             el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
-            el.customerNum.value       = 'TMP-00000';
+            
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            el.customerNum.value = `TMP-${yy}${mm}${dd}${hh}${min}${ss}`;
             el.customerName.disabled   = false; el.customerName.readOnly   = false;
             el.address.disabled        = false; el.address.readOnly        = false;
             el.containerNum.disabled   = false; el.containerNum.readOnly   = false;
@@ -1102,7 +1162,9 @@ function applyState(state) {
             break;
 
         case STATE.READY:
+            el.btnSaveOnly.disabled = false;
             el.btnSaveSend.disabled = false;
+            el.btnManual.disabled = false;
             break;
     }
 
@@ -1120,6 +1182,7 @@ function checkManualReadiness() {
         el.customerBranch.value.trim() &&
         el.customerName.value.trim() &&
         el.address.value.trim();
+    el.btnSaveOnly.disabled = !allFilled;
     el.btnSaveSend.disabled = !allFilled;
 }
 
@@ -1133,48 +1196,76 @@ function checkManualReadiness() {
 // ============================================================
 // SEARCH / MANUAL BUTTON LOGIC
 // ============================================================
-async function doLookup(forceManual = false) {
+async function doLookup(forceManual = false, isAutoCheck = false) {
     const taxRecIdVal = el.taxRecId.value.trim();
     const taxIdVal    = el.taxId.value.trim();
 
     if (!taxRecIdVal) {
-        showToast('กรุณากรอก Tax Record ID ก่อน', 'error');
-        el.taxRecId.focus();
+        if (!isAutoCheck) {
+            showToast('กรุณากรอก Tax Record ID ก่อน', 'error');
+            el.taxRecId.focus();
+        }
         return;
     }
 
-    if (!forceManual && !taxIdVal) {
+    if (!isAutoCheck && !forceManual && !taxIdVal) {
         showToast('กรุณากรอก Tax ID ก่อน', 'error');
         el.taxId.focus();
         return;
     }
 
-    if (!forceManual && taxIdVal.length !== 13) {
+    if (!isAutoCheck && !forceManual && taxIdVal.length !== 13) {
         showToast('Tax ID ต้องมี 13 หลัก', 'error');
         el.taxId.focus();
         return;
     }
 
-    applyState(STATE.SEARCHING);
+    if (!isAutoCheck) applyState(STATE.SEARCHING);
 
     try {
         const url = `/api/customer/lookup-branches?tax_rec_id=${encodeURIComponent(taxRecIdVal)}&tax_id=${encodeURIComponent(taxIdVal)}`;
         const resp = await fetch(url);
         const data = await resp.json();
 
-        if (!resp.ok || !data.success) {
-            // Distinguish error codes
-            if (data.code === 'LOCKED') {
-                applyState(STATE.LOCKED);
-                showBanner('⚠️ ' + data.message, 'error');
-            } else {
-                applyState(STATE.INITIAL);
-                showBanner('❌ ' + (data.message || 'ไม่พบข้อมูล'), 'error');
-            }
+        if (isAutoCheck && (!resp.ok || !data.success || !data.existing_tax_id)) {
+            // Auto check silently ignores errors or non-linked states
+            if (!isAutoCheck) applyState(STATE.INITIAL);
             return;
         }
 
         hideBanner();
+        isLockedRecord = data.is_locked || !!data.existing_tax_id;
+
+        if (data.existing_tax_id || data.status === 'ready') {
+            applyState(STATE.READONLY_LOCKED);
+            el.btnManual.disabled = true;
+            if (data.existing_tax_id) {
+                el.taxId.value = data.existing_tax_id;
+            }
+            if (data.existing_profile) {
+                el.customerBranch.value = data.existing_profile.customer_branch || 'สำนักงานใหญ่';
+                el.customerNum.value    = data.existing_profile.customer_num    || '';
+                el.customerName.value   = data.existing_profile.customer_name   || '';
+                el.address.value        = data.existing_profile.customer_addr   || '';
+            }
+            el.containerNum.value = data.existing_container_num || '';
+            showBanner('⚠️ ถ้าต้องการแก้ไขข้อมูลลูกค้า โปรดติดต่อ admin', 'warning');
+            
+            if (!isAutoCheck) {
+                if (data.status === 'ready') {
+                    showToast('ใบกำกับภาษีนี้เสร็จสมบูรณ์แล้ว ไม่สามารถแก้ไขได้', 'error');
+                } else if (forceManual) {
+                    showToast('ข้อมูลลูกค้านี้ถูกบันทึกแล้ว ไม่สามารถป้อนข้อมูลใหม่ได้ โปรดติดต่อ Admin', 'error');
+                }
+            }
+            return;
+        }
+
+        if (!resp.ok || !data.success) {
+            applyState(STATE.INITIAL);
+            showBanner('❌ ' + (data.message || 'ไม่พบข้อมูล'), 'error');
+            return;
+        }
 
         if (forceManual) {
             // Manual entry — skip profile check
@@ -1196,11 +1287,14 @@ async function doLookup(forceManual = false) {
 
     } catch (err) {
         console.error('Lookup error:', err);
-        applyState(STATE.INITIAL);
-        showBanner('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        if (!isAutoCheck) {
+            applyState(STATE.INITIAL);
+            showBanner('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        }
     }
 }
 
+el.taxRecId.addEventListener('blur', () => doLookup(false, true));
 el.btnSearch.addEventListener('click', () => doLookup(false));
 el.btnManual.addEventListener('click', () => doLookup(true));
 
@@ -1267,17 +1361,28 @@ el.btnSheetOk.addEventListener('click', () => {
     el.customerName.value   = profile.customer_name   || '';
     el.address.value        = profile.customer_addr   || '';
     closeSheet();
-    applyState(STATE.PROFILE_SELECTED);
+    applyState(isLockedRecord ? STATE.READONLY_LOCKED : STATE.PROFILE_SELECTED);
 });
 
 // ============================================================
 // CANCEL BUTTON — reset form
 // ============================================================
 el.btnCancel.addEventListener('click', () => {
-    applyState(STATE.INITIAL);
-    el.taxRecId.value = '';
-    el.taxId.value    = '';
-    hideBanner();
+    try { liff.closeWindow(); } catch(e) {}
+});
+
+// ============================================================
+// SAVE ONLY BUTTON
+// ============================================================
+el.btnSaveOnly.addEventListener('click', async () => {
+    if (el.btnSaveOnly.disabled) return;
+    if (!el.taxRecId.value.trim() || !el.taxId.value.trim() ||
+        !el.customerBranch.value.trim() || !el.customerName.value.trim() ||
+        !el.address.value.trim()) {
+        showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+        return;
+    }
+    await doSaveAndSend('save', null);
 });
 
 // ============================================================
@@ -1341,6 +1446,7 @@ async function doSaveAndSend(sendMethod, emailAddress) {
 
     const payload = {
         line_user_id:    lineUserId || 'mock_user_id_for_dev',
+        line_display_name: lineDisplayName || 'mock_user_name',
         tax_rec_id:      el.taxRecId.value.trim(),
         tax_id:          el.taxId.value.trim(),
         customer_branch: el.customerBranch.value.trim(),
@@ -1363,9 +1469,7 @@ async function doSaveAndSend(sendMethod, emailAddress) {
         el.loadingOverlay.classList.remove('show');
 
         if (resp.ok && data.success) {
-            const msg = sendMethod === 'email'
-                ? 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที'
-                : 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
+            const msg = data.message || 'ได้บันทึกรายการแล้ว';
             showToast(msg, 'success', 5000);
             el.btnSaveSend.disabled = true;
             el.btnCancel.style.display = 'none';
@@ -1374,7 +1478,6 @@ async function doSaveAndSend(sendMethod, emailAddress) {
              el.customerName, el.address, el.containerNum]
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;
-            el.btnManual.disabled = true;
             // Close LIFF after 5s
             setTimeout(() => {
                 try { liff.closeWindow(); } catch(e) {}

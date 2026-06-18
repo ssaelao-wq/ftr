@@ -199,6 +199,11 @@
         }
         .items-table tbody tr:not(.summary-row) td:nth-child(3) { border-right: none; }
         .items-table tbody tr:not(.summary-row) td:nth-child(4) { border-left: none; }
+        /* Summary row: remove top border on the first two columns (No. and Code/Desc) */
+        .items-table tbody tr.summary-row td.summary-no-cell,
+        .items-table tbody tr.summary-row td.summary-desc-cell {
+            border-top: none;
+        }
         .col-no { width: 6%; }
         .col-desc { width: 40%; }
         .col-qty { width: 8%; }
@@ -428,7 +433,8 @@
                 
                 <!-- ===== SUMMARY & TOTALS ===== -->
                 <tr class="summary-row">
-                    <td colspan="2" rowspan="7" class="baht-text-cell">
+                    <td class="summary-no-cell" rowspan="7" style="border-right: 1px solid #5B7DB1; border-bottom: 1px solid #5B7DB1; vertical-align: bottom;">&nbsp;</td>
+                    <td class="summary-desc-cell baht-text-cell" rowspan="7" style="border-bottom: 1px solid #5B7DB1;">
                         {{bahtText}}
                     </td>
                     <td class="calc-label" colspan="3">

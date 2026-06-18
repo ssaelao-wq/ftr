@@ -69,7 +69,7 @@ Matches missing-info.html style system and UX.
         .page-header {
             background: var(--green-bg);
             color: white;
-            padding: 20px 16px 32px;
+            padding: 16px 16px 24px;
             position: relative;
             overflow: hidden;
         }
@@ -92,22 +92,35 @@ Matches missing-info.html style system and UX.
             border-radius: 50%;
         }
 
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
         .header-icon {
             font-size: 2rem;
-            margin-bottom: 6px;
+            margin-bottom: 0;
             display: block;
+        }
+
+        .header-text {
+            flex: 1;
         }
 
         .page-header h1 {
             font-size: 1.25rem;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         .page-header p {
             font-size: 0.82rem;
             opacity: 0.85;
             font-weight: 400;
+            margin-bottom: 0;
         }
 
         /* ============================================================
@@ -471,15 +484,93 @@ Matches missing-info.html style system and UX.
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* ============================================================
+           NEW SEARCH & CHECKLIST STYLES
+        ============================================================ */
+        .search-input-wrapper {
+            display: flex;
+            gap: 8px;
+        }
+
+        .search-input-wrapper .field-input {
+            flex: 1;
+        }
+
+        .btn-search {
+            padding: 10px 16px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-search:active { transform: scale(0.96); }
+        .btn-search:hover { background: var(--green-dark); }
+        .btn-search:disabled { background: var(--grey-300); color: var(--grey-500); cursor: not-allowed; }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            background: var(--grey-100);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-align: left;
+        }
+
+        .checklist-item:hover {
+            background: var(--grey-200);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--green);
+            cursor: pointer;
+        }
+
+        .checklist-item-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .checklist-item-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .checklist-item-subtitle {
+            font-size: 0.78rem;
+            color: var(--grey-600);
+        }
     </style>
 </head>
 <body>
 
 <!-- PAGE HEADER -->
 <div class="page-header">
-    <span class="header-icon">🧾</span>
-    <h1>ขอใบกำกับภาษีเต็มรูป</h1>
-    <p>ระบุหมายเลขเพื่อตรวจสอบและขอเอกสาร</p>
+    <div class="header-content">
+        <span class="header-icon">🧾</span>
+        <div class="header-text">
+            <h1>ขอใบกำกับภาษีเต็มรูป</h1>
+            <p>ระบุหมายเลขเพื่อตรวจสอบและขอเอกสาร</p>
+        </div>
+    </div>
 </div>
 
 <!-- MAIN CARD -->
@@ -488,19 +579,22 @@ Matches missing-info.html style system and UX.
         <!-- Error Banner -->
         <div class="status-banner error" id="statusBanner"></div>
 
+        <!-- Tax ID -->
+        <div class="field-group">
+            <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
+            <div class="search-input-wrapper">
+                <input type="text" id="taxId" class="field-input" placeholder="13 หลัก"
+                       maxlength="13" inputmode="numeric" pattern="\d{13}"
+                       autocomplete="off" autocorrect="off">
+                <button class="btn-search" id="btnSearch">🔍 ค้นหา</button>
+            </div>
+        </div>
+
         <!-- Tax Record ID -->
         <div class="field-group">
             <div class="field-label">Tax Record ID <span class="req">*</span></div>
             <input type="text" id="taxRecId" class="field-input" placeholder="เช่น RF2605-00123"
                    autocomplete="off" autocorrect="off" spellcheck="false">
-        </div>
-
-        <!-- Tax ID -->
-        <div class="field-group">
-            <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
-            <input type="text" id="taxId" class="field-input" placeholder="13 หลัก"
-                   maxlength="13" inputmode="numeric" pattern="\d{13}"
-                   autocomplete="off" autocorrect="off">
         </div>
 
         <!-- Checking inline spinner -->
@@ -514,6 +608,24 @@ Matches missing-info.html style system and UX.
     <div class="action-bar">
         <button class="btn btn-ok" id="btnOk">ตกลง</button>
         <button class="btn btn-cancel" id="btnCancel">ยกเลิก</button>
+    </div>
+</div>
+
+<!-- BOTTOM SHEET MODAL (Invoice Selection Checklist) -->
+<div class="overlay-backdrop" id="checklistBackdrop"></div>
+<div class="bottom-sheet" id="checklistSheet">
+    <div class="sheet-drag-handle"></div>
+    <h2>เลือกใบกำกับภาษี</h2>
+    <p class="sheet-sub">เลือกใบกำกับภาษีในรอบ 14 วันที่ต้องการขอ</p>
+
+    <!-- Checklist Container -->
+    <div id="checklistContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 16px; padding: 0 4px;">
+        <!-- Checkboxes dynamically rendered here -->
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-ok" id="btnChecklistOk">ตกลง</button>
+        <button class="btn btn-cancel" id="btnChecklistCancel">ยกเลิก</button>
     </div>
 </div>
 
@@ -571,6 +683,7 @@ Matches missing-info.html style system and UX.
 
     let currentState = STATE.INITIAL;
     let lineUserId = null;
+    let lineDisplayName = null;
     let pdfState = null; // 'ready' or 'no_pdf'
     let currentCustomerName = '';
 
@@ -583,7 +696,8 @@ Matches missing-info.html style system and UX.
             } else {
                 const profile = await liff.getProfile();
                 lineUserId = profile.userId;
-                console.log("LIFF initialized. Line User ID:", lineUserId);
+                lineDisplayName = profile.displayName;
+                console.log("LIFF initialized. Line User ID:", lineUserId, "Name:", lineDisplayName);
             }
         } catch (err) {
             console.error('LIFF Initialization failed', err);
@@ -609,7 +723,15 @@ Matches missing-info.html style system and UX.
         btnSendLine: document.getElementById('btnSendLine'),
         btnSheetCancel: document.getElementById('btnSheetCancel'),
         loadingOverlay: document.getElementById('loadingOverlay'),
-        toast: document.getElementById('toast')
+        toast: document.getElementById('toast'),
+        
+        // New elements
+        btnSearch: document.getElementById('btnSearch'),
+        checklistBackdrop: document.getElementById('checklistBackdrop'),
+        checklistSheet: document.getElementById('checklistSheet'),
+        checklistContainer: document.getElementById('checklistContainer'),
+        btnChecklistOk: document.getElementById('btnChecklistOk'),
+        btnChecklistCancel: document.getElementById('btnChecklistCancel')
     };
 
     // Toast helper
@@ -620,7 +742,7 @@ Matches missing-info.html style system and UX.
         elements.toast.className = `toast show ${type}`;
         toastTimeout = setTimeout(() => {
             elements.toast.classList.remove('show');
-        }, 3000);
+        }, 4000); // 4 seconds for warnings so user can read excluded IDs
     }
 
     // State updates
@@ -631,20 +753,24 @@ Matches missing-info.html style system and UX.
             case STATE.INITIAL:
                 elements.taxRecId.disabled = false;
                 elements.taxId.disabled = false;
+                elements.btnSearch.disabled = false;
                 elements.btnOk.disabled = false;
                 elements.btnCancel.disabled = false;
                 elements.checkingIndicator.style.display = 'none';
                 elements.statusBanner.style.display = 'none';
                 
-                // Close Sheet
+                // Close Sheets
                 elements.deliveryBackdrop.style.display = 'none';
                 elements.deliverySheet.classList.remove('open');
+                elements.checklistBackdrop.style.display = 'none';
+                elements.checklistSheet.classList.remove('open');
                 elements.loadingOverlay.classList.remove('show');
                 break;
 
             case STATE.CHECKING:
                 elements.taxRecId.disabled = true;
                 elements.taxId.disabled = true;
+                elements.btnSearch.disabled = true;
                 elements.btnOk.disabled = true;
                 elements.btnCancel.disabled = true;
                 elements.checkingIndicator.style.display = 'flex';
@@ -655,6 +781,7 @@ Matches missing-info.html style system and UX.
             case STATE.ERROR:
                 elements.taxRecId.disabled = false;
                 elements.taxId.disabled = false;
+                elements.btnSearch.disabled = false;
                 elements.btnOk.disabled = false;
                 elements.btnCancel.disabled = false;
                 elements.checkingIndicator.style.display = 'none';
@@ -690,6 +817,91 @@ Matches missing-info.html style system and UX.
         }
     }
 
+    // Search action
+    async function searchInvoices() {
+        const taxIdVal = elements.taxId.value.trim();
+        if (!taxIdVal) {
+            showToast('กรุณากรอก Tax ID', 'error');
+            return;
+        }
+        if (taxIdVal.length !== 13 || !/^\d+$/.test(taxIdVal)) {
+            showToast('Tax ID ต้องเป็นตัวเลข 13 หลัก', 'error');
+            return;
+        }
+
+        elements.btnSearch.disabled = true;
+        elements.btnSearch.innerText = 'กำลังค้นหา...';
+
+        try {
+            const res = await fetch(`/api/customer/search-invoices?tax_id=${encodeURIComponent(taxIdVal)}`);
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                const invoices = data.invoices || [];
+                if (invoices.length === 0) {
+                    showToast('ไม่พบใบกำกับภาษีของ Tax ID นี้ในรอบ 14 วัน', 'error');
+                } else {
+                    renderChecklist(invoices);
+                    openChecklist();
+                }
+            } else {
+                showToast(data.message || 'เกิดข้อผิดพลาดในการค้นหา', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้', 'error');
+        } finally {
+            elements.btnSearch.disabled = false;
+            elements.btnSearch.innerText = '🔍 ค้นหา';
+        }
+    }
+
+    function renderChecklist(invoices) {
+        const container = elements.checklistContainer;
+        container.innerHTML = '';
+
+        invoices.forEach(inv => {
+            const dateStr = inv.service_date ? new Date(inv.service_date).toLocaleDateString('th-TH') : '-';
+            const item = document.createElement('div');
+            item.className = 'checklist-item';
+            item.innerHTML = `
+                <input type="checkbox" value="${inv.tax_rec_id}">
+                <div class="checklist-item-details">
+                    <span class="checklist-item-title">${inv.tax_rec_id}</span>
+                    <span class="checklist-item-subtitle">วันที่บริการ: ${dateStr}</span>
+                </div>
+            `;
+            item.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT') {
+                    const cb = item.querySelector('input[type="checkbox"]');
+                    cb.checked = !cb.checked;
+                }
+            });
+            container.appendChild(item);
+        });
+    }
+
+    function openChecklist() {
+        elements.checklistBackdrop.style.display = 'block';
+        elements.checklistSheet.classList.add('open');
+    }
+
+    function closeChecklist() {
+        elements.checklistBackdrop.style.display = 'none';
+        elements.checklistSheet.classList.remove('open');
+    }
+
+    function applyChecklistSelection() {
+        const checkedBoxes = elements.checklistContainer.querySelectorAll('input[type="checkbox"]:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        if (selectedIds.length === 0) {
+            showToast('กรุณาเลือกใบกำกับภาษีอย่างน้อย 1 รายการ', 'error');
+            return;
+        }
+        elements.taxRecId.value = selectedIds.join(',');
+        closeChecklist();
+    }
+
     // Handle verification
     async function checkInvoice() {
         const taxRecIdVal = elements.taxRecId.value.trim();
@@ -717,6 +929,12 @@ Matches missing-info.html style system and UX.
             if (res.ok && data.success) {
                 pdfState = data.pdf_state;
                 currentCustomerName = data.customer_name;
+                
+                if (data.excluded && data.excluded.length > 0) {
+                    showToast(`ข้ามเอกสารที่ไม่ตรงเงื่อนไข: ${data.excluded.join(', ')}`, 'warning');
+                    elements.taxRecId.value = data.valid.join(',');
+                }
+
                 updateState(STATE.POPUP_OPEN, { customerName: data.customer_name });
             } else {
                 updateState(STATE.ERROR, { errorMessage: data.message || 'เกิดข้อผิดพลาดในการตรวจสอบ' });
@@ -736,6 +954,7 @@ Matches missing-info.html style system and UX.
 
         const payload = {
             line_user_id: lineUserId || 'mock_user_id_for_dev',
+            line_display_name: lineDisplayName || 'mock_user_name',
             tax_rec_id: taxRecIdVal,
             tax_id: taxIdVal,
             send_method: sendMethod,
@@ -774,9 +993,7 @@ Matches missing-info.html style system and UX.
     elements.btnOk.addEventListener('click', checkInvoice);
     
     elements.btnCancel.addEventListener('click', () => {
-        elements.taxRecId.value = '';
-        elements.taxId.value = '';
-        updateState(STATE.INITIAL);
+        try { liff.closeWindow(); } catch (e) {}
     });
 
     elements.btnSheetCancel.addEventListener('click', () => {
@@ -785,6 +1002,20 @@ Matches missing-info.html style system and UX.
 
     elements.deliveryBackdrop.addEventListener('click', () => {
         updateState(STATE.INITIAL);
+    });
+
+    // Search Triggers
+    elements.btnSearch.addEventListener('click', searchInvoices);
+
+    // Checklist triggers
+    elements.btnChecklistOk.addEventListener('click', applyChecklistSelection);
+    elements.btnChecklistCancel.addEventListener('click', () => {
+        closeChecklist();
+        elements.taxId.focus();
+    });
+    elements.checklistBackdrop.addEventListener('click', () => {
+        closeChecklist();
+        elements.taxId.focus();
     });
 
     // Send Email Trigger

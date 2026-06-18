@@ -9,40 +9,43 @@ const { sendInvoiceEmail } = require('../../services/emailService');
 // GET /api/admin/customers/stats
 router.get('/stats', async (req, res) => {
     try {
-        const [totalRows] = await db.query('SELECT COUNT(*) AS count FROM invoices');
         const [pendingRows] = await db.query(`
             SELECT COUNT(*) AS count 
             FROM invoices i
-            LEFT JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
-            WHERE i.tax_id IS NULL 
-               OR i.customer_branch IS NULL 
+            LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
+            WHERE i.customer_num IS NULL 
                OR p.customer_name IS NULL 
                OR p.customer_addr IS NULL
         `);
         const [readyExportRows] = await db.query(`
             SELECT COUNT(*) AS count 
             FROM invoices i
-            JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
+            JOIN customer_profile p ON i.customer_num = p.customer_num
             WHERE p.customer_name IS NOT NULL 
               AND p.customer_addr IS NOT NULL 
               AND i.is_accounting_exported = FALSE
         `);
-        const [exportedRows] = await db.query(`
+        const [newCustomerRows] = await db.query(`
+            SELECT COUNT(*) AS count 
+            FROM customer_profile 
+            WHERE customer_num LIKE 'TMP-%'
+        `);
+        const [pendingPdfRows] = await db.query(`
             SELECT COUNT(*) AS count 
             FROM invoices i
-            JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
+            JOIN customer_profile p ON i.customer_num = p.customer_num
             WHERE p.customer_name IS NOT NULL 
               AND p.customer_addr IS NOT NULL 
-              AND i.is_accounting_exported = TRUE
+              AND i.status != 'ready'
         `);
 
         res.json({
             success: true,
             stats: {
-                total: totalRows[0].count,
                 pending: pendingRows[0].count,
                 readyExport: readyExportRows[0].count,
-                exported: exportedRows[0].count
+                newCustomerData: newCustomerRows[0].count,
+                pendingPdf: pendingPdfRows[0].count
             }
         });
     } catch (error) {
@@ -54,12 +57,12 @@ router.get('/stats', async (req, res) => {
 
 // Helper to build dynamic sql query from filters
 function buildSearchQuery(queryParams) {
-    const { tax_rec_id, customer, address, tax_id, date_from, date_to, is_accounting_exported } = queryParams;
+    const { tax_rec_id, customer, address, tax_id, date_from, date_to, is_accounting_exported, status, pdf_status } = queryParams;
     let sql = `
-        SELECT i.tax_rec_id, i.tax_id, i.customer_branch, i.container_num, i.service_date, i.status, i.is_accounting_exported, i.created_at, i.updated_at,
+        SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.container_num, i.service_date, i.status, i.is_accounting_exported, i.created_at, i.updated_at,
                p.customer_name AS customer, p.customer_addr, p.customer_num AS customer_code
         FROM invoices i
-        LEFT JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
+        LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
         WHERE 1=1
     `;
     const params = [];
@@ -77,7 +80,7 @@ function buildSearchQuery(queryParams) {
         params.push(`%${address}%`);
     }
     if (tax_id) {
-        sql += ' AND i.tax_id = ?';
+        sql += ' AND p.tax_id = ?';
         params.push(tax_id);
     }
     if (date_from) {
@@ -93,17 +96,50 @@ function buildSearchQuery(queryParams) {
         sql += ' AND i.is_accounting_exported = ?';
         params.push(flag);
     }
+    const finalStatus = status || pdf_status;
+    if (finalStatus && finalStatus !== 'all') {
+        if (finalStatus === 'incomplete') {
+            sql += " AND i.status = 'pending' AND (p.customer_name IS NULL OR p.customer_addr IS NULL OR p.tax_id IS NULL)";
+        } else if (finalStatus === 'pending') {
+            sql += " AND i.status = 'pending' AND p.customer_name IS NOT NULL AND p.customer_addr IS NOT NULL AND p.tax_id IS NOT NULL";
+        } else {
+            sql += ' AND i.status = ?';
+            params.push(finalStatus);
+        }
+    }
 
     return { sql, params };
 }
 
 // GET /api/admin/customers/search
 router.get('/search', async (req, res) => {
+    let page = parseInt(req.query.page, 10) || 1;
+    if (page < 1) page = 1;
+    const limit = 50;
+    const offset = (page - 1) * limit;
+
     try {
         const { sql, params } = buildSearchQuery(req.query);
-        const orderSql = `${sql} ORDER BY i.service_date DESC, i.created_at DESC`;
-        const [rows] = await db.query(orderSql, params);
-        res.json({ success: true, customers: rows });
+        
+        // Count query
+        const countSql = `SELECT COUNT(*) AS count FROM (${sql}) AS temp_count`;
+        const [countRows] = await db.query(countSql, params);
+        const totalCustomers = countRows[0].count;
+        const totalPages = Math.ceil(totalCustomers / limit);
+
+        const orderSql = `${sql} ORDER BY i.tax_rec_id DESC LIMIT ? OFFSET ?`;
+        const [rows] = await db.query(orderSql, [...params, limit, offset]);
+
+        res.json({
+            success: true,
+            customers: rows,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages || 1,
+                totalCustomers: totalCustomers,
+                limit: limit
+            }
+        });
     } catch (error) {
         console.error('Customer search error:', error);
         res.status(500).json({ success: false, message: 'Internal server error during customer search.' });
@@ -113,7 +149,7 @@ router.get('/search', async (req, res) => {
 // PUT /api/admin/customers/:tax_rec_id
 router.put('/:tax_rec_id', async (req, res) => {
     const { tax_rec_id } = req.params;
-    const { customer, company_name, address, tax_id, customer_branch, container_num } = req.body;
+    const { customer, company_name, address, tax_id, customer_branch, container_num, customer_num } = req.body;
     const finalCustomer = customer || company_name;
     const finalBranch = customer_branch || 'สำนักงานใหญ่';
 
@@ -121,41 +157,109 @@ router.put('/:tax_rec_id', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Customer Name, Address, and Tax ID are required.' });
     }
 
+    const connection = await db.getConnection();
+    let transactionStarted = false;
     try {
-        // Validate record exists
-        const [rows] = await db.execute('SELECT tax_rec_id FROM invoices WHERE tax_rec_id = ?', [tax_rec_id]);
-        if (rows.length === 0) {
+        await connection.beginTransaction();
+        transactionStarted = true;
+
+        // 1. Validate invoice record exists
+        const [invoiceRows] = await connection.execute(
+            'SELECT tax_rec_id, customer_num FROM invoices WHERE tax_rec_id = ?',
+            [tax_rec_id]
+        );
+        if (invoiceRows.length === 0) {
+            connection.release();
             return res.status(404).json({ success: false, message: 'Tax record not found.' });
         }
 
-        // Validate that customer profile exists for this tax_id & branch combination
-        const [profiles] = await db.execute(
-            'SELECT id FROM customer_profile WHERE tax_id = ? AND customer_branch = ?',
-            [tax_id.trim(), finalBranch.trim()]
-        );
-        if (profiles.length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Customer Profile not found for Tax ID "${tax_id}" and Branch "${finalBranch}". Please upload the customer profile first.` 
-            });
+        const currentCustomerNum = invoiceRows[0].customer_num;
+
+        // 2. Check if a profile with the submitted customer_num or tax_id and customer_branch already exists
+        let profileRows = [];
+        if (customer_num && customer_num.trim()) {
+            const [rows] = await connection.execute(
+                'SELECT customer_num, customer_name, customer_addr FROM customer_profile WHERE customer_num = ? LIMIT 1',
+                [customer_num.trim()]
+            );
+            profileRows = rows;
+        } else {
+            const [rows] = await connection.execute(
+                'SELECT customer_num, customer_name, customer_addr FROM customer_profile WHERE tax_id = ? AND customer_branch = ? LIMIT 1',
+                [tax_id.trim(), finalBranch.trim()]
+            );
+            profileRows = rows;
         }
 
-        // Update existing master customer profile's customer_name, customer_addr, and reset its accounting export flag
-        await db.execute(
-            'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, is_accounting_exported = FALSE WHERE tax_id = ? AND customer_branch = ?',
-            [finalCustomer.trim(), address.trim(), tax_id.trim(), finalBranch.trim()]
+        let targetCustomerNum;
+        let shouldCreateNew = false;
+
+        if (profileRows.length > 0) {
+            const existingProfile = profileRows[0];
+            
+            // Check if name or address has changed
+            const nameChanged = (existingProfile.customer_name || '').trim() !== finalCustomer.trim();
+            const addrChanged = (existingProfile.customer_addr || '').trim() !== address.trim();
+
+            if (nameChanged || addrChanged) {
+                // If any field changed, we treat it as an edit -> create a new TMP record
+                shouldCreateNew = true;
+            } else {
+                // No changes, use the existing profile as is (no update/export trigger for customer_profile)
+                targetCustomerNum = existingProfile.customer_num;
+            }
+        } else {
+            // No profile exists for this Tax ID + Branch combo at all
+            shouldCreateNew = true;
+        }
+
+        if (shouldCreateNew) {
+            // Generate a brand new TMP- customer_num
+            const now = new Date();
+            const yy = String(now.getFullYear()).slice(-2);
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const hh = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            targetCustomerNum = `TMP-${yy}${mm}${dd}${hh}${min}${ss}`;
+
+            await connection.execute(
+                `INSERT INTO customer_profile 
+                 (tax_id, customer_num, customer_name, customer_addr, customer_branch, is_accounting_exported) 
+                 VALUES (?, ?, ?, ?, ?, FALSE)`,
+                [
+                    tax_id.trim(),
+                    targetCustomerNum,
+                    finalCustomer.trim(),
+                    address.trim(),
+                    finalBranch.trim()
+                ]
+            );
+        }
+
+        // 3. Update the invoice record with the targetCustomerNum, container_num, and status
+        await connection.execute(
+            `UPDATE invoices 
+             SET customer_num = ?, container_num = ?, status = 'pending', is_accounting_exported = FALSE 
+             WHERE tax_rec_id = ?`,
+            [
+                targetCustomerNum,
+                container_num ? container_num.trim() : null,
+                tax_rec_id
+            ]
         );
 
-        // Update the invoice record to link to this profile, set container_num, reset status and both export flags
-        await db.execute(
-            'UPDATE invoices SET tax_id = ?, customer_branch = ?, container_num = ?, status = \'pending\', is_accounting_exported = FALSE WHERE tax_rec_id = ?',
-            [tax_id.trim(), finalBranch.trim(), container_num ? container_num.trim() : null, tax_rec_id]
-        );
-
-        res.json({ success: true, message: 'Invoice linked and Customer profile updated successfully.' });
+        await connection.commit();
+        res.json({ success: true, message: 'Invoice customer link and profile updated successfully.' });
     } catch (error) {
+        if (transactionStarted) {
+            await connection.rollback().catch(() => {});
+        }
         console.error('Invoice customer update error:', error);
         res.status(500).json({ success: false, message: 'Internal server error during invoice customer update.' });
+    } finally {
+        connection.release();
     }
 });
 
@@ -182,7 +286,9 @@ router.post('/export', async (req, res) => {
         }
 
         // 3. Format CSV content with | delimiter
-        const csvHeaders = 'tax_rec_id|customer_code|company_name|address|tax_id\n';
+        let csvContent = '\uFEFF'; // UTF-8 BOM to avoid corruption of Thai characters in Excel
+        csvContent += 'tax_rec_id|customer_code|company_name|address|tax_id\r\n';
+        
         const csvRows = rows.map(r => {
             const taxRecId = r.tax_rec_id || '';
             const customerCode = r.customer_code || '';
@@ -190,16 +296,18 @@ router.post('/export', async (req, res) => {
             const address = (r.address || '').replace(/[\r\n]+/g, ' ');         // Clean newlines
             const taxId = r.tax_id || '';
             return `${taxRecId}|${customerCode}|${companyName}|${address}|${taxId}`;
-        }).join('\n');
+        }).join('\r\n');
 
-        const csvContent = csvHeaders + csvRows;
+        csvContent += csvRows + '\r\n';
 
         // 4. Update the database flag is_accounting_exported = TRUE inside a transaction
         const taxRecIds = rows.map(r => r.tax_rec_id);
         
         const connection = await db.getConnection();
-        await connection.beginTransaction();
+        let transactionStarted = false;
         try {
+            await connection.beginTransaction();
+            transactionStarted = true;
             // Bulk update matching records
             await connection.query(
                 'UPDATE invoices SET is_accounting_exported = TRUE WHERE tax_rec_id IN (?)',
@@ -207,7 +315,9 @@ router.post('/export', async (req, res) => {
             );
             await connection.commit();
         } catch (txErr) {
-            await connection.rollback();
+            if (transactionStarted) {
+                await connection.rollback().catch(() => {});
+            }
             throw txErr;
         } finally {
             connection.release();
@@ -218,7 +328,7 @@ router.post('/export', async (req, res) => {
 
         // 6. Return file download stream
         const filename = `accounting_export_${new Date().toISOString().slice(0,10).replace(/-/g,'')}_${Date.now()}.csv`;
-        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.status(200).send(csvContent);
 
@@ -235,10 +345,10 @@ router.post('/:tax_rec_id/generate-pdf', async (req, res) => {
     try {
         // 1. Fetch invoice record with customer details
         const [rows] = await db.execute(`
-            SELECT i.tax_rec_id, i.tax_id, i.customer_branch, i.status,
+            SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.status,
                    p.customer_name AS customer, p.customer_addr AS customer_addr
             FROM invoices i
-            LEFT JOIN customer_profile p ON i.tax_id = p.tax_id AND i.customer_branch = p.customer_branch
+            LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
             WHERE i.tax_rec_id = ?
         `, [tax_rec_id]);
         if (rows.length === 0) {

@@ -2,16 +2,16 @@
 
 
 ===========================
-Always use these Docker steps and commands:
+Docker steps and commands, always use these steps to create docker image and run:
 
 1. Edit code locally 
-2. Upload to /www/wwwroot/ftr/ 
+2. Upload updated code files and .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)
 3. cd /www/server/panel/data/compose/ftr-app 
 4. docker compose down 
-5. docker rm -f ftr-app (if needed) 
-6. docker compose up -d --build (if code changed) 
-   docker compose up -d         (if only compose config changed) 
-7. docker logs ftr-app --tail 20 (verify) 
+5. docker rm -f ftr-app 		(if needed) 
+6. docker compose up -d --build 	(if code changed) 
+   docker compose up -d         	(if only compose config changed) 
+7. docker logs ftr-app --tail 20 	(verify) 
 
 
 # Verify ALL vars are loaded correctly
@@ -34,15 +34,13 @@ docker exec ftr-app printenv | grep -E "EMAIL|OAUTH|DB|PORT"
 	node src/index.js --watch
       	
 Create info in package.json:
-   "scripts": {
-       "start": "node src/index.js",
-       "dev": "nodemon src/index.js"
-   }
+	"scripts": {
+       		"start": "node src/index.js",
+       		"dev": "nodemon src/index.js"
+   	}
 
 # Then run on public as below
 	npm start or npm run dev    # run dev, will refresh when code change
-or
-	node src/index.js
 
 
 
@@ -70,21 +68,20 @@ and the Kubernetes Operator for your own projects.
 ------------------------------
 FTR Project Dependency Modules:
 
-npm install puppeteer nodemailer node-cron multer csv-parse bcrypt express-session
+# Project modules
+npm install puppeteer nodemailer node-cron multer csv-parse bcrypt express-session dotenv googleapis
 
-npm install nodemailer dotenv googleapis
-
+# Puppeteer for PDF generating 
 # Installs the OS libraries (graphics libraries, sound libraries, fonts, etc.) 
-# that Chrome needs to run. Run on Linux onece only, Windows already has it.
+# that Chrome needs to run. Run on Linux once only, Windows already has it.
 npx puppeteer system-deps
-
 
 # (or npx.cmd on Windows) manually download chrome.
 npx puppeteer browsers install chrome 
 
 
 ------------------------------
-=== Line OA ===
+=== LINE OA ===
 
 Provider: "Unicon Container Services" 
 ProviderID: 2005147845
@@ -108,81 +105,3 @@ mkSC69+JrhBq+aCwXfMIF1qYHteKrS0DyuUWfvS0YckqTEPpIuEJIw3bFq4HrxRLBjRbFhT7KZIQUAY6
     LIFF ID: 2010196890-kJW56aX3
     LIFF URL: https://liff.line.me/2010196890-kJW56aX3
     Size: Compact
-
------------------------
-=== Activities Logs ===
-
-request_add_missing_data 	-> REQ_MISS_DATA, 
-request_full_tax_invoice 	-> REQ_FULL_TAX, 
-request_upload_cdms 		-> REQ_UPLOAD_CDMS, 
-request_download_missing_data 	-> REQ_DOWNLOAD_MISS, 
-cron_generate_pdf 		-> CRON_GEN_PDF, 
-onthefly_generate_pdf 		-> ONTHEFLY_GEN_PDF, 
-sending_email 			-> SENDING_EMAIL. 
-
------------------------
-MySQL statement to create tables:
-
--- Drop the database if it already exists to start fresh
-DROP DATABASE IF EXISTS ftr_db;
-
--- Create the database
-CREATE DATABASE ftr_db;
-
--- Use the newly created database
-USE ftr_db;
-
--- Create Invoices Table (Combined CDMS Transaction & Customer Tax Profile Data)
-CREATE TABLE `invoices` (  
-  `tax_rec_id` VARCHAR(50) NOT NULL,  
-  `line_user_id` VARCHAR(255) DEFAULT NULL,  
-  `customer_code` VARCHAR(50) DEFAULT NULL,  
-  `company_name` VARCHAR(255) DEFAULT NULL,  
-  `tax_id` VARCHAR(13) DEFAULT NULL,  
-  `address` TEXT DEFAULT NULL,  
-  `service_date` DATE DEFAULT NULL,  
-  `gross_amount` DECIMAL(10, 2) DEFAULT NULL,  
-  `vat_amount` DECIMAL(10, 2) DEFAULT NULL,  
-  `total_amount` DECIMAL(10, 2) DEFAULT NULL,  
-  `verification_code` VARCHAR(20) DEFAULT NULL,  
-  `container_no` VARCHAR(50) DEFAULT NULL,  
-  `status` ENUM('pending', 'ready', 'failed') DEFAULT 'pending',  
-  `is_accounting_exported` BOOLEAN DEFAULT FALSE,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`tax_rec_id`)  
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Create Generated Documents Table  
-CREATE TABLE `generated_documents` (  
-  `id` INT AUTO_INCREMENT NOT NULL,  
-  `tax_rec_id` VARCHAR(50) NOT NULL,  
-  `pdf_url` VARCHAR(500) NOT NULL,  
-  `generated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  
-  PRIMARY KEY (`id`),  
-  CONSTRAINT `fk_doc_invoice` FOREIGN KEY (`tax_rec_id`) REFERENCES `invoices` (`tax_rec_id`) ON DELETE CASCADE  
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Create Admin Users Table
-CREATE TABLE `admin_users` (
-  `id` INT AUTO_INCREMENT NOT NULL,
-  `username` VARCHAR(50) NOT NULL UNIQUE,
-  `password_hash` VARCHAR(255) NOT NULL,
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Create Activity Logs Table
-CREATE TABLE `activity_logs` (
-  `log_id` INT AUTO_INCREMENT NOT NULL,
-  `action` VARCHAR(100) NOT NULL,
-  `datetime` VARCHAR(20) NOT NULL,
-  `values` TEXT DEFAULT NULL,
-  PRIMARY KEY (`log_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Insert Admin User: admin/admin123
-INSERT INTO `admin_users` (`username`, `password_hash`) 
-VALUES ('admin', '$2b$10$X.zBWTh4BdxYakAmTTm.HumGGz31N7ZRJ5vSgV2/VIfmbLU6Oxpv6');
-
------------------------
