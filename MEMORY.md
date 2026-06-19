@@ -8,7 +8,7 @@ This document serves as the persistent memory and active log for the Full Tax Re
 * **Key Architecture:** Consolidated `invoices` table combining daily CDMS transaction imports with customer LIFF tax profiles (`company_name`, `address`, `tax_id`), alongside `generated_documents` tracking.
 
 ## 2. Active Context & Current State
-* **Current Status:** All requested phases and adjustments—including pagination (50 records limit with navigators), search clearing, status staging (splitting pending into Incomplete/Pending), branch popup column realignment, save-only confirmation, dynamic client URL resolution, and side-by-side LINE Flex message company names—have been fully implemented, verified via integration test suites, and pushed to GitHub.
+* **Current Status:** All requested phases and adjustments—including pagination (50 records limit with navigators), search clearing, status staging (splitting pending into Incomplete/Pending), branch popup column realignment, save-only confirmation, dynamic client URL resolution, side-by-side LINE Flex message company names, dynamic PDF multi-page pagination, and 5-line customer address CSS clamping—have been fully implemented, verified via integration test suites, and pushed to GitHub.
 
 ## 3. Session & Task History
 
@@ -20,6 +20,7 @@ This document serves as the persistent memory and active log for the Full Tax Re
   - **Template Enhancements**: Wrapped the main layout of `invoice.html` in template comments (`<!-- START_PAGE_TEMPLATE -->` / `<!-- END_PAGE_TEMPLATE -->`) and extracted it programmatically in `pdfService.js` to render multiple pages sequentially. Added a `{{pageNumber}}` metadata row (e.g. `1 / 2`).
   - **Summary Logic**: Display summary totals only on the final page; non-final pages render empty sum values and print `( อ่านต่อหน้าถัดไป / Continued on Next Page )` in the Baht text cell.
   - **Verification**: Verified using `node src/test-pdf.js` with different item sizes, and generated actual database PDF for `RF2606-01898` checking page counts.
+  - **Documentation**: Documented full specifications, layout heights, clamping limits, and dynamic partitioning algorithms in Section 5.3.1 of `ftr_system_design.md`.
 * **Key Decisions:** Grouped Booking No. and Container No. as a paired block (takes exactly 2 rows) that stays together at the end of the last page to keep formatting clean.
 
 ### **[2026-06-19] Remove Horizontal Borders on PDF Template Summary Section**
