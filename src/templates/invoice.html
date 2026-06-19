@@ -21,9 +21,21 @@
             background: #fff;
         }
 
-        .invoice-container {
+        .page-container {
             width: 100%;
             padding: 0;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        @media print {
+            .page-container {
+                page-break-after: always;
+                box-sizing: border-box;
+            }
+            .page-container:last-child {
+                page-break-after: avoid;
+            }
         }
 
         /* ========== HEADER ========== */
@@ -121,6 +133,11 @@
         .customer-addr {
             font-size: 12px;
             margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .customer-taxid-line {
             margin-top: 4px;
@@ -332,7 +349,8 @@
     </style>
 </head>
 <body>
-    <div class="invoice-container">
+<!-- START_PAGE_TEMPLATE -->
+    <div class="page-container">
 
         <!-- ===== HEADER: Logo + Company Info ===== -->
         <table class="header-table">
@@ -400,6 +418,13 @@
                                 <span class="meta-label-en">Date</span>
                             </td>
                             <td class="meta-value-cell">{{invoiceDate}}</td>
+                        </tr>
+                        <tr>
+                            <td class="meta-label-cell">
+                                <span class="meta-label-th">หน้า</span>
+                                <span class="meta-label-en">Page</span>
+                            </td>
+                            <td class="meta-value-cell">{{pageNumber}}</td>
                         </tr>
                         <tr>
                             <td colspan="2" style="padding: 6px;">
@@ -530,5 +555,6 @@
         </div>
 
     </div>
+<!-- END_PAGE_TEMPLATE -->
 </body>
 </html>

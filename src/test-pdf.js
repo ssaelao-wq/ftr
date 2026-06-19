@@ -31,12 +31,19 @@ async function main() {
         customer_addr: '5 SOI UDOMSUK 34, UDOMSUK RD.,BANGNA NUEA, BANGNA BANGKOK,\n10260THAILAND',
         tax_id: '0105534102275',
         service_date: '2026-05-07',  // Will format to 07/05/69
+        booking_num: 'BKG1234567',
+        container_num: 'MSKU9876543',
     };
 
     const items = [
         { part_desc: 'FU FACILITIES USAGE FUEL FEE', unit_num: 1, price: 100.00, amount: 100.00, container_no: 'TEMU4009700' },
         { part_desc: 'AF ADMISSION FEE', unit_num: 1, price: 238.32, amount: 238.32, container_no: null },
         { part_desc: 'SV-IN LIFT OFF CHARGE', unit_num: 1, price: 600.00, amount: 600.00, container_no: null },
+        { part_desc: 'MOCK ITEM 4', unit_num: 1, price: 100.00, amount: 100.00 },
+        { part_desc: 'MOCK ITEM 5', unit_num: 1, price: 200.00, amount: 200.00 },
+        { part_desc: 'MOCK ITEM 6', unit_num: 1, price: 300.00, amount: 300.00 },
+        { part_desc: 'MOCK ITEM 7', unit_num: 1, price: 400.00, amount: 400.00 },
+        { part_desc: 'MOCK ITEM 8', unit_num: 1, price: 500.00, amount: 500.00 }
     ];
 
     function wrapContainerNumbers(containerStr, maxLineChars = 40) {
@@ -68,65 +75,66 @@ async function main() {
     }
 
     // Combine any container numbers from items if present, or simulate a list
-    // In our test, let's simulate a list of container numbers from customer:
-    const testContainerStr = 'WHSU1234567, TEMU4009700, MSKU9876543, PONU1122334, KLINE9988776';
-    const containerLines = wrapContainerNumbers(testContainerStr, 40);
-
-    // Build items HTML
     let subtotal = 0;
-    let itemsHtml = '';
-    let rowCount = 0;
-    const TOTAL_ROWS = 15; // Target total rows for items + containers + padding
-
-    // 1. Add item rows
-    items.forEach((item, index) => {
-        const itemAmount = Number(item.amount) || 0;
+    const itemObjects = items.map((item, index) => {
+        const itemAmount = Number(item.amount) || (Number(item.price) * Number(item.unit_num)) || 0;
         subtotal += itemAmount;
-
-        itemsHtml += `
-            <tr style="height: 22px;">
-                <td class="text-center">${index + 1}</td>
-                <td class="text-left">${item.part_desc || ''}</td>
-                <td class="text-center">${formatQty(item.unit_num)}</td>
-                <td class="text-center">UNIT</td>
-                <td class="text-right">${formatCurrency(item.price)}</td>
-                <td class="text-right">${formatCurrency(itemAmount)}</td>
-            </tr>
-        `;
-        rowCount++;
+        return {
+            type: 'item',
+            index: index + 1,
+            part_desc: item.part_desc,
+            unit_num: item.unit_num,
+            price: item.price,
+            amount: itemAmount
+        };
     });
 
-    // 2. Add container number rows (if space permits)
-    containerLines.forEach(line => {
-        if (rowCount < TOTAL_ROWS) {
-            itemsHtml += `
-                <tr style="height: 22px;">
-                    <td class="text-center">&nbsp;</td>
-                    <td class="text-left" style="padding-left: 20px;">${line}</td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-right"></td>
-                    <td class="text-right"></td>
-                </tr>
-            `;
-            rowCount++;
+    const bookingNum = (header.booking_num || '').trim();
+    const containerNum = (header.container_num || '').trim();
+    const hasBkg = bookingNum.length > 0;
+    const hasCntr = containerNum.length > 0;
+    const hasBkgCntr = hasBkg || hasCntr;
+
+    // Chunking logic to split items into pages
+    const MAX_ROWS_PER_PAGE = 9;
+    const pages = [];
+    const tempItems = [...itemObjects];
+
+    if (hasBkgCntr) {
+        if (tempItems.length <= 7) {
+            pages.push({
+                items: tempItems,
+                hasBkgCntr: true
+            });
+        } else {
+            while (tempItems.length > 7) {
+                pages.push({
+                    items: tempItems.splice(0, 9),
+                    hasBkgCntr: false
+                });
+            }
+            pages.push({
+                items: tempItems,
+                hasBkgCntr: true
+            });
         }
-    });
-
-    // 3. Add empty padding rows to reach TOTAL_ROWS
-    while (rowCount < TOTAL_ROWS) {
-        itemsHtml += `
-            <tr style="height: 22px;">
-                <td class="text-center">&nbsp;</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-            </tr>
-        `;
-        rowCount++;
+    } else {
+        if (tempItems.length === 0) {
+            pages.push({
+                items: [],
+                hasBkgCntr: false
+            });
+        } else {
+            while (tempItems.length > 0) {
+                pages.push({
+                    items: tempItems.splice(0, 9),
+                    hasBkgCntr: false
+                });
+            }
+        }
     }
+
+    const totalPages = pages.length;
 
     const vat = subtotal * 0.07;
     const totalAmount = subtotal + vat;
@@ -151,25 +159,113 @@ async function main() {
         logoBase64 = 'data:image/jpeg;base64,' + fs.readFileSync(logoPath, 'base64');
     }
 
-    // Replace placeholders
-    htmlContent = htmlContent
-        .replace(/{{logoBase64}}/g, logoBase64)
-        .replace(/{{customer}}/g, header.customer || '') // In real DB, customer_num
-        .replace(/{{customerCompanyName}}/g, 'OPTIMAL TECH CO.,LTD.') // In real DB, customer_name
-        .replace(/{{customerAddr}}/g, (header.customer_addr || '').replace(/\n/g, '<br>'))
-        .replace(/{{taxId}}/g, header.tax_id || '')
-        .replace(/{{customerBranch}}/g, '00002') // Mock branch ID
-        .replace(/{{invoiceNo}}/g, header.tax_rec_id || '')
-        .replace(/{{invoiceDate}}/g, formattedDate)
-        .replace(/{{itemRows}}/g, itemsHtml)
-        .replace(/{{subtotal}}/g, formatCurrency(subtotal))
-        .replace(/{{discount}}/g, formatCurrency(0))
-        .replace(/{{afterDiscount}}/g, formatCurrency(subtotal))
-        .replace(/{{deposit}}/g, formatCurrency(0))
-        .replace(/{{afterDeposit}}/g, formatCurrency(subtotal))
-        .replace(/{{vat}}/g, formatCurrency(vat))
-        .replace(/{{totalAmount}}/g, formatCurrency(totalAmount))
-        .replace(/{{bahtText}}/g, `( ${bahtTextStr} )`);
+    // Extract the page template between comments
+    const templateStartTag = '<!-- START_PAGE_TEMPLATE -->';
+    const templateEndTag = '<!-- END_PAGE_TEMPLATE -->';
+    const startIdx = htmlContent.indexOf(templateStartTag);
+    const endIdx = htmlContent.indexOf(templateEndTag);
+    if (startIdx === -1 || endIdx === -1) {
+        throw new Error('Template tags START_PAGE_TEMPLATE/END_PAGE_TEMPLATE not found in invoice.html');
+    }
+    const pageTemplate = htmlContent.substring(startIdx + templateStartTag.length, endIdx);
+
+    let pagesHtml = '';
+
+    // Generate each page
+    pages.forEach((pageData, pageIdx) => {
+        let itemsHtml = '';
+        let rowCount = 0;
+
+        // Render item rows
+        pageData.items.forEach((item) => {
+            itemsHtml += `
+                <tr style="height: 22px;">
+                    <td class="text-center">${item.index}</td>
+                    <td class="text-left">${item.part_desc || ''}</td>
+                    <td class="text-center">${formatQty(item.unit_num)}</td>
+                    <td class="text-center">UNIT</td>
+                    <td class="text-right">${formatCurrency(item.price)}</td>
+                    <td class="text-right">${formatCurrency(item.amount)}</td>
+                </tr>
+            `;
+            rowCount++;
+        });
+
+        // Append BKG and CNTR rows if needed on this page
+        if (pageData.hasBkgCntr) {
+            itemsHtml += `
+                <tr style="height: 22px;">
+                    <td class="text-center">&nbsp;</td>
+                    <td class="text-left" style="padding-left: 20px;">BKG: ${bookingNum}</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
+                </tr>
+                <tr style="height: 22px;">
+                    <td class="text-center">&nbsp;</td>
+                    <td class="text-left" style="padding-left: 20px;">CNTR: ${containerNum}</td>
+                    <td class="text-center"></td>
+                    <td class="text-center"></td>
+                    <td class="text-right"></td>
+                    <td class="text-right"></td>
+                </tr>
+            `;
+            rowCount += 2;
+        }
+
+        // Pad table with empty rows
+        while (rowCount < MAX_ROWS_PER_PAGE) {
+            itemsHtml += `
+                <tr style="height: 22px;">
+                    <td class="text-center">&nbsp;</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            `;
+            rowCount++;
+        }
+
+        // Summary values check
+        const isLastPage = (pageIdx === totalPages - 1);
+        const subtotalVal = isLastPage ? formatCurrency(subtotal) : '';
+        const discountVal = isLastPage ? formatCurrency(0) : '';
+        const afterDiscountVal = isLastPage ? formatCurrency(subtotal) : '';
+        const depositVal = isLastPage ? formatCurrency(0) : '';
+        const afterDepositVal = isLastPage ? formatCurrency(subtotal) : '';
+        const vatVal = isLastPage ? formatCurrency(vat) : '';
+        const totalAmountVal = isLastPage ? formatCurrency(totalAmount) : '';
+        const bahtTextVal = isLastPage ? `( ${bahtTextStr} )` : '( อ่านต่อหน้าถัดไป / Continued on Next Page )';
+
+        // Replace placeholders in page template
+        let pageHtml = pageTemplate
+            .replace(/{{logoBase64}}/g, logoBase64)
+            .replace(/{{customer}}/g, header.customer || '')
+            .replace(/{{customerCompanyName}}/g, 'OPTIMAL TECH CO.,LTD.')
+            .replace(/{{customerAddr}}/g, (header.customer_addr || '').replace(/\n/g, '<br>'))
+            .replace(/{{taxId}}/g, header.tax_id || '')
+            .replace(/{{customerBranch}}/g, '00002')
+            .replace(/{{invoiceNo}}/g, header.tax_rec_id || '')
+            .replace(/{{invoiceDate}}/g, formattedDate)
+            .replace(/{{pageNumber}}/g, `${pageIdx + 1} / ${totalPages}`)
+            .replace(/{{itemRows}}/g, itemsHtml)
+            .replace(/{{subtotal}}/g, subtotalVal)
+            .replace(/{{discount}}/g, discountVal)
+            .replace(/{{afterDiscount}}/g, afterDiscountVal)
+            .replace(/{{deposit}}/g, depositVal)
+            .replace(/{{afterDeposit}}/g, afterDepositVal)
+            .replace(/{{vat}}/g, vatVal)
+            .replace(/{{totalAmount}}/g, totalAmountVal)
+            .replace(/{{bahtText}}/g, bahtTextVal);
+
+        pagesHtml += pageHtml;
+    });
+
+    // Reconstruct the full HTML by placing pages inside <body>
+    htmlContent = htmlContent.substring(0, startIdx) + pagesHtml + htmlContent.substring(endIdx + templateEndTag.length);
 
     // Output paths
     const pdfDir = path.join(__dirname, '../storage/pdfs');
@@ -210,7 +306,7 @@ async function main() {
 
     try {
         const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'load' });
+        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
         
         // Wait a bit for fonts to load
         await new Promise(resolve => setTimeout(resolve, 1500));

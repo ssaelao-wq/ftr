@@ -12,6 +12,16 @@ This document serves as the persistent memory and active log for the Full Tax Re
 
 ## 3. Session & Task History
 
+### **[2026-06-19] Implement PDF Dynamic Pagination and Address Clamping**
+* **Task Summary:** Resolved page overflow issues by implementing dynamic multi-page pagination and address line-clamping.
+  - **A4 Height Constraints**: Reduced maximum table row capacity per page to `9` to accommodate long, wrapped customer company names and addresses without pushing content onto a second page.
+  - **Address Clamping**: Added CSS webkit-line-clamp to `.customer-addr` to truncate addresses at exactly `5` lines with an ellipsis (`...`) for safety.
+  - **Dynamic Pagination**: If items and BKG/CNTR rows exceed the 9-row limit, the code chunks items. Non-last pages display up to 9 items, whereas the last page displays remaining items (up to 7) followed by the BKG and CNTR lines.
+  - **Template Enhancements**: Wrapped the main layout of `invoice.html` in template comments (`<!-- START_PAGE_TEMPLATE -->` / `<!-- END_PAGE_TEMPLATE -->`) and extracted it programmatically in `pdfService.js` to render multiple pages sequentially. Added a `{{pageNumber}}` metadata row (e.g. `1 / 2`).
+  - **Summary Logic**: Display summary totals only on the final page; non-final pages render empty sum values and print `( อ่านต่อหน้าถัดไป / Continued on Next Page )` in the Baht text cell.
+  - **Verification**: Verified using `node src/test-pdf.js` with different item sizes, and generated actual database PDF for `RF2606-01898` checking page counts.
+* **Key Decisions:** Grouped Booking No. and Container No. as a paired block (takes exactly 2 rows) that stays together at the end of the last page to keep formatting clean.
+
 ### **[2026-06-19] Remove Horizontal Borders on PDF Template Summary Section**
 * **Task Summary:** Removed horizontal borders under the "รวมเป็นเงิน", "หักส่วนลด", "ยอดหลังหักส่วนลด", "หักเงินมัดจำ", and "ยอดหลังหักส่วนลด" fields in the HTML invoice template to match visual styling guidelines.
   - **CSS Adjustments**: Added utility classes `.no-border-top` and `.no-border-bottom` to targets `calc-label` and `calc-value` to toggle borders.

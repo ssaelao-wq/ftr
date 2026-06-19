@@ -605,15 +605,22 @@ The following components are already scaffolded and partially implemented:
 
 **Tasks:**
 1. **Create `src/services/pdfService.js`:**
-   - `generatePdf(record)` function — accepts a full invoice record object
-   - Uses Puppeteer to render an HTML invoice template to PDF
-   - Saves output to `/storage/pdfs/FTR_[tax_rec_id].pdf`
-   - Returns the saved file path
+   - `generatePdf(taxRecId)` function — fetches the invoice header and line items.
+   - **Dynamic Pagination**: Splitting items list and BKG/CNTR lines to guarantee page compliance (maximum 9 rows per page).
+     - If both Booking No. and Container No. exist, they are treated as a paired block (takes exactly 2 rows) and are kept together on the last page.
+     - Single-page invoices with BKG/CNTR can fit at most 7 items.
+     - Multi-page invoices can fit up to 9 items on non-last pages (no BKG/CNTR), and up to 7 items + BKG & CNTR lines on the last page.
+     - Non-final pages leave summary total fields blank and display `( อ่านต่อหน้าถัดไป / Continued on Next Page )` in the Baht text cell.
+     - Final page displays the actual sum calculations and Baht text.
+   - Extracts the page structure from `invoice.html` and renders pages sequentially, adding page number metadata (`{{pageNumber}}` e.g., `1 / 2`).
+   - Uses Puppeteer (with `waitUntil: 'domcontentloaded'` to prevent font timeouts) to render the HTML invoice template to PDF.
+   - Saves output to `/storage/pdfs/FTR_[tax_rec_id].pdf`.
+   - Returns the saved file path.
 
 2. **Create `src/templates/invoice.html`:**
-   - Full Tax Invoice HTML template matching the `full_tax_invoice.jpg` reference image
-   - Supports dynamic injection of: `tax_rec_id`, `company_name`, `address`, `tax_id`, `service_date`, `gross_amount`, `vat_amount`, `total_amount`, `container_no`, `verification_code`
-   - Thai-language labels; A4 print layout
+   - Full Tax Invoice HTML template matching the `full_tax_invoice.jpg` reference image.
+   - Page containers styled with `@media print { page-break-after: always; }` to support clean page rendering.
+   - **Customer Address Clamping**: CSS webkit-line-clamp applied to `.customer-addr` to truncate addresses to exactly 5 lines (with ellipsis `...`) to guarantee layout height stability.
    - Specific summary row borders (under Gross, Discount, After Discount, Deposit, After Deposit) are removed from both text and value columns to match client aesthetic guidelines.
 
 3. **Wire up `pdfService` in `src/api/customer.js`:**
