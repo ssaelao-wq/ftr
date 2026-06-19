@@ -7,10 +7,24 @@ This document serves as the persistent memory and active log for the Full Tax Re
 * **Core Goal:** Automate the transition from physical "Brief Tax Invoices" to digital Full Tax Invoices via Line Official Account (OA) and LIFF forms.
 * **Key Architecture:** Consolidated `invoices` table combining daily CDMS transaction imports with customer LIFF tax profiles (`company_name`, `address`, `tax_id`), alongside `generated_documents` tracking.
 
-## **2. Active Context & Current State**
-* **Current Status:** Phase 5 (Cron Batch Script), Phase 6 (Admin Auth), Phase 7 (CDMS CSV Ingest), Phase 8 (Customer Search & Edit), and Phase 9 (Activity Logs Viewer) have been fully implemented. The admin portal and standalone cron script are ready for testing. The database schema is fully aligned and ready.
+## 2. Active Context & Current State
+* **Current Status:** All requested phases and adjustments—including pagination (50 records limit with navigators), search clearing, status staging (splitting pending into Incomplete/Pending), branch popup column realignment, save-only confirmation, dynamic client URL resolution, and side-by-side LINE Flex message company names—have been fully implemented, verified via integration test suites, and pushed to GitHub.
 
-## **3. Session & Task History**
+## 3. Session & Task History
+
+### **[2026-06-19] LINE Links Redirect, Flex Message Company Name Layout, Save-Only Fix, Pagination, and Search UX Enhancements**
+* **Task Summary:** 
+  - **Dynamic Link Resolution**: Fixed the game website redirect issue by implementing dynamic base URL resolution based on request `Referer`/`Origin` headers (or proxy/host fallback), bypassing the placeholder `your-domain.com` in both single and multi-invoice endpoints.
+  - **LINE Flex Layout**: Redesigned the multi-pdf LINE Flex message to display the associated company name next to each document download link in side-by-side columns, complete with professional headers for "เลขที่เอกสาร" and "ชื่อบริษัท", and removed the global company name header.
+  - **Save-Only Response**: Corrected the save-only behavior in `/save-and-send`. It now returns the toast message `'ได้บันทึกรายการแล้ว'` and skips background PDF generation/sending.
+  - **Pagination**: Implemented server-side pagination (50 records per page) and navigational controls (Prev/Next buttons with a page selection dropdown) across all admin portal tables (Invoice Data, Customer Data, Manage PDF, Activity Logs).
+  - **PDF Status Stages**: Split the `pending` PDF status into `Incomplete` (missing customer details) and `Pending` (has customer details, awaiting PDF generation), with updated badge visualizations.
+  - **Search & UI Adjustments**: Added "Clear Search" buttons to all admin search pages. Moved the "Select" button to the first column in the customer profile branch selector popup. Changed the email modal's background from transparent to solid.
+  - **Multi-Profile Fix**: Fixed erroneous `TMP-` customer profile creation during invoice editing by submitting the selected `customer_num` to the backend to compare against the correct profile.
+* **Key Decisions:**
+  - Used request origin dynamically so that development (localhost:3000) and production (ftr.uniconwebapp.com) environments do not require manual env updates for links.
+  - Avoided premature locking of PDF generation/sending by skipping background tasks when the user only clicked "Save".
+  - Maintained complete backward compatibility in DB lookups and email engines.
 
 ### **[2026-06-04] Admin Manage PDF Webpage and API Endpoints**
 * **Task Summary:** Created a new "Manage PDF Invoices" portal page (`pdf-management.html`) in the Admin UI with identical filters to the customer search page. Added endpoints to manually trigger PDF generation (`POST /api/admin/customers/:tax_rec_id/generate-pdf`) and download generated PDFs (`GET /api/admin/customers/:tax_rec_id/download-pdf`). Structured action buttons with custom SVG icons, a CSS-only tooltip system, and dynamic disabled states depending on profile completeness and PDF readiness.
