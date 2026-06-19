@@ -12,6 +12,13 @@ This document serves as the persistent memory and active log for the Full Tax Re
 
 ## 3. Session & Task History
 
+### **[2026-06-19] ZIM Customer Invoice PartName Prefixing**
+* **Task Summary:** Implemented automated prefix formatting for ZIM (Thailand) Co., Ltd. invoice records during CDMS CSV file imports.
+  - **Prefix logic**: Created `src/config.js` to store a configurable list of ZIM PartNames (e.g. Glue Stain Cleaning, Oil Stain Cleaning, Remove DG Sticker). If the row's CustomerCode starts with "ZIM" (case-insensitive) and its trimmed PartName matches the list (case-insensitively), we prefix the PartName with "ZIM - 02 " when saving to `invoices_rec.part_desc` (e.g., `"ZIM - 02 Glue Stain Cleaning"`), ignoring `PartNumber`.
+  - **Trim & Normalization**: Leading and trailing spaces are automatically removed from `PartName`.
+  - **Verification**: Created `scratch/verify_zim_prefix.js` verifying the logic across multiple matching and non-matching scenarios.
+* **Key Decisions:** Used a centralized `config.js` file to ensure the list of ZIM PartNames is easily editable for future modifications. Monkey-patched authentication middleware in verification tests to allow simple, clean programmatic API calls without authentication redirect loops.
+
 ### **[2026-06-19] LINE Links Redirect, Flex Message Company Name Layout, Save-Only Fix, Pagination, and Search UX Enhancements**
 * **Task Summary:** 
   - **Dynamic Link Resolution**: Fixed the game website redirect issue by implementing dynamic base URL resolution based on request `Referer`/`Origin` headers (or proxy/host fallback), bypassing the placeholder `your-domain.com` in both single and multi-invoice endpoints.

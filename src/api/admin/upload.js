@@ -4,8 +4,24 @@ const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const db = require('../../db');
 const { logActivity } = require('../../logger');
+const config = require('../../config');
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Configured list of ZIM PartNames for fast lookups
+const zimPartsSet = new Set(
+    (config.ZIM_PART_NAME_LIST || []).map(name => name.trim().toLowerCase())
+);
+
+// Helper function to check if the record needs a ZIM prefix
+function shouldPrefixZim(customerCode, partName) {
+    if (!customerCode || !partName) return false;
+    const cleanCode = customerCode.trim().toUpperCase();
+    const cleanPart = partName.trim().toLowerCase();
+    
+    // Checks if CustomerCode starts with "ZIM" (e.g. ZIM, ZIM (THAILAND) CO.,LTD.)
+    return cleanCode.startsWith('ZIM') && zimPartsSet.has(cleanPart);
+}
 
 // Helper to convert date format from DD/MM/YYYY to YYYY-MM-DD
 function parseCSVDate(dateStr) {
@@ -119,8 +135,20 @@ router.post('/cdms', upload.single('file'), async (req, res) => {
                     items: []
                 });
             }
+
+            const rawPartName = r.PartName ? r.PartName.trim() : '';
+            const customerCode = r.CustomerCode ? r.CustomerCode.trim() : '';
+            let finalPartDesc = '';
+            
+            if (shouldPrefixZim(customerCode, rawPartName)) {
+                finalPartDesc = `ZIM - 02 ${rawPartName}`;
+            } else {
+                const partNum = r.PartNumber ? r.PartNumber.trim() : '';
+                finalPartDesc = `${partNum} ${rawPartName}`.trim();
+            }
+
             invoicesGroupMap.get(invNo).items.push({
-                part_desc: `${r.PartNumber.trim()} ${r.PartName.trim()}`.trim(),
+                part_desc: finalPartDesc,
                 price: parseFloat(r.Price) || 0,
                 unit_num: parseFloat(r.Qty) || 0,
                 amount: parseFloat(r.Amount) || 0
