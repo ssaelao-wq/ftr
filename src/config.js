@@ -7,6 +7,7 @@ module.exports = {
         "Glue Stain Cleaning",
         "Oil Stain Cleaning",
         "Special Treatment Charge/Lashing Gear/Garbage",
+        "Special Treatment Charge/Lashing Gears/Garbage",
         "Remove Nail",
         "Remove DG Sticker"
     ]

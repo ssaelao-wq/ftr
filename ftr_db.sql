@@ -1,5 +1,5 @@
 USE ftr_db;
-
+ 
 select * from invoices;
 select * from invoices_rec;
 select * from customer_profile;
