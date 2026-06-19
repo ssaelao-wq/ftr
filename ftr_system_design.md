@@ -137,6 +137,73 @@ Auditing mechanism recording **9** distinct types of system events (format: `act
 * **Email Dispatch:** After PDF generation/retrieval, creates an email with the PDF attached and sends it to `email_sending`. Records `SENDING_EMAIL`.
 * **Verification Criteria:** To generate a PDF, `company_name`, `address`, and `tax_id` must contain valid data.
 
+#### 5.3.1 PDF Pagination and Address Clamping Logic
+
+To ensure the generated Full Tax Invoice PDFs strictly comply with the A4 single-page layout (under normal circumstances) and format multi-page invoices properly without layout breaks or horizontal line mismatches, the following constraints and algorithms are implemented:
+
+##### 1. A4 Page Height & Table Capacity Constraints
+- The printable area height of an A4 page with 10mm top and 8mm bottom margins is **279mm** (approx. `1054px` at 96 DPI).
+- To accommodate long, wrapped customer company names and addresses, the maximum number of table rows allowed per page is **9 rows**.
+- If the table size is kept at exactly 9 rows (including items, BKG/CNTR, and empty padding rows), the content is guaranteed to fit on exactly one page without overflowing or creating trailing blank pages.
+
+##### 2. Customer Address Clamping (Max 5 Lines)
+- Customer addresses can occasionally wrap to multiple lines, expanding the customer info box and pushing the items table down.
+- To prevent address wrapping from causing unexpected layout overflows, a CSS line clamp is applied to the address container:
+  ```css
+  .customer-addr {
+      font-size: 12px;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+  }
+  ```
+- Addresses exceeding **5 lines** are automatically truncated with an ellipsis (`...`), ensuring the customer box never grows beyond `82.5px` and fits within the page height safety margin.
+
+##### 3. Booking & Container Paired Rows
+- If **either** Booking No. or Container No. exists, **both** lines are rendered as a pair (`BKG: <value>` and `CNTR: <value>`) and kept together on the same page.
+- Because this pair occupies 2 table rows, they are placed at the end of the last page.
+- Single-page invoices containing BKG/CNTR can therefore fit **at most 7 items** (`9 - 2 = 7`).
+- If an invoice has 8 or more items, the items are dynamically partitioned across multiple pages.
+
+##### 4. Dynamic Page Partitioning Algorithm
+- Let `items` be the list of invoice items.
+- If `hasBkgCntr` is true (either booking_num or container_num has value):
+  - If `items.length <= 7`: A single page is generated containing all items and the BKG + CNTR rows.
+  - If `items.length > 7`: 
+    - The first page(s) are packed with exactly **9 items** per page (no BKG/CNTR lines).
+    - This slicing repeats until the remaining items can fit on the last page along with the BKG/CNTR block (i.e. remaining items $\le 7$).
+    - The last page is rendered with the remaining items (between 0 and 7 items) followed by the BKG and CNTR rows.
+- If `hasBkgCntr` is false:
+  - Items are sliced in chunks of exactly **9 items** per page for all pages.
+
+##### 5. Multi-Page Layout Formatting
+- **Page Isolation**: In `invoice.html`, each page is wrapped in `<div class="page-container">`. The CSS handles A4 page breaks:
+  ```css
+  .page-container {
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      box-sizing: border-box;
+  }
+  @media print {
+      .page-container {
+          page-break-after: always;
+          box-sizing: border-box;
+      }
+      .page-container:last-child {
+          page-break-after: avoid;
+      }
+  }
+  ```
+- **Page Counters**: The metadata block on every page displays `{{pageNumber}}` populated as `CurrentPage / TotalPages` (e.g. `1 / 2`, `2 / 2`).
+- **Summary Section Rules**:
+  - **Non-final pages**: The subtotal, discount, vat, and totalAmount cells are rendered blank. The Baht text cell displays `( อ่านต่อหน้าถัดไป / Continued on Next Page )`.
+  - **Final page**: Displays the actual computed totals and the final Baht text.
+
+
 ## 6. Technical Stack
 * **Backend:** Node.js (Express.js for API, Admin Web Portal with Authentication)
 * **Frontend (Admin):** HTML5, CSS3, JavaScript (for Login, CSV Upload/Download, Customer Search & Edit, and Activity Log Viewer webpages)
