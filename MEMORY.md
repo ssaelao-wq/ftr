@@ -12,6 +12,13 @@ This document serves as the persistent memory and active log for the Full Tax Re
 
 ## 3. Session & Task History
 
+### **[2026-06-19] Remove Horizontal Borders on PDF Template Summary Section**
+* **Task Summary:** Removed horizontal borders under the "รวมเป็นเงิน", "หักส่วนลด", "ยอดหลังหักส่วนลด", "หักเงินมัดจำ", and "ยอดหลังหักส่วนลด" fields in the HTML invoice template to match visual styling guidelines.
+  - **CSS Adjustments**: Added utility classes `.no-border-top` and `.no-border-bottom` to targets `calc-label` and `calc-value` to toggle borders.
+  - **HTML Adjustments**: Applied classes to the corresponding `tr` elements. Because `border-collapse: collapse` merges adjacent cell borders, removing the borders required setting `border-bottom: none` on the top row and `border-top: none` on the bottom row.
+  - **Verification**: Executed `node src/test-pdf.js` to compile the template and verify visual output rendering inside Puppeteer.
+* **Key Decisions:** Used helper CSS classes directly in the template `<style>` block to maintain clean, manageable HTML markup rather than messy inline styling.
+
 ### **[2026-06-19] ZIM Customer Invoice PartName Prefixing**
 * **Task Summary:** Implemented automated prefix formatting for ZIM (Thailand) Co., Ltd. invoice records during CDMS CSV file imports.
   - **Prefix logic**: Created `src/config.js` to store a configurable list of ZIM PartNames (e.g. Glue Stain Cleaning, Oil Stain Cleaning, Remove DG Sticker). If the row's CustomerCode starts with "ZIM" (case-insensitive) and its trimmed PartName matches the list (case-insensitively), we prefix the PartName with "ZIM - 02 " when saving to `invoices_rec.part_desc` (e.g., `"ZIM - 02 Glue Stain Cleaning"`), ignoring `PartNumber`.

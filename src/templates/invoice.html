@@ -264,6 +264,16 @@
             font-weight: bold;
         }
 
+        /* Remove horizontal borders under specific summary fields */
+        .items-table tbody tr.no-border-bottom td.calc-label,
+        .items-table tbody tr.no-border-bottom td.calc-value {
+            border-bottom: none;
+        }
+        .items-table tbody tr.no-border-top td.calc-label,
+        .items-table tbody tr.no-border-top td.calc-value {
+            border-top: none;
+        }
+
         /* ========== FOOTER ========== */
         .footer-section {
             margin-top: 8px;
@@ -432,7 +442,7 @@
                 {{itemRows}}
                 
                 <!-- ===== SUMMARY & TOTALS ===== -->
-                <tr class="summary-row">
+                <tr class="summary-row no-border-bottom">
                     <td class="summary-no-cell" rowspan="7" style="border-right: 1px solid #5B7DB1; border-bottom: 1px solid #5B7DB1; vertical-align: bottom;">&nbsp;</td>
                     <td class="summary-desc-cell baht-text-cell" rowspan="7" style="border-bottom: 1px solid #5B7DB1;">
                         {{bahtText}}
@@ -443,35 +453,35 @@
                     </td>
                     <td class="calc-value">{{subtotal}}</td>
                 </tr>
-                <tr class="summary-row">
+                <tr class="summary-row no-border-top no-border-bottom">
                     <td class="calc-label" colspan="3">
                         <span class="th-text">หักส่วนลด</span>
                         <span class="en-text">Less Discount</span>
                     </td>
                     <td class="calc-value">{{discount}}</td>
                 </tr>
-                <tr class="summary-row">
+                <tr class="summary-row no-border-top no-border-bottom">
                     <td class="calc-label" colspan="3">
                         <span class="th-text">ยอดหลังหักส่วนลด</span>
                         <span class="en-text">After Discount</span>
                     </td>
                     <td class="calc-value">{{afterDiscount}}</td>
                 </tr>
-                <tr class="summary-row">
+                <tr class="summary-row no-border-top no-border-bottom">
                     <td class="calc-label" colspan="3">
                         <span class="th-text">หักเงินมัดจำ</span>
                         <span class="en-text">Less Deposit</span>
                     </td>
                     <td class="calc-value">{{deposit}}</td>
                 </tr>
-                <tr class="summary-row">
+                <tr class="summary-row no-border-top no-border-bottom">
                     <td class="calc-label" colspan="3">
                         <span class="th-text">ยอดหลังหักส่วนลด</span>
                         <span class="en-text">After Discount</span>
                     </td>
                     <td class="calc-value">{{afterDeposit}}</td>
                 </tr>
-                <tr class="summary-row">
+                <tr class="summary-row no-border-top">
                     <td class="calc-label" colspan="3">
                         <span class="th-text">จำนวนภาษีมูลค่าเพิ่ม &nbsp;7%</span>
                         <span class="en-text">VAT</span>
