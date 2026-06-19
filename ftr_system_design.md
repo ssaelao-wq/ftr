@@ -390,14 +390,20 @@ To ensure a robust implementation, the detailed technical logic for each module 
       - Generates PDF on-the-fly, updates status/documents tables, and triggers email or LINE push dispatch in the background.
 
 #### Module 5 & 6: PDF & Email Engine
-* **PDF Storage:** Generated PDFs will be saved to `/storage/pdfs/FTR_[tax_rec_id].pdf`.
+* **PDF Storage:** Generated PDFs will be saved to `/storage/pdfs/<YYYYMM>/<DD>/FTR_[tax_rec_id].pdf` based on `invoices.created_at`. If the folder doesn't exist, it is created automatically.
 * **Email Content:** The system will dispatch the PDF with the following Thai content:
   - **Subject:** `ใบกำกับภาษีแบบเต็ม สำหรับเลขประจำตัวผู้เสียภาษี: <tax_id>`
   - **Body:** Lists all requested `tax_rec_id`s line-by-line. All PDFs are attached in a single email.
 
-#### Module 7: Cron Batch Processing
+#### Module 7: Cron Batch & Data Cleanup Processing
 * **Nightly Scan:** At 01:00 AM, the cron job selects all invoices where `status = 'pending'` (meaning PDF URL is blank) AND checks the completeness of `company_name`, `address`, and `tax_id` (ensure no blank fields).
 * **Cron Email Dispatch:** The nightly cron job *only* generates the PDF and stores it. It does *not* send an email. Emails are strictly dispatched only when a customer actively requests it via the LIFF form (since they may use a different email address each time).
+* **Data Cleanup Program (ftr_cleanup_data):** Runs via system cron (e.g. nightly) to perform routine database and storage maintenance:
+  - Deletes monthly PDF subfolders (`storage/pdfs/YYYYMM/DD/`) representing dates older than 180 days (configured via `CLEANUP_SETTINGS.PDF_MAX_DAYS` in `src/config.js`).
+  - Deletes `invoices` database records older than 180 days (configured via `CLEANUP_SETTINGS.INVOICE_MAX_DAYS` in `src/config.js`), automatically cascading to delete related invoice items and generated documents.
+  - Deletes `activity_logs` audit records older than 60 days (configured via `CLEANUP_SETTINGS.LOG_MAX_DAYS` in `src/config.js`).
+  - Clears inactive `puppeteer_profile_*` folders inside the OS temp directory older than 24 hours (configured via `CLEANUP_SETTINGS.TEMP_FILES_MAX_DAYS` in `src/config.js`).
+  - Inserts a `CRON_CLEANUP` activity log entry summarizing counts of deleted data.
 
 #### Module 8 & 9: Admin Web Portal
 * **Access & Routing:** The root URL (e.g., `http://localhost:3000` or the live domain) redirects standard browser traffic directly to the Admin Dashboard (`/admin/dashboard.html`), which triggers a login check and redirects to `/admin/login.html` if the user is unauthenticated. Users do not need to manually type `/admin` or `/admin/login.html` to access the portal. For LINE OA users, the root router handles incoming LIFF queries (`?target=...`) and redirects them to the customer LIFF forms.
@@ -681,7 +687,7 @@ The following components are already scaffolded and partially implemented:
      - Final page displays the actual sum calculations and Baht text.
    - Extracts the page structure from `invoice.html` and renders pages sequentially, adding page number metadata (`{{pageNumber}}` e.g., `1 / 2`).
    - Uses Puppeteer (with `waitUntil: 'domcontentloaded'` to prevent font timeouts) to render the HTML invoice template to PDF.
-   - Saves output to `/storage/pdfs/FTR_[tax_rec_id].pdf`.
+   - Saves output to `/storage/pdfs/<YYYYMM>/<DD>/FTR_[tax_rec_id].pdf` based on the invoice's creation timestamp.
    - Returns the saved file path.
 
 2. **Create `src/templates/invoice.html`:**
@@ -735,6 +741,7 @@ The following components are already scaffolded and partially implemented:
 **Deliverables:** At 01:00 AM, all eligible pending records are converted to PDFs; a single `CRON_GEN_PDF` log entry records the count.
 
 **Run script from cronjob:** cd /www/wwwroot/your-project-folder && node src/cron_batch.js
+**Run cleanup script from cronjob:** cd /www/wwwroot/your-project-folder && npm run cleanup
 ---
 
 ### Phase 6 — Admin Authentication Middleware (Module 8)

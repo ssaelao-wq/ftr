@@ -8,9 +8,23 @@ This document serves as the persistent memory and active log for the Full Tax Re
 * **Key Architecture:** Consolidated `invoices` table combining daily CDMS transaction imports with customer LIFF tax profiles (`company_name`, `address`, `tax_id`), alongside `generated_documents` tracking.
 
 ## 2. Active Context & Current State
-* **Current Status:** All requested phases and adjustments—including pagination (50 records limit with navigators), search clearing, status staging (splitting pending into Incomplete/Pending), branch popup column realignment, save-only confirmation, dynamic client URL resolution, side-by-side LINE Flex message company names, dynamic PDF multi-page pagination, and 5-line customer address CSS clamping—have been fully implemented, verified via integration test suites, and pushed to GitHub.
+* **Current Status:** All requested phases and adjustments—including pagination, search clearing, status staging, branch column alignment, save-only confirmation, dynamic client URL resolution, multi-page PDF pagination, 5-line clamping, date-based PDF folder structures, and the automated ftr_cleanup_data cleanup program—have been fully implemented, verified via integration test suites, and pushed to GitHub.
 
 ## 3. Session & Task History
+
+### **[2026-06-19] Implement Date-based PDF Directory Storage and Data Cleanup Cron Job**
+* **Task Summary:** Implemented nested monthly and daily subfolder structures for generated PDFs and created a database/file data cleanup script.
+  - **Date-based Folders**: Modified `pdfService.js` to extract the `created_at` timestamp from the invoice and save generated PDFs inside subdirectories named `/storage/pdfs/<YYYYMM>/<DD>/`. Folder creation is automatic and recursive.
+  - **Dynamic Link Resolution**: Modified `/api/customer` to build LINE public download URLs dynamically from the actual relative path returned by the generator.
+  - **Standalone Cleanup Program (`ftr_cleanup_data.js`)**: Designed a script runnable by system cron. Uses configuration from `src/config.js` to:
+    - Identify and delete entire `YYYYMM/DD` directories older than 180 days (counting/deleting PDFs).
+    - Remove empty monthly directories inside `storage/pdfs/`.
+    - Delete `invoices` records older than 180 days (cascades to invoice items and documents).
+    - Delete `activity_logs` records older than 60 days.
+    - Delete inactive Puppeteer profile directories inside the OS temp directory older than 24 hours.
+    - Insert a `CRON_CLEANUP` log summary of all deleted resources to the `activity_logs` audit database.
+  - **NPM Script**: Added `"cleanup": "node src/ftr_cleanup_data.js"` inside `package.json` for easy cron trigger execution.
+  - **Verification**: Verified using a mock database test suite `test_cleanup_and_storage.js` running on Windows.
 
 ### **[2026-06-19] Implement PDF Dynamic Pagination and Address Clamping**
 * **Task Summary:** Resolved page overflow issues by implementing dynamic multi-page pagination and address line-clamping.

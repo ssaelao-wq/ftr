@@ -10,5 +10,13 @@ module.exports = {
         "Special Treatment Charge/Lashing Gears/Garbage",
         "Remove Nail",
         "Remove DG Sticker"
-    ]
+    ],
+
+    // Cleanup Configuration (retention days for different types of data)
+    CLEANUP_SETTINGS: {
+        PDF_MAX_DAYS: 180,
+        INVOICE_MAX_DAYS: 180,
+        LOG_MAX_DAYS: 60,
+        TEMP_FILES_MAX_DAYS: 1
+    }
 };

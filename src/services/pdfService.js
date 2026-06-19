@@ -55,7 +55,7 @@ function formatQty(value) {
 async function generatePdf(taxRecId) {
     // 1. Fetch Header Info with joined customer profile details
     const [headerRows] = await db.execute(`
-        SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.container_num, i.booking_num, i.service_date, i.status,
+        SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.container_num, i.booking_num, i.service_date, i.status, i.created_at,
                p.customer_num, p.customer_name, p.customer_addr
         FROM invoices i
         LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
@@ -257,12 +257,17 @@ async function generatePdf(taxRecId) {
     htmlContent = htmlContent.substring(0, startIdx) + pagesHtml + htmlContent.substring(endIdx + templateEndTag.length);
 
     // 5. Setup storage path
-    const pdfDir = path.join(__dirname, '../../storage/pdfs');
+    const createdAt = header.created_at ? new Date(header.created_at) : new Date();
+    const yyyymm = `${createdAt.getFullYear()}${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
+    const dd = String(createdAt.getDate()).padStart(2, '0');
+    
+    const relativePdfDir = `storage/pdfs/${yyyymm}/${dd}`;
+    const pdfDir = path.join(__dirname, '../../', relativePdfDir);
     if (!fs.existsSync(pdfDir)) {
         fs.mkdirSync(pdfDir, { recursive: true });
     }
     const pdfPath = path.join(pdfDir, `FTR_${taxRecId}.pdf`);
-    const relativePdfPath = `/storage/pdfs/FTR_${taxRecId}.pdf`;
+    const relativePdfPath = `/${relativePdfDir}/FTR_${taxRecId}.pdf`;
 
     // 6. Generate PDF via Puppeteer
     // Determine Chrome executable path. Prefer system-installed Chrome so we

@@ -403,8 +403,7 @@ router.post('/save-and-send', async (req, res) => {
                         try {
                             // Build public PDF URL from the storage path using dynamic base URL helper
                             const baseUrl = getBaseUrl(req);
-                            const pdfFileName = `FTR_${tax_rec_id}.pdf`;
-                            const pdfPublicUrl = `${baseUrl}/storage/pdfs/${pdfFileName}`;
+                            const pdfPublicUrl = `${baseUrl}${generatedPdfPath}`;
 
                             await sendLinePdfLink(line_user_id, tax_rec_id, customer_name, pdfPublicUrl);
                             logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`);
