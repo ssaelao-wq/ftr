@@ -614,6 +614,7 @@ The following components are already scaffolded and partially implemented:
    - Full Tax Invoice HTML template matching the `full_tax_invoice.jpg` reference image
    - Supports dynamic injection of: `tax_rec_id`, `company_name`, `address`, `tax_id`, `service_date`, `gross_amount`, `vat_amount`, `total_amount`, `container_no`, `verification_code`
    - Thai-language labels; A4 print layout
+   - Specific summary row borders (under Gross, Discount, After Discount, Deposit, After Deposit) are removed from both text and value columns to match client aesthetic guidelines.
 
 3. **Wire up `pdfService` in `src/api/customer.js`:**
    - Replace the `// TODO: Call PDF Generation service (Module 5)` stubs
