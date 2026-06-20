@@ -7,3 +7,9 @@ npm-debug.log
 README.txt
 MEMORY.md
 RULES.md
+ztemp.txt
+ngrok.*
+*.xlsx
+*.xls
+*.cxv
+*.pdf

@@ -420,7 +420,12 @@ router.post('/:tax_rec_id/send-email', async (req, res) => {
 
     try {
         // 1. Fetch invoice to confirm it exists and is ready
-        const [invoiceRows] = await db.execute('SELECT * FROM invoices WHERE tax_rec_id = ?', [tax_rec_id]);
+        const [invoiceRows] = await db.execute(`
+            SELECT i.*, p.tax_id 
+            FROM invoices i 
+            LEFT JOIN customer_profile p ON i.customer_num = p.customer_num 
+            WHERE i.tax_rec_id = ?
+        `, [tax_rec_id]);
         if (invoiceRows.length === 0) {
             return res.status(404).json({ success: false, message: 'Tax record not found.' });
         }

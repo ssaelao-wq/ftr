@@ -2,7 +2,45 @@
 
 
 ===========================
-Docker steps and commands, always use these steps to create docker image and run:
+# Setup cronjob
+
+Setup in aaPanel
+1. Navigate to Cron in the aaPanel side menu.
+2. Add a new cron task with these settings:
+    - Type: Shell Script
+    - Name: FTR-PDF-Engine
+    - Execution Cycle: Daily at 01:00
+    - Script Content: cd /www/wwwroot/ftr && node src/cron_batch.js >> cron_batch.log 2>&1
+
+3. Add a second task for cleanup:
+    - Type: Shell Script
+    - Name: FTR-Data-Cleanup
+    - Execution Cycle: Daily at 02:00
+    - Script Content: cd /www/wwwroot/ftr && node src/ftr_cleanup_data.js >> cron_cleanup.log 2>&1
+
+# package.json
+{
+  "name": "ftr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "cleanup": "node src/ftr_cleanup_data.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+
+# run PDF engine at 01:00
+cd /www/wwwroot/ftr && node src/cron_batch.js >> cron_batch.log 2>&1
+
+# run cleanup at 02:00
+cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
+or
+cd /www/wwwroot/ftr && node src/ftr_cleanup_data.js >> cron_cleanup.log 2>&1
+
+===========================
+# Docker steps and commands, always use these steps to create docker image and run:
 
 1. Edit code locally 
 2. Upload updated code files and .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)

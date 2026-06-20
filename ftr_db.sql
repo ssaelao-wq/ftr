@@ -1,7 +1,15 @@
 USE ftr_db;
  
-select * from invoices;
-select * from invoices_rec;
+select * from invoices where tax_rec_id = "RF2606-01898";
+select * from invoices_rec where tax_rec_id = "RF2606-01898";
+
+INSERT INTO invoices_rec (tax_rec_id, part_desc, price, unit_num, amount) 
+VALUES ("RF2606-01898", "AAAAAAA", 150.00, 1, 150.00),
+		("RF2606-01898", "BBBBBBB", 150.00, 1, 150.00),
+        ("RF2606-01898", "CCCCCCC", 150.00, 1, 150.00),
+        ("RF2606-01898", "DDDDDDD", 150.00, 1, 150.00),
+        ("RF2606-01898", "EEEEEEE", 150.00, 1, 150.00);
+        
 select * from customer_profile;
 select * from activity_logs;
 select * from generated_documents;
@@ -15,5 +23,22 @@ TRUNCATE TABLE invoices_rec;
 TRUNCATE TABLE customer_profile;
 TRUNCATE TABLE activity_logs;
 TRUNCATE TABLE generated_documents;
+SET FOREIGN_KEY_CHECKS = 1;
+*/
+
+/*
+SET FOREIGN_KEY_CHECKS = 0;
+DELETE FROM invoices;
+DELETE FROM invoices_rec;
+DELETE FROM customer_profile;
+DELETE FROM activity_logs;
+DELETE FROM generated_documents;
+
+-- Optional: Reset the AUTO_INCREMENT counters back to 1
+ALTER TABLE invoices AUTO_INCREMENT = 1;
+ALTER TABLE invoices_rec AUTO_INCREMENT = 1;
+ALTER TABLE customer_profile AUTO_INCREMENT = 1;
+ALTER TABLE activity_logs AUTO_INCREMENT = 1;
+ALTER TABLE generated_documents AUTO_INCREMENT = 1;
 SET FOREIGN_KEY_CHECKS = 1;
 */
