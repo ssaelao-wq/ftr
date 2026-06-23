@@ -1,46 +1,44 @@
 
 
+===========================
+**Step 1: Create Your Description File**
+Run this in your terminal to quickly create a plain text version file (eg. CHANGELOG.md).
+
+	echo "Version: 1.0.0 - Initial stable release with dashboard" > CHANGELOG.md
+	echo "Version: 1.0.1 - Cosmatic changes" >> CHANGELOG.md
+
+**Step 2: Track and Commit Your Code**
+This saves your project files and your new description file into Git locally.
+
+	git add .
+	git commit -m "Release version 1.0.0 with full description"
+	git commit -m "Release version 1.0.1"
+
+**Step 3: Create the Version Tag**
+This stamps the version number onto your latest commit.
+
+	git tag -a v1.0.0 -m "Release version 1.0.0"
+	git tag -a v1.0.1 -m "Release version 1.0.1"
+
+**Step 4: Push Everything to GitHub**
+This sends both your code updates and your version tags to your online repository.
+
+	git push origin main
+	git push origin v1.0.0
+	git push origin v1.0.1
+
+---------------
+
+**Go Backward Later:** jump back to the exact version in the future.
+
+	Checkout code to existing folder:
+	git checkout v1.0.0
+	
+	Checkout code to a specific folder:
+	git worktree add C:\Users\Somboon\LocalData\1-SSL\Dev\ftr-BK\test v1.0.0
 
 ===========================
-# Setup cronjob
-
-Setup in aaPanel
-1. Navigate to Cron in the aaPanel side menu.
-2. Add a new cron task with these settings:
-    - Type: Shell Script
-    - Name: FTR-PDF-Engine
-    - Execution Cycle: Daily at 01:00
-    - Script Content: cd /www/wwwroot/ftr && node src/cron_batch.js >> cron_batch.log 2>&1
-
-3. Add a second task for cleanup:
-    - Type: Shell Script
-    - Name: FTR-Data-Cleanup
-    - Execution Cycle: Daily at 02:00
-    - Script Content: cd /www/wwwroot/ftr && node src/ftr_cleanup_data.js >> cron_cleanup.log 2>&1
-
-# package.json
-{
-  "name": "ftr",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "cleanup": "node src/ftr_cleanup_data.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-
-# run PDF engine at 01:00
-cd /www/wwwroot/ftr && node src/cron_batch.js >> cron_batch.log 2>&1
-
-# run cleanup at 02:00
-cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
-or
-cd /www/wwwroot/ftr && node src/ftr_cleanup_data.js >> cron_cleanup.log 2>&1
-
-===========================
-# Docker steps and commands, always use these steps to create docker image and run:
+# Docker steps and commands to create docker image and run:
 
 1. Edit code locally 
 2. Upload updated code files and .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)
@@ -60,18 +58,27 @@ docker exec ftr-app printenv | grep -E "EMAIL|OAUTH|DB|PORT"
       - /www/wwwroot/ftr/.env        # ← single source of truth
 
 
+===========================
+# Point LINE OA LIFF endpoint to webserver to let Rich menu connect to webpage
 
-=== Run Database server ===
+1. https://developers.line.biz/
+2. Login
+3. Select project "Unicon Container Services" -> Unicon_channel (LINE Login)
+4. Select LIFF app name
+5. Edit Endpoint URL = https://ftr.uniconwebapp.com
 
-= Start/Stop database: net <start/stop> <Database Service: MySQLSSL>
+===========================
+# Run Database server
+
+# Start/Stop database: net <start/stop> <Database Service: MySQLSSL>
 	net start MySQLSSL
 
-= Run Webserver ===
+# Run Webserver
 1. Run from the webserver folder
 2. Start node server: node <auto restart: --watch> <node server>
 	node src/index.js --watch
       	
-Create info in package.json:
+# Create info in package.json:
 	"scripts": {
        		"start": "node src/index.js",
        		"dev": "nodemon src/index.js"
@@ -81,12 +88,49 @@ Create info in package.json:
 	npm start or npm run dev    # run dev, will refresh when code change
 
 
+===========================
+# Setup cronjob
 
-------------------------------
+Setup in aaPanel
+1. Navigate to Cron in the aaPanel side menu.
+2. Add a new cron task running PDF engine:
+    - Type: Shell Script
+    - Name: FTR-PDF-Engine
+    - Execution Cycle: Daily at 01:00
+    - Script Content: cd /www/wwwroot/ftr && node src/cron_batch.js >> cron_batch.log 2>&1
+    - Script Content with Docker: docker exec ftr-app node src/cron_batch.js > /www/wwwroot/ftr/cron_batch.log 2>&1
 
-=== Create tunnel to test with using ngrok ===
-Your Authtoken: use this personal Authtoken to authenticate ngrok agents, SDKs, 
-and the Kubernetes Operator for your own projects.
+
+3. Add a second task running Cleanup data:
+    - Type: Shell Script
+    - Name: FTR-Data-Cleanup
+    - Execution Cycle: Daily at 02:00
+    - Script Content: cd /www/wwwroot/ftr && node src/ftr_cleanup_data.js >> cron_cleanup.log 2>&1
+    - Script Content with Docker: docker exec ftr-app node src/ftr_cleanup_data.js > /www/wwwroot/ftr/cron_cleanup.log 2>&1
+
+- Testing command directly, not from cronjob
+docker exec ftr-app node src/cron_batch.js
+docker exec ftr-app node src/ftr_cleanup_data.js
+
+# package.json
+{
+  "name": "ftr",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "cleanup": "node src/ftr_cleanup_data.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
+
+===========================
+
+# Create tunnel to test with using ngrok
+# Your Authtoken: use this personal Authtoken to authenticate ngrok agents, SDKs, 
+# and the Kubernetes Operator for your own projects.
 
 	34PTbCPE0dlC9328AHSJ9pPKH6O_3qLHEWvcFxvp9JCyXKy9A
 
@@ -103,7 +147,7 @@ and the Kubernetes Operator for your own projects.
 6. From end-user click provided link: eg. "https://cythia-nonformal-undefeatedly.ngrok-free.dev", 
    it will redirect to our web application from port 3000
 
-------------------------------
+===========================
 FTR Project Dependency Modules:
 
 # Project modules
@@ -118,8 +162,8 @@ npx puppeteer system-deps
 npx puppeteer browsers install chrome 
 
 
-------------------------------
-=== LINE OA ===
+===========================
+# LINE OA
 
 Provider: "Unicon Container Services" 
 ProviderID: 2005147845

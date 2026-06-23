@@ -3,6 +3,7 @@ const router = express.Router();
 const path = require('path');
 const db = require('../../db');
 const { logActivity } = require('../../logger');
+const { getBKKDate, formatBKKDateISO } = require('../../utils/timezone');
 const { generatePdf } = require('../../services/pdfService');
 const { sendInvoiceEmail } = require('../../services/emailService');
 
@@ -215,13 +216,13 @@ router.put('/:tax_rec_id', async (req, res) => {
 
         if (shouldCreateNew) {
             // Generate a brand new TMP- customer_num
-            const now = new Date();
-            const yy = String(now.getFullYear()).slice(-2);
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const ss = String(now.getSeconds()).padStart(2, '0');
+            const now = getBKKDate();
+            const yy = String(now.getUTCFullYear()).slice(-2);
+            const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+            const dd = String(now.getUTCDate()).padStart(2, '0');
+            const hh = String(now.getUTCHours()).padStart(2, '0');
+            const min = String(now.getUTCMinutes()).padStart(2, '0');
+            const ss = String(now.getUTCSeconds()).padStart(2, '0');
             targetCustomerNum = `TMP-${yy}${mm}${dd}${hh}${min}${ss}`;
 
             await connection.execute(
@@ -327,7 +328,7 @@ router.post('/export', async (req, res) => {
         await logActivity('REQ_DOWNLOAD_MISS', `${username}:${rows.length}`, username);
 
         // 6. Return file download stream
-        const filename = `accounting_export_${new Date().toISOString().slice(0,10).replace(/-/g,'')}_${Date.now()}.csv`;
+        const filename = `accounting_export_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.status(200).send(csvContent);
@@ -393,7 +394,11 @@ router.get('/:tax_rec_id/download-pdf', async (req, res) => {
         // 2. Resolve absolute path relative to the project root (src/api/admin is two subfolders deep from project root)
         const absolutePdfPath = path.join(__dirname, '../../..', relativePdfPath);
         
-        // 3. Send file download stream
+        // 3. Log the download activity (non-blocking or handled within try-catch)
+        const username = req.session.adminUser ? req.session.adminUser.username : 'system';
+        await logActivity('DOWNLOAD_PDF', relativePdfPath, username);
+
+        // 4. Send file download stream
         res.download(absolutePdfPath, `FTR_${tax_rec_id}.pdf`);
         
     } catch (error) {

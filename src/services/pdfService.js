@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 const thaiBahtText = require('../utils/thaiBaht');
+const { getBKKDate } = require('../utils/timezone');
 
 /**
  * Helper to format currency numbers to THB currency format (2 decimal places and commas)
@@ -23,14 +24,14 @@ function formatCurrency(value) {
  */
 function formatDateInvoice(dateInput) {
     if (!dateInput) return '';
-    const date = new Date(dateInput);
+    const date = getBKKDate(dateInput);
     if (isNaN(date.getTime())) return String(dateInput);
 
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getUTCDate()).padStart(2, '0');
+    const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
     // For BE year (common in Thai tax documents), add 543 to Christian year.
     // e.g. 2026 + 543 = 2569 -> "69"
-    const christianYear = date.getFullYear();
+    const christianYear = date.getUTCFullYear();
     const beYear = christianYear + (christianYear < 2400 ? 543 : 0);
     const yy = String(beYear).slice(-2);
     
@@ -257,9 +258,9 @@ async function generatePdf(taxRecId) {
     htmlContent = htmlContent.substring(0, startIdx) + pagesHtml + htmlContent.substring(endIdx + templateEndTag.length);
 
     // 5. Setup storage path
-    const createdAt = header.created_at ? new Date(header.created_at) : new Date();
-    const yyyymm = `${createdAt.getFullYear()}${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
-    const dd = String(createdAt.getDate()).padStart(2, '0');
+    const createdAt = getBKKDate(header.created_at);
+    const yyyymm = `${createdAt.getUTCFullYear()}${String(createdAt.getUTCMonth() + 1).padStart(2, '0')}`;
+    const dd = String(createdAt.getUTCDate()).padStart(2, '0');
     
     const relativePdfDir = `storage/pdfs/${yyyymm}/${dd}`;
     const pdfDir = path.join(__dirname, '../../', relativePdfDir);

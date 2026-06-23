@@ -9,6 +9,7 @@ const os = require('os');
 const db = require('./db');
 const { logActivity } = require('./logger');
 const config = require('./config');
+const { getBKKDate } = require('./utils/timezone');
 
 // Helper to count PDF files in a directory recursively before deleting
 function countPdfsInDir(dir) {
@@ -62,8 +63,8 @@ async function runCleanup(shouldEndPool = true) {
     let deletedLogsCount = 0;
     let deletedTempDirsCount = 0;
 
-    const now = new Date();
-    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const now = getBKKDate();
+    const todayMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     try {
         // 1. Delete PDF directories (folders) older than 180 days based on their YYYYMM/DD names
@@ -85,7 +86,7 @@ async function runCleanup(shouldEndPool = true) {
                             const month = parseInt(yyyymm.substring(4, 6)) - 1; // JS months are 0-indexed
                             const day = parseInt(dd);
                             
-                            const folderMidnight = new Date(year, month, day);
+                            const folderMidnight = new Date(Date.UTC(year, month, day));
                             const diffTime = todayMidnight - folderMidnight;
                             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -163,7 +164,7 @@ async function runCleanup(shouldEndPool = true) {
 
         // 5. Log cleanup run to DB
         const logValues = `pdfs_deleted:${deletedPdfsCount},invoices_deleted:${deletedInvoicesCount},logs_deleted:${deletedLogsCount},temp_dirs_deleted:${deletedTempDirsCount}`;
-        await logActivity('CRON_CLEANUP', logValues);
+        await logActivity('CRON_CLEANUP', logValues, 'cron');
         console.log(`✅ Cleanup job finished successfully. Logged: ${logValues}`);
 
     } catch (error) {

@@ -42,7 +42,7 @@ async function runCronBatch() {
 
         // Log results if any items were processed
         if (successCount > 0) {
-            await logActivity('CRON_GEN_PDF', String(successCount));
+            await logActivity('CRON_GEN_PDF', String(successCount), 'cron');
         }
 
         console.log(`✅ Batch complete. Successfully generated: ${successCount}. Failed: ${failCount}.`);

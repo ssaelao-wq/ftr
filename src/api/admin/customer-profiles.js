@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 const { logActivity } = require('../../logger');
+const { formatBKKDateISO } = require('../../utils/timezone');
 
 // Helper to build profile query from filters
 function buildProfileQuery(queryParams) {
@@ -203,7 +204,7 @@ router.post('/export', async (req, res) => {
         // Log download activity
         await logActivity('REQ_DOWNLOAD_CUSTOMER', `${username}:${rows.length}`, username);
 
-        const filename = `customer_profile_export_${new Date().toISOString().slice(0,10).replace(/-/g,'')}_${Date.now()}.csv`;
+        const filename = `customer_profile_export_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.status(200).send(csvContent);
