@@ -288,11 +288,13 @@ async function generatePdf(taxRecId) {
             '/usr/bin/chromium',
           ];
 
-    let executablePath;
-    for (const p of chromePaths) {
-        if (fs.existsSync(p)) {
-            executablePath = p;
-            break;
+    let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    if (!executablePath) {
+        for (const p of chromePaths) {
+            if (fs.existsSync(p)) {
+                executablePath = p;
+                break;
+            }
         }
     }
     // Fall back to puppeteer's bundled path (may fail if cache is wrong user)

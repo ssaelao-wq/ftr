@@ -14,9 +14,9 @@ module.exports = {
 
     // Cleanup Configuration (retention days for different types of data)
     CLEANUP_SETTINGS: {
-        PDF_MAX_DAYS: 180,
-        INVOICE_MAX_DAYS: 180,
-        LOG_MAX_DAYS: 60,
-        TEMP_FILES_MAX_DAYS: 1
+        PDF_MAX_DAYS: parseInt(process.env.PDF_MAX_DAYS) || 180,
+        INVOICE_MAX_DAYS: parseInt(process.env.INVOICE_MAX_DAYS) || 180,
+        LOG_MAX_DAYS: parseInt(process.env.LOG_MAX_DAYS) || 60,
+        TEMP_FILES_MAX_DAYS: parseInt(process.env.TEMP_FILES_MAX_DAYS) || 1
     }
 };

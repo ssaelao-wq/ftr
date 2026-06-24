@@ -65,23 +65,36 @@ async function handleLogout() {
     }
 }
 
-// Mobile sidebar responsiveness toggle
+// Sidebar responsiveness toggle (Mobile & Desktop)
 function setupMobileNav() {
     const toggleBtn = document.getElementById('mobileToggle');
     const sidebar = document.querySelector('.sidebar');
+    const layout = document.querySelector('.admin-layout');
     
-    if (toggleBtn && sidebar) {
+    if (toggleBtn && sidebar && layout) {
         toggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            sidebar.classList.toggle('active');
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('active');
+            } else {
+                layout.classList.toggle('sidebar-hidden');
+                // Optional: Save preference to localStorage
+                const isHidden = layout.classList.contains('sidebar-hidden');
+                localStorage.setItem('sidebarHidden', isHidden);
+            }
         });
 
-        // Close sidebar on tapping elsewhere
+        // Close sidebar on tapping elsewhere (mobile only)
         document.addEventListener('click', (e) => {
-            if (sidebar.classList.contains('active') && !sidebar.contains(e.target)) {
+            if (window.innerWidth <= 768 && sidebar.classList.contains('active') && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
                 sidebar.classList.remove('active');
             }
         });
+
+        // Load preference on desktop
+        if (window.innerWidth > 768 && localStorage.getItem('sidebarHidden') === 'true') {
+            layout.classList.add('sidebar-hidden');
+        }
     }
 }
 

@@ -86,9 +86,11 @@ async function main() {
           ]
         : ['/usr/bin/google-chrome', '/usr/bin/chromium-browser', '/usr/bin/chromium'];
 
-    let executablePath;
-    for (const p of chromePaths) {
-        if (fs.existsSync(p)) { executablePath = p; break; }
+    let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    if (!executablePath) {
+        for (const p of chromePaths) {
+            if (fs.existsSync(p)) { executablePath = p; break; }
+        }
     }
     if (!executablePath) executablePath = await puppeteer.executablePath();
 

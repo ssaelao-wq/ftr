@@ -11,21 +11,27 @@ Run this in your terminal to quickly create a plain text version file (eg. CHANG
 This saves your project files and your new description file into Git locally.
 
 	git add .
-	git commit -m "Release version 1.0.0 with full description"
 	git commit -m "Release version 1.0.1"
 
 **Step 3: Create the Version Tag**
 This stamps the version number onto your latest commit.
 
-	git tag -a v1.0.0 -m "Release version 1.0.0"
 	git tag -a v1.0.1 -m "Release version 1.0.1"
 
 **Step 4: Push Everything to GitHub**
 This sends both your code updates and your version tags to your online repository.
 
 	git push origin main
-	git push origin v1.0.0
 	git push origin v1.0.1
+
+-----------
+Please sync to Github as v1.0.2. Run following commands:
+	echo "Version: 1.0.2 - Fixbug cannot send LINE/Email" >> CHANGELOG.md
+	git add .
+	git commit -m "Release version 1.0.2"
+	git tag -a v1.0.2 -m "Release version 1.0.2"
+	git push origin main
+	git push origin v1.0.2
 
 ---------------
 
@@ -38,16 +44,18 @@ This sends both your code updates and your version tags to your online repositor
 	git worktree add C:\Users\Somboon\LocalData\1-SSL\Dev\ftr-BK\test v1.0.0
 
 ===========================
-# Docker steps and commands to create docker image and run:
-
+# Change coding, we need to build Docker image and run:
 1. Edit code locally 
 2. Upload updated code files and .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)
 3. cd /www/server/panel/data/compose/ftr-app 
 4. docker compose down 
-5. docker rm -f ftr-app 		(if needed) 
+[5. docker rm -f ftr-app 		(if needed)] 
 6. docker compose up -d --build 	(if code changed) 
    docker compose up -d         	(if only compose config changed) 
 7. docker logs ftr-app --tail 20 	(verify) 
+
+# Change .env only, we just restart the docker:
+   docker compose restart web-app
 
 
 # Verify ALL vars are loaded correctly

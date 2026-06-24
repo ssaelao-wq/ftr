@@ -149,6 +149,16 @@ body {
     max-width: calc(100% - 260px);
 }
 
+.admin-layout.sidebar-hidden .sidebar {
+    transform: translateX(-100%);
+}
+
+.admin-layout.sidebar-hidden .main-content {
+    margin-left: 0;
+    max-width: 100%;
+}
+
+
 .top-bar {
     display: flex;
     justify-content: space-between;
@@ -589,15 +599,21 @@ select.form-control {
     color: var(--danger);
 }
 
-/* Mobile Toggle */
+/* Mobile & Desktop Toggle */
 .mobile-nav-toggle {
-    display: none;
+    display: block;
     font-size: 1.5rem;
     background: transparent;
     border: none;
     color: var(--text-primary);
     cursor: pointer;
+    transition: var(--transition);
 }
+
+.mobile-nav-toggle:hover {
+    color: var(--accent);
+}
+
 
 /* Login Page Layout */
 .login-layout {
