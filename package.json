@@ -27,5 +27,8 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.9",
     "puppeteer": "^25.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

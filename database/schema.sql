@@ -45,6 +45,7 @@ CREATE TABLE `invoices_rec` (
     `unit_num` DECIMAL(10,0) DEFAULT NULL,
     `amount` DECIMAL(10, 2) DEFAULT NULL,
     `verification_code` VARCHAR(20) DEFAULT NULL,
+    `raw_cdms_row` TEXT DEFAULT NULL,
     PRIMARY KEY (`rec_id`),
     CONSTRAINT `fk_rec_invoice` FOREIGN KEY (`tax_rec_id`) REFERENCES `invoices` (`tax_rec_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

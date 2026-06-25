@@ -274,10 +274,24 @@ router.post('/export', async (req, res) => {
         const { sql, params } = buildSearchQuery(req.body);
         
         // 2. We only export records that have complete profiles
+        // 2. We only export records that have complete profiles, joining with invoices_rec to obtain item details and raw_cdms_row
         let exportSql = `
-            SELECT tax_rec_id, customer_code, customer AS company_name, customer_addr AS address, tax_id 
+            SELECT 
+                filtered.tax_rec_id, 
+                filtered.customer_code, 
+                filtered.customer AS company_name, 
+                filtered.customer_addr AS address, 
+                filtered.tax_id,
+                filtered.customer_branch,
+                filtered.service_date,
+                ir.part_desc,
+                ir.price,
+                ir.unit_num,
+                ir.amount,
+                ir.raw_cdms_row
             FROM (${sql}) AS filtered 
-            WHERE customer IS NOT NULL AND customer_addr IS NOT NULL AND tax_id IS NOT NULL
+            JOIN invoices_rec ir ON filtered.tax_rec_id = ir.tax_rec_id
+            WHERE filtered.customer IS NOT NULL AND filtered.customer_addr IS NOT NULL AND filtered.tax_id IS NOT NULL
         `;
         
         const [rows] = await db.query(exportSql, params);
@@ -286,23 +300,251 @@ router.post('/export', async (req, res) => {
             return res.status(400).json({ success: false, message: 'No completed customer profiles match the filter criteria for export.' });
         }
 
-        // 3. Format CSV content with | delimiter
+        // 3. Format CSV content with | delimiter and 47-column Winspeed structure
         let csvContent = '\uFEFF'; // UTF-8 BOM to avoid corruption of Thai characters in Excel
-        csvContent += 'tax_rec_id|customer_code|company_name|address|tax_id\r\n';
+        const header = [
+            'brchcode', 'shipmentno', 'shipmentdate', 'invoiceno', 'invoicedate',
+            'customercode', 'customername', 'customerpo', 'creditstartdate', 'creditdays',
+            'creditenddate', 'duedate', 'senddate', 'transpcode', 'salecode',
+            'salename', 'partnumber', 'partname', 'inventory', 'location',
+            'unit', 'qty', 'price', 'discount', 'amount',
+            'jobcode', 'jobname', 'unitrate', 'vattype', 'sumgoodamount',
+            'billdiscount', 'billafterdiscount', 'basevat', 'vatrate', 'vatamount',
+            'netamount', 'vatcode', 'vatgroup', 'goodtype', 'fob',
+            'stockflag', 'commission', 'incoterm', 'bookcode', 'bookno',
+            'description'
+        ].join('|');
+
+        csvContent += header + '\r\n';
         
         const csvRows = rows.map(r => {
-            const taxRecId = r.tax_rec_id || '';
-            const customerCode = r.customer_code || '';
-            const companyName = (r.company_name || '').replace(/[\r\n]+/g, ' '); // Clean newlines
-            const address = (r.address || '').replace(/[\r\n]+/g, ' ');         // Clean newlines
-            const taxId = r.tax_id || '';
-            return `${taxRecId}|${customerCode}|${companyName}|${address}|${taxId}`;
+            let cdms = {};
+            if (r.raw_cdms_row) {
+                try {
+                    cdms = JSON.parse(r.raw_cdms_row);
+                } catch (e) {
+                    console.error('Failed to parse raw_cdms_row JSON:', e);
+                }
+            }
+
+            // Helper to get raw CDMS column value or fallback
+            const getVal = (cdmsKey, fallbackVal = '') => {
+                return (cdms[cdmsKey] !== undefined && cdms[cdmsKey] !== null) ? String(cdms[cdmsKey]).trim() : String(fallbackVal).trim();
+            };
+
+            // Cleaner wrapper to strip newlines and pipes
+            const clean = (val) => {
+                if (!val) return '';
+                return val.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
+            };
+
+            // 1. brchcode
+            let brchcode = '00000';
+            if (r.customer_branch && r.customer_branch.trim() !== 'สำนักงานใหญ่') {
+                brchcode = r.customer_branch.trim();
+            }
+
+            // 2. shipmentno
+            const shipmentno = getVal('ShipmentNo', r.tax_rec_id);
+
+            // 3. shipmentdate (format DD/MM/YYYY)
+            let fallbackDate = '';
+            if (r.service_date) {
+                const d = new Date(r.service_date);
+                if (!isNaN(d.getTime())) {
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const yyyy = d.getFullYear();
+                    fallbackDate = `${dd}/${mm}/${yyyy}`;
+                }
+            }
+            const shipmentdate = getVal('ShipmentDate', fallbackDate);
+
+            // 4. invoiceno
+            const invoiceno = getVal('InvoiceNo', r.tax_rec_id);
+
+            // 5. invoicedate
+            const invoicedate = getVal('InvoiceDate', fallbackDate);
+
+            // 6. customercode
+            const customercode = r.customer_code || '';
+
+            // 7. customername
+            const customername = r.company_name || '';
+
+            // 8. customerpo
+            const customerpo = '';
+
+            // 9. creditstartdate
+            const creditstartdate = '';
+
+            // 10. creditdays
+            const creditdays = '';
+
+            // 11. creditenddate
+            const creditenddate = '';
+
+            // 12. duedate
+            const duedate = '';
+
+            // 13. senddate
+            const senddate = '';
+
+            // 14. transpcode
+            const transpcode = '';
+
+            // 15. salecode
+            const salecode = '';
+
+            // 16. salename
+            const salename = '';
+
+            // 17. partnumber
+            const partnumber = getVal('PartNumber', '');
+
+            // 18. partname
+            const partname = getVal('PartName', r.part_desc || '');
+
+            // 19. inventory
+            const inventory = getVal('Inventory', '');
+
+            // 20. location
+            const location = getVal('Location', '');
+
+            // 21. unit
+            const unit = getVal('Unit', '');
+
+            // 22. qty
+            const qty = getVal('Qty', r.unit_num || '0');
+
+            // 23. price
+            const price = getVal('Price', r.price || '0');
+
+            // 24. discount
+            const discount = '';
+
+            // 25. amount
+            const amount = getVal('Amount', r.amount || '0');
+
+            // 26. jobcode
+            const jobcode = '';
+
+            // 27. jobname
+            const jobname = '';
+
+            // 28. unitrate
+            const unitrate = getVal('UnitRate', '1');
+
+            // 29. vattype
+            const vattype = getVal('VatType', '');
+
+            // 30. sumgoodamount (from BaseVat)
+            const sumgoodamount = getVal('BaseVat', r.amount || '0');
+
+            // 31. billdiscount
+            const billdiscount = '';
+
+            // 32. billafterdiscount (from BaseVat)
+            const billafterdiscount = getVal('BaseVat', r.amount || '0');
+
+            // 33. basevat (from BaseVat)
+            const basevat = getVal('BaseVat', r.amount || '0');
+
+            // 34. vatrate
+            const vatrate = getVal('VatRate', '7');
+
+            // 35. vatamount
+            const vatamount = getVal('VatAmount', '0');
+
+            // 36. netamount (BaseVat + VatAmount)
+            const baseVatNum = parseFloat(getVal('BaseVat', r.amount || '0')) || 0;
+            const vatAmtNum = parseFloat(getVal('VatAmount', '0')) || 0;
+            const netamount = (baseVatNum + vatAmtNum).toFixed(2);
+
+            // 37. vatcode
+            const vatcode = getVal('VatCode', '');
+
+            // 38. vatgroup
+            const vatgroup = getVal('VatGroup', '');
+
+            // 39. goodtype
+            const goodtype = getVal('GoodType', '');
+
+            // 40. fob
+            const fob = '';
+
+            // 41. stockflag
+            const stockflag = getVal('StockFlag', '');
+
+            // 42. commission
+            const commission = '';
+
+            // 43. incoterm
+            const incoterm = '';
+
+            // 44. bookcode
+            const bookcode = 'SA01';
+
+            // 45. bookno
+            const bookno = '4902105005';
+
+            // 46. description
+            const description = '';
+
+            return [
+                clean(brchcode),
+                clean(shipmentno),
+                clean(shipmentdate),
+                clean(invoiceno),
+                clean(invoicedate),
+                clean(customercode),
+                clean(customername),
+                clean(customerpo),
+                clean(creditstartdate),
+                clean(creditdays),
+                clean(creditenddate),
+                clean(duedate),
+                clean(senddate),
+                clean(transpcode),
+                clean(salecode),
+                clean(salename),
+                clean(partnumber),
+                clean(partname),
+                clean(inventory),
+                clean(location),
+                clean(unit),
+                clean(qty),
+                clean(price),
+                clean(discount),
+                clean(amount),
+                clean(jobcode),
+                clean(jobname),
+                clean(unitrate),
+                clean(vattype),
+                clean(sumgoodamount),
+                clean(billdiscount),
+                clean(billafterdiscount),
+                clean(basevat),
+                clean(vatrate),
+                clean(vatamount),
+                clean(netamount),
+                clean(vatcode),
+                clean(vatgroup),
+                clean(goodtype),
+                clean(fob),
+                clean(stockflag),
+                clean(commission),
+                clean(incoterm),
+                clean(bookcode),
+                clean(bookno),
+                clean(description)
+            ].join('|');
         }).join('\r\n');
 
         csvContent += csvRows + '\r\n';
 
-        // 4. Update the database flag is_accounting_exported = TRUE inside a transaction
-        const taxRecIds = rows.map(r => r.tax_rec_id);
+        // 4. Update the database flag is_accounting_exported = TRUE inside a transaction (using unique IDs)
+        const taxRecIds = [...new Set(rows.map(r => r.tax_rec_id))];
         
         const connection = await db.getConnection();
         let transactionStarted = false;
@@ -325,10 +567,10 @@ router.post('/export', async (req, res) => {
         }
 
         // 5. Log download activity (Non-blocking)
-        await logActivity('REQ_DOWNLOAD_MISS', `${username}:${rows.length}`, username);
+        await logActivity('REQ_DOWNLOAD_MISS', `${username}:${taxRecIds.length}`, username);
 
         // 6. Return file download stream
-        const filename = `accounting_export_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
+        const filename = `invoice_data_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.status(200).send(csvContent);
@@ -399,7 +641,7 @@ router.get('/:tax_rec_id/download-pdf', async (req, res) => {
         await logActivity('DOWNLOAD_PDF', relativePdfPath, username);
 
         // 4. Send file download stream
-        res.download(absolutePdfPath, `FTR_${tax_rec_id}.pdf`);
+        res.download(absolutePdfPath, `Unicon_${tax_rec_id}.pdf`);
         
     } catch (error) {
         console.error('PDF download error:', error);

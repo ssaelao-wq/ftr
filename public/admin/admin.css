@@ -2,6 +2,16 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
 
+html {
+    font-size: 16px;
+}
+
+@media (min-width: 769px) {
+    html {
+        font-size: 14px;
+    }
+}
+
 :root {
     --bg-primary: #0b0f19;
     --bg-secondary: #111827;
@@ -81,6 +91,8 @@ body {
     flex-direction: column;
     position: fixed;
     height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     z-index: 100;
     transition: var(--transition);
 }
@@ -105,6 +117,10 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 0.5rem; /* space for scrollbar */
+    margin-bottom: 1rem;
 }
 
 .sidebar-link {

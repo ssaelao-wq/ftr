@@ -78,6 +78,20 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /api/admin/logs/actions
+router.get('/actions', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            'SELECT DISTINCT log_action FROM activity_logs ORDER BY log_action ASC'
+        );
+        const actions = rows.map(r => r.log_action).filter(Boolean);
+        res.json({ success: true, actions });
+    } catch (error) {
+        console.error('Distinct actions query error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error during actions retrieval.' });
+    }
+});
+
 // GET /api/admin/logs/export
 // Exports last N activity logs in a pipe-delimited CSV format
 router.get('/export', async (req, res) => {

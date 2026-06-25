@@ -40,10 +40,8 @@ async function runCronBatch() {
             }
         }
 
-        // Log results if any items were processed
-        if (successCount > 0) {
-            await logActivity('CRON_GEN_PDF', String(successCount), 'cron');
-        }
+        // Always log results so admins know the cron runs successfully
+        await logActivity('CRON_GEN_PDF', String(successCount), 'cron');
 
         console.log(`✅ Batch complete. Successfully generated: ${successCount}. Failed: ${failCount}.`);
     } catch (err) {

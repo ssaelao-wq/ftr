@@ -1,14 +1,18 @@
 USE ftr_db;
- 
-select * from invoices where tax_rec_id = "RF2606-01898";
-select * from invoices_rec where tax_rec_id = "RF2606-01898";
 
+
+
+/*
 INSERT INTO invoices_rec (tax_rec_id, part_desc, price, unit_num, amount) 
 VALUES ("RF2606-01898", "AAAAAAA", 150.00, 1, 150.00),
 		("RF2606-01898", "BBBBBBB", 150.00, 1, 150.00),
         ("RF2606-01898", "CCCCCCC", 150.00, 1, 150.00),
         ("RF2606-01898", "DDDDDDD", 150.00, 1, 150.00),
         ("RF2606-01898", "EEEEEEE", 150.00, 1, 150.00);
+*/
+ 
+select * from invoices; 		# where tax_rec_id = "RF2606-01898";
+select * from invoices_rec;		# where tax_rec_id = "RF2606-01898";
         
 select * from customer_profile;
 select * from activity_logs;
@@ -16,7 +20,9 @@ select * from generated_documents;
 select * from admin_users;
 
 -- ALTER TABLE invoices ADD COLUMN booking_num VARCHAR(50) DEFAULT NULL AFTER container_num;
-/*
+-- ALTER TABLE invoices_rec ADD COLUMN raw_cdms_row TEXT DEFAULT NULL;
+
+/* Clean up all data in every table
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE invoices;
 TRUNCATE TABLE invoices_rec;

@@ -1,41 +1,72 @@
 
 
-===========================
-**Step 1: Create Your Description File**
+###########################
+# Run DB and Server locally
+
+# Start/Stop database: net <start/stop> <Database Service: MySQLSSL>
+	net start MySQLSSL
+
+# Run Webserver
+1. Run from the project folder
+2.1 Start node directly:
+	node --watch src/index.js	# --watch = auto-restart when code change
+      	
+2.2 Start node from .json file: 
+# Install Nodemon
+	npm install --save-dev nodemon
+
+# Create info in package.json:
+	"scripts": {
+       		"start": "node --watch src/index.js",
+       		"dev": "nodemon src/index.js"
+   	}
+
+# Then run on public as below
+	npm start 
+	or
+	npm run dev    			# auto-restart when code change
+	or
+	npx nodemon src/index.js	# auto-restart when code change
+
+
+###########################
+# Git Commands
+#
+
+# Step 1: Create Your Description File
 Run this in your terminal to quickly create a plain text version file (eg. CHANGELOG.md).
 
 	echo "Version: 1.0.0 - Initial stable release with dashboard" > CHANGELOG.md
 	echo "Version: 1.0.1 - Cosmatic changes" >> CHANGELOG.md
 
-**Step 2: Track and Commit Your Code**
+# Step 2: Track and Commit Your Code
 This saves your project files and your new description file into Git locally.
 
 	git add .
 	git commit -m "Release version 1.0.1"
 
-**Step 3: Create the Version Tag**
+# Step 3: Create the Version Tag
 This stamps the version number onto your latest commit.
 
 	git tag -a v1.0.1 -m "Release version 1.0.1"
 
-**Step 4: Push Everything to GitHub**
-This sends both your code updates and your version tags to your online repository.
+# Step 4: Push Everything to GitHub
+# This sends both your code updates and your version tags to your online repository.
 
 	git push origin main
 	git push origin v1.0.1
 
 -----------
-Please sync to Github as v1.0.2. Run following commands:
-	echo "Version: 1.0.2 - Fixbug cannot send LINE/Email" >> CHANGELOG.md
+# Please sync to Github as v1.0.2. Run following commands:
+	echo "Version: 1.0.3 - Fixbug and change wording" >> CHANGELOG.md
 	git add .
-	git commit -m "Release version 1.0.2"
-	git tag -a v1.0.2 -m "Release version 1.0.2"
+	git commit -m "Release version 1.0.3"
+	git tag -a v1.0.3 -m "Release version 1.0.3"
 	git push origin main
-	git push origin v1.0.2
+	git push origin v1.0.3
 
 ---------------
-
-**Go Backward Later:** jump back to the exact version in the future.
+# Go Backward Later: jump back to the exact version in the future.
 
 	Checkout code to existing folder:
 	git checkout v1.0.0
@@ -43,63 +74,34 @@ Please sync to Github as v1.0.2. Run following commands:
 	Checkout code to a specific folder:
 	git worktree add C:\Users\Somboon\LocalData\1-SSL\Dev\ftr-BK\test v1.0.0
 
-===========================
-# Change coding, we need to build Docker image and run:
-1. Edit code locally 
-2. Upload updated code files and .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)
-3. cd /www/server/panel/data/compose/ftr-app 
-4. docker compose down 
-[5. docker rm -f ftr-app 		(if needed)] 
-6. docker compose up -d --build 	(if code changed) 
-   docker compose up -d         	(if only compose config changed) 
-7. docker logs ftr-app --tail 20 	(verify) 
+###########################
+# Docker Deployment
+
+# Change coding: we need to build Docker image and run:
+    1. Edit code locally 
+    2. Upload code files + .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)
+    3. cd /www/server/panel/data/compose/ftr-app 
+    4. docker compose down 
+   [5. docker rm -f ftr-app 		(if needed)] 
+    6. docker compose up -d --build 	(if code changed) 
+       docker compose up -d         	(if only compose config changed) 
+    7. docker logs ftr-app --tail 20 	(verify) 
 
 # Change .env only, we just restart the docker:
    docker compose restart web-app
 
-
 # Verify ALL vars are loaded correctly
-docker exec ftr-app printenv | grep -E "EMAIL|OAUTH|DB|PORT"
+    docker exec ftr-app printenv | grep -E "EMAIL|OAUTH|DB|PORT"
 
 # Setup in .yaml file to read from real source only.
     env_file:
       - /www/wwwroot/ftr/.env        # ← single source of truth
 
 
-===========================
-# Point LINE OA LIFF endpoint to webserver to let Rich menu connect to webpage
-
-1. https://developers.line.biz/
-2. Login
-3. Select project "Unicon Container Services" -> Unicon_channel (LINE Login)
-4. Select LIFF app name
-5. Edit Endpoint URL = https://ftr.uniconwebapp.com
-
-===========================
-# Run Database server
-
-# Start/Stop database: net <start/stop> <Database Service: MySQLSSL>
-	net start MySQLSSL
-
-# Run Webserver
-1. Run from the webserver folder
-2. Start node server: node <auto restart: --watch> <node server>
-	node src/index.js --watch
-      	
-# Create info in package.json:
-	"scripts": {
-       		"start": "node src/index.js",
-       		"dev": "nodemon src/index.js"
-   	}
-
-# Then run on public as below
-	npm start or npm run dev    # run dev, will refresh when code change
-
-
-===========================
+###########################
 # Setup cronjob
 
-Setup in aaPanel
+# Setup in aaPanel
 1. Navigate to Cron in the aaPanel side menu.
 2. Add a new cron task running PDF engine:
     - Type: Shell Script
@@ -108,7 +110,6 @@ Setup in aaPanel
     - Script Content: cd /www/wwwroot/ftr && node src/cron_batch.js >> cron_batch.log 2>&1
     - Script Content with Docker: docker exec ftr-app node src/cron_batch.js > /www/wwwroot/ftr/cron_batch.log 2>&1
 
-
 3. Add a second task running Cleanup data:
     - Type: Shell Script
     - Name: FTR-Data-Cleanup
@@ -116,9 +117,9 @@ Setup in aaPanel
     - Script Content: cd /www/wwwroot/ftr && node src/ftr_cleanup_data.js >> cron_cleanup.log 2>&1
     - Script Content with Docker: docker exec ftr-app node src/ftr_cleanup_data.js > /www/wwwroot/ftr/cron_cleanup.log 2>&1
 
-- Testing command directly, not from cronjob
-docker exec ftr-app node src/cron_batch.js
-docker exec ftr-app node src/ftr_cleanup_data.js
+# Testing command directly, not from cronjob
+    docker exec ftr-app node src/cron_batch.js
+    docker exec ftr-app node src/ftr_cleanup_data.js
 
 # package.json
 {
@@ -131,12 +132,24 @@ docker exec ftr-app node src/ftr_cleanup_data.js
     "dev": "nodemon src/index.js",
     "cleanup": "node src/ftr_cleanup_data.js",
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
+},
+
 cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
 
-===========================
 
-# Create tunnel to test with using ngrok
+###########################
+# LINE OA
+# Point LINE OA LIFF endpoint to webserver to let Rich menu connect to webpage
+
+1. https://developers.line.biz/
+2. Login
+3. Select project "Unicon Container Services" -> Unicon_channel (LINE Login)
+4. Select LIFF app name
+5. Edit Endpoint URL = https://ftr.uniconwebapp.com
+
+
+###########################
+# Create tunnel using ngrok.com
 # Your Authtoken: use this personal Authtoken to authenticate ngrok agents, SDKs, 
 # and the Kubernetes Operator for your own projects.
 
@@ -155,8 +168,9 @@ cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
 6. From end-user click provided link: eg. "https://cythia-nonformal-undefeatedly.ngrok-free.dev", 
    it will redirect to our web application from port 3000
 
-===========================
-FTR Project Dependency Modules:
+
+###########################
+# FTR Project Dependency Modules:
 
 # Project modules
 npm install puppeteer nodemailer node-cron multer csv-parse bcrypt express-session dotenv googleapis
@@ -170,7 +184,7 @@ npx puppeteer system-deps
 npx puppeteer browsers install chrome 
 
 
-===========================
+###########################
 # LINE OA
 
 Provider: "Unicon Container Services" 

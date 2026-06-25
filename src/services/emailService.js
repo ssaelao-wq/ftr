@@ -74,7 +74,7 @@ async function createTransporter() {
  * @param {string} emailSending  — Recipient email address
  * @param {string} taxRecId      — Tax Record ID (e.g. RF2605-00589)
  * @param {string} taxId         — Customer Tax ID (13-digit)
- * @param {string} pdfRelPath    — Relative path to the PDF file (e.g. /storage/pdfs/FTR_RF2605-00589.pdf)
+ * @param {string} pdfRelPath    — Relative path to the PDF file (e.g. /storage/pdfs/Unicon_RF2605-00589.pdf)
  * @returns {Promise<object>}    — nodemailer info object on success
  */
 async function sendInvoiceEmail(emailSending, arg2, arg3, arg4) {
@@ -104,26 +104,54 @@ async function sendInvoiceEmail(emailSending, arg2, arg3, arg4) {
             throw new Error(`PDF file not found at path: ${absolutePath}`);
         }
         return {
-            filename:    `FTR_${itemTaxRecId}.pdf`,
+            filename:    `Unicon_${itemTaxRecId}.pdf`,
             path:        absolutePath,
             contentType: 'application/pdf'
         };
     });
 
+    // Add signature and QR inline images if they exist
+    const sigPath = path.join(projectRoot, 'Unicon_SignatureImage.jpg');
+    if (fs.existsSync(sigPath)) {
+        attachments.push({
+            filename: 'Unicon_SignatureImage.jpg',
+            path: sigPath,
+            cid: 'unicon_signature_image'
+        });
+    }
+
+    const qrPath = path.join(projectRoot, 'Unicon_QR.jpg');
+    if (fs.existsSync(qrPath)) {
+        attachments.push({
+            filename: 'Unicon_QR.jpg',
+            path: qrPath,
+            cid: 'unicon_qr'
+        });
+    }
+
     const taxRecIdsStr = invoicesData.map(item => item.taxRecId || item.tax_rec_id).join(', ');
 
     const mailOptions = {
-        from:    `"FTR Invoice System" <${process.env.EMAIL_USER}>`,
+        from:    `"Unicon Container Services" <${process.env.EMAIL_USER}>`,
         to:      emailSending,
         subject: `ใบกำกับภาษีแบบเต็ม สำหรับเลขประจำตัวผู้เสียภาษี: ${taxId}`,
-        text:    `ใบกำกับภาษีแบบเต็มของหมายเลขเอกสาร: ${taxRecIdsStr}\nสำหรับเลขประจำตัวผู้เสียภาษี: ${taxId}\n\nกรุณาดูไฟล์แนบ`,
+        text:    `เรียน ลูกค้าและผู้มาใช้บริการ\n\nใบกำกับภาษีแบบเต็มสำหรับหมายเลขเอกสาร ${taxRecIdsStr} ของเลขประจำตัวผู้เสียภาษี ${taxId} ได้แนบมาพร้อมกับอีเมลฉบับนี้เรียบร้อยแล้ว\nหากท่านมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อ แผนกบัญชี โทรศัพท์ 02-738-8914 ในวันและเวลาทำการ เจ้าหน้าที่ของเรายินดีให้บริการ\n\nขอขอบพระคุณที่ไว้วางใจใช้บริการกับเรา\nหมายเหตุ: อีเมลฉบับนี้จัดส่งโดยระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้ หากต้องการติดต่อหรือสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อบริษัทผ่านช่องทางที่ระบุข้างต้น\n\nUnicon Container Services Co.,Ltd.\nเปิดทำการ จันทร์-เสาร์ เวลา 08.00-18.00 น.\nCheck booking http://150.95.90.37/bis`,
         html: `
-            <div style="font-family: sans-serif; font-size: 14px; color: #333;">
-                <p>เรียนลูกค้า,</p>
-                <p>ใบกำกับภาษีแบบเต็มของหมายเลขเอกสาร <strong>${taxRecIdsStr}</strong> สำหรับเลขประจำตัวผู้เสียภาษี <strong>${taxId}</strong> ได้ถูกแนบมาพร้อมกับอีเมล์ฉบับนี้แล้ว</p>
-                <p>หากมีคำถามใดๆ กรุณาติดต่อเจ้าหน้าที่</p>
+            <div style="font-family: sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
+                <p>เรียน ลูกค้าและผู้มาใช้บริการ</p>
                 <br>
-                <p style="color: #999; font-size: 12px;">อีเมล์นี้ถูกส่งโดยระบบอัตโนมัติ กรุณาอย่าตอบกลับ</p>
+                <p>ใบกำกับภาษีแบบเต็มสำหรับหมายเลขเอกสาร <strong>${taxRecIdsStr}</strong> ของเลขประจำตัวผู้เสียภาษี <strong>${taxId}</strong> ได้แนบมาพร้อมกับอีเมลฉบับนี้เรียบร้อยแล้ว</p>
+                <p>หากท่านมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อ แผนกบัญชี โทรศัพท์ <strong>02-738-8914</strong> ในวันและเวลาทำการ เจ้าหน้าที่ของเรายินดีให้บริการ</p>
+                <br>
+                <p>ขอขอบพระคุณที่ไว้วางใจใช้บริการกับเรา</p>
+                <p style="color: #666; font-size: 12px;"><strong>หมายเหตุ:</strong> อีเมลฉบับนี้จัดส่งโดยระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้ หากต้องการติดต่อหรือสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อบริษัทผ่านช่องทางที่ระบุข้างต้น</p>
+                <br>
+                <p><img src="cid:unicon_signature_image" alt="Unicon Signature" style="max-width: 100%; height: auto; display: block; margin: 10px 0;" /></p>
+                <br>
+                <p>Unicon Container Services Co.,Ltd.<br>
+                เปิดทำการ จันทร์-เสาร์ เวลา 08.00-18.00 น.<br>
+                Check booking <a href="http://150.95.90.37/bis" target="_blank">http://150.95.90.37/bis</a></p>
+                <p><img src="cid:unicon_qr" alt="Unicon QR" style="max-width: 150px; height: auto; display: block; margin: 10px 0;" /></p>
             </div>
         `,
         attachments: attachments

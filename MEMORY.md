@@ -72,6 +72,17 @@ This document serves as the persistent memory and active log for the Full Tax Re
   - Placed a mock placeholder on the Send Email button for this step, alerting the admin on click.
   - Documented new pages and endpoints in `ftr_system_design.md`.
 
+### **[2026-06-25] Winspeed Export Format, Dynamic Logs Dropdown, and Email/LINE Adjustments**
+* **Task Summary:** Integrated the 46-column Winspeed Accounting System export format. Updated the database schema (`invoices_rec.raw_cdms_row`) to store raw CDMS CSV rows as serialized JSON strings on upload. Created a dynamic backend API `GET /api/admin/logs/actions` and updated the admin Logs UI to populate the Activity Type dropdown filter dynamically. Adjusted the email template to include an inline signature and QR code and changed the sender name to "Unicon Container Services". Added follow-up LINE text message confirmation notifications on successful email delivery.
+* **Key Decisions:**
+  - Used JSON serialization (`raw_cdms_row TEXT`) in the `invoices_rec` table to store extra CDMS columns, preventing schema bloating while preserving all raw values.
+  - Set the email template inline images using Nodemailer Content-ID (CID) inline attachments for robust rendering in client inboxes.
+  - Implemented dynamic logs action filtering by querying unique action logs from the database at runtime.
+
+### **[2026-06-25] Desktop Web Portal Font Size Adjustment**
+* **Task Summary:** Reduced the font size of the Web Portal on PC screens only by 2px to improve readability and visual hierarchy on larger screens.
+  - **Implementation**: Defined the root `html` selector in `public/admin/admin.css` and added a `min-width: 769px` media query to scale the base font size down from `16px` to `14px` on desktop viewport widths. This scales all relative `rem` font sizes proportionally without affecting mobile browser rendering.
+
 ### **[2026-06-04] Manual Customer Modification & PDF Regeneration (Logic Gap Resolution)**
 * **Task Summary:** Resolved a logic gap where manual updates by the Admin to customer details (`customer`, `customer_addr`, `tax_id`) did not trigger PDF regeneration. Now, modifying customer details sets the invoice `status = 'pending'`, which forces on-the-fly regeneration when the customer requests it next, or automatic nightly regeneration via the cron job.
 * **Key Decisions:**

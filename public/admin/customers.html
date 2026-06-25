@@ -561,7 +561,7 @@
                     const blob = await response.blob();
                     
                     const contentDisp = response.headers.get('Content-Disposition');
-                    let filename = 'accounting_export.csv';
+                    let filename = 'invoice_data.csv';
                     if (contentDisp && contentDisp.includes('filename=')) {
                         filename = contentDisp.split('filename=')[1].trim();
                     }

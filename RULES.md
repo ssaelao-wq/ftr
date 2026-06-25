@@ -118,3 +118,15 @@
 - Every time a task, feature, or significant debugging session is completed, append a concise summary of the work, modified files, and key decisions to `MEMORY.md`.
 - Never rely solely on chat history or ephemeral context for project continuity.
 - Ensure the next assistant or developer can read `MEMORY.md` and immediately understand the current state of the codebase.
+
+---
+
+### Rule #13 — Project Knowledge Persistence (Continuous Handover)
+
+> **Always updated work logic, architectural to `ftr_system_design.mdd` before ending a session.**
+
+- Every time a new or updated requirement that changes software logic is completed, append details information to `ftr_system_design.md`.
+- Every time a new or updated technology, DB schema, architectural change is completed, append details information to `ftr_system_design.md`.
+- Never rely solely on chat history or ephemeral context for project continuity.
+- Ensure the next assistant or developer can read `ftr_system_design.md` to have the project knowlege.
+

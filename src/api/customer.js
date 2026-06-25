@@ -66,7 +66,19 @@ async function sendLinePdfLink(lineUserId, taxRecId, customerName, pdfUrl) {
                             },
                             {
                                 type: 'text',
-                                text: 'กดปุ่มด้านล่างเพื่อเปิดหรือดาวโหลดใบกำกับภาษี PDF',
+                                text: 'ใบกำกับภาษีแบบเต็มพร้อมดาวน์โหลดแล้ว กรุณาแตะปุ่มด้านล่างเพื่อดาวน์โหลด PDF',
+                                size: 'xs',
+                                color: '#888888',
+                                wrap: true,
+                                margin: 'sm'
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'md'
+                            },
+                            {
+                                type: 'text',
+                                text: 'หากท่านมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อ แผนกบัญชี โทรศัพท์ 02-738-8914 ในวันและเวลาทำการ เจ้าหน้าที่ของเรายินดีให้บริการ ขอขอบคุณที่ใช้บริการ Unicon Container Services',
                                 size: 'xs',
                                 color: '#888888',
                                 wrap: true,
@@ -101,6 +113,37 @@ async function sendLinePdfLink(lineUserId, taxRecId, customerName, pdfUrl) {
     const response = await axios.post(
         'https://api.line.me/v2/bot/message/push',
         flexMessage,
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${channelToken}`
+            }
+        }
+    );
+    return response.data;
+}
+
+// Helper: Send LINE Text Message
+// ---------------------------------------------------------------------------
+async function sendLineTextMessage(lineUserId, textMessage) {
+    const channelToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+    if (!channelToken) {
+        throw new Error('LINE_CHANNEL_ACCESS_TOKEN not configured in .env');
+    }
+
+    const payload = {
+        to: lineUserId,
+        messages: [
+            {
+                type: 'text',
+                text: textMessage
+            }
+        ]
+    };
+
+    const response = await axios.post(
+        'https://api.line.me/v2/bot/message/push',
+        payload,
         {
             headers: {
                 'Content-Type': 'application/json',
@@ -172,7 +215,9 @@ router.get('/lookup-branches', async (req, res) => {
 // (Legacy endpoint kept for compatibility — now also checks is_customer_data_updated)
 // ---------------------------------------------------------------------------
 router.post('/update-profile', async (req, res) => {
-    const { line_user_id, tax_rec_id, tax_id, customer_branch, customer_name, customer_num, address, container_num } = req.body;
+    const { line_user_id, line_display_name, tax_rec_id, tax_id, customer_branch, customer_name, customer_num, address, container_num } = req.body;
+
+    const lineUsername = line_display_name ? `[c]${line_display_name}` : '[c]Customer';
 
     if (!tax_rec_id || !tax_id || !customer_branch || !address) {
         return res.status(400).json({ success: false, message: 'Missing required fields' });
@@ -240,7 +285,7 @@ router.post('/update-profile', async (req, res) => {
             [profileCustNum, container_num ? container_num.trim() : null, tax_rec_id]
         );
 
-        logActivity('REQ_MISS_DATA', `${profileName}:${address}:${tax_rec_id}`);
+        logActivity('REQ_MISS_DATA', `${profileName}:${address}:${tax_rec_id}`, lineUsername);
 
         res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error) {
@@ -256,12 +301,15 @@ router.post('/update-profile', async (req, res) => {
 router.post('/save-and-send', async (req, res) => {
     const {
         line_user_id,
+        line_display_name,
         tax_rec_id, tax_id,
         customer_branch, customer_num, customer_name,
         address, container_num,
         send_method,   // 'email' | 'line'
         email_address  // required if send_method = 'email'
     } = req.body;
+
+    const lineUsername = line_display_name ? `[c]${line_display_name}` : '[c]Customer';
 
     // Basic validation
     if (!tax_rec_id || !tax_id || !customer_branch || !customer_name || !address || !send_method) {
@@ -366,7 +414,7 @@ router.post('/save-and-send', async (req, res) => {
             ]
         );
 
-        logActivity('REQ_MISS_DATA', `${customer_name}:${address}:${tax_rec_id}`);
+        logActivity('REQ_MISS_DATA', `${customer_name}:${address}:${tax_rec_id}`, lineUsername);
 
         // --- Return immediate response so the UI doesn't hang ---
         let confirmMessage = 'ได้บันทึกรายการแล้ว';
@@ -390,12 +438,22 @@ router.post('/save-and-send', async (req, res) => {
                         [tax_rec_id]
                     );
 
-                    logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${tax_id}:${send_method}:${generatedPdfPath}`);
+                    logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${tax_id}:${send_method}:${generatedPdfPath}`, lineUsername);
 
                     if (send_method === 'email') {
                         try {
                             await sendInvoiceEmail(email_address, tax_rec_id, tax_id, generatedPdfPath);
-                            logActivity('SENDING_EMAIL', `${email_address}:${generatedPdfPath}`);
+                            logActivity('SENDING_EMAIL', `${email_address}:${generatedPdfPath}`, lineUsername);
+
+                            // Send LINE notification message if line_user_id is available
+                            if (line_user_id && line_user_id !== 'mock_user_id_for_dev') {
+                                try {
+                                    const textMsg = `เราได้ส่ง ใบกำกับภาษีแบบเต็ม ไปยัง Email: ${email_address} นี้แล้ว \nโปรดตรวจสอบ  email ของคุณในอีก 1-2นาที  \nขอขอบพระคุณที่ใช้บริการ`;
+                                    await sendLineTextMessage(line_user_id, textMsg);
+                                } catch (linePushErr) {
+                                    console.error('[save-and-send] LINE notification push failed:', linePushErr.message);
+                                }
+                            }
                         } catch (emailErr) {
                             console.error('[save-and-send] Email dispatch failed:', emailErr.message);
                         }
@@ -406,7 +464,7 @@ router.post('/save-and-send', async (req, res) => {
                             const pdfPublicUrl = `${baseUrl}${generatedPdfPath}`;
 
                             await sendLinePdfLink(line_user_id, tax_rec_id, customer_name, pdfPublicUrl);
-                            logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`);
+                            logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`, lineUsername);
                         } catch (lineErr) {
                             console.error('[save-and-send] LINE push failed:', lineErr.message);
                         }
@@ -497,7 +555,7 @@ async function sendLineMultiPdfLink(lineUserId, taxId, customerName, invoiceLink
                         contents: [
                             {
                                 type: 'text',
-                                text: 'กดที่หมายเลขเอกสารด้านล่างเพื่อดาวน์โหลด PDF:',
+                                text: 'ใบกำกับภาษีแบบเต็มพร้อมดาวน์โหลดแล้ว กรุณาแตะที่หมายเลขเอกสารเพื่อดาวน์โหลด PDF',
                                 size: 'xs',
                                 color: '#888888',
                                 wrap: true,
@@ -522,6 +580,18 @@ async function sendLineMultiPdfLink(lineUserId, taxId, customerName, invoiceLink
                                 layout: 'vertical',
                                 spacing: 'xs',
                                 contents: textLinks
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'md'
+                            },
+                            {
+                                type: 'text',
+                                text: 'หากท่านมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อ แผนกบัญชี โทรศัพท์ 02-738-8914 ในวันและเวลาทำการ เจ้าหน้าที่ของเรายินดีให้บริการ ขอขอบคุณที่ใช้บริการ Unicon Container Services',
+                                size: 'xs',
+                                color: '#888888',
+                                wrap: true,
+                                margin: 'sm'
                             }
                         ],
                         paddingAll: '16px'
@@ -768,6 +838,16 @@ router.post('/request-invoice', async (req, res) => {
                 if (method === 'email') {
                     await sendInvoiceEmail(email_sending, tax_id, pdfData);
                     await logActivity('SENDING_EMAIL_MULTI', `${email_sending}:${validTaxRecIds.join(',')}`, lineUsername);
+
+                    // Send LINE notification message if line_user_id is available
+                    if (line_user_id && line_user_id !== 'mock_user_id_for_dev') {
+                        try {
+                            const textMsg = `เราได้ส่ง ใบกำกับภาษีแบบเต็ม ไปยัง Email: ${email_sending} นี้แล้ว \nโปรดตรวจสอบ  email ของคุณในอีก 1-2นาที  \nขอขอบพระคุณที่ใช้บริการ`;
+                            await sendLineTextMessage(line_user_id, textMsg);
+                        } catch (linePushErr) {
+                            console.error('[request-invoice] LINE notification push failed:', linePushErr.message);
+                        }
+                    }
                 } else if (method === 'line') {
                     await sendLineMultiPdfLink(line_user_id, tax_id, customerName, pdfData);
                     await logActivity('SENDING_LINE_MULTI', `${validTaxRecIds.join(',')}:${fullLineId}`, lineUsername);

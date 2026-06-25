@@ -204,7 +204,7 @@ router.post('/export', async (req, res) => {
         // Log download activity
         await logActivity('REQ_DOWNLOAD_CUSTOMER', `${username}:${rows.length}`, username);
 
-        const filename = `customer_profile_export_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
+        const filename = `customer_data_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
         res.status(200).send(csvContent);

@@ -149,13 +149,6 @@
                             <label for="filterAction">Activity Type</label>
                             <select id="filterAction" class="form-control">
                                 <option value="all">All Activities</option>
-                                <option value="REQ_MISS_DATA">REQ_MISS_DATA (Submit Tax Profile)</option>
-                                <option value="REQ_FULL_TAX">REQ_FULL_TAX (Request Tax Invoice)</option>
-                                <option value="REQ_UPLOAD_CDMS">REQ_UPLOAD_CDMS (CDMS Upload)</option>
-                                <option value="REQ_DOWNLOAD_MISS">REQ_DOWNLOAD_MISS (Accounting Download)</option>
-                                <option value="CRON_GEN_PDF">CRON_GEN_PDF (Nightly PDF Cron)</option>
-                                <option value="ONTHEFLY_GEN_PDF">ONTHEFLY_GEN_PDF (PDF On-The-Fly)</option>
-                                <option value="SENDING_EMAIL">SENDING_EMAIL (Email Delivery)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -229,7 +222,48 @@
     <script>
         let currentPage = 1;
 
-        window.addEventListener('load', () => {
+        const actionLabels = {
+            'REQ_MISS_DATA': 'Submit Tax Profile',
+            'REQ_FULL_TAX': 'Request Tax Invoice',
+            'REQ_UPLOAD_CDMS': 'CDMS Upload',
+            'REQ_UPLOAD_CUSTOMER': 'Customer Profile Upload',
+            'REQ_UPLOAD_GATEIN': 'Gate-In Upload',
+            'REQ_UPLOAD_GATEOUT': 'Gate-Out Upload',
+            'REQ_DOWNLOAD_MISS': 'Accounting Download',
+            'REQ_DOWNLOAD_CUSTOMER': 'Customer Profile Download',
+            'EDIT_PROFILE': 'Edit Customer Profile',
+            'DOWNLOAD_PDF': 'Admin PDF Download',
+            'ONTHEFLY_GEN_PDF': 'PDF On-The-Fly',
+            'SENDING_EMAIL': 'Email Delivery',
+            'SENDING_LINE': 'LINE Delivery',
+            'SENDING_EMAIL_MULTI': 'Batch Email Delivery',
+            'SENDING_LINE_MULTI': 'Batch LINE Delivery',
+            'CRON_GEN_PDF': 'Nightly PDF Cron',
+            'CRON_CLEANUP': 'Data Cleanup Cron'
+        };
+
+        async function loadActionFilters() {
+            try {
+                const response = await fetch('/api/admin/logs/actions');
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    const select = document.getElementById('filterAction');
+                    select.innerHTML = '<option value="all">All Activities</option>';
+                    data.actions.forEach(action => {
+                        const friendlyLabel = actionLabels[action] ? `${action} (${actionLabels[action]})` : `${action} (${action})`;
+                        const opt = document.createElement('option');
+                        opt.value = action;
+                        opt.textContent = friendlyLabel;
+                        select.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to load activity dropdown list:', err);
+            }
+        }
+
+        window.addEventListener('load', async () => {
+            await loadActionFilters();
             loadLogs(1);
         });
 

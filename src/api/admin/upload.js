@@ -151,7 +151,8 @@ router.post('/cdms', upload.single('file'), async (req, res) => {
                 part_desc: finalPartDesc,
                 price: parseFloat(r.Price) || 0,
                 unit_num: parseFloat(r.Qty) || 0,
-                amount: parseFloat(r.Amount) || 0
+                amount: parseFloat(r.Amount) || 0,
+                raw_row: JSON.stringify(r)
             });
         }
 
@@ -179,8 +180,8 @@ router.post('/cdms', upload.single('file'), async (req, res) => {
                 // Insert into Child invoices_rec table
                 for (const item of inv.items) {
                     await connection.execute(
-                        'INSERT INTO invoices_rec (tax_rec_id, part_desc, price, unit_num, amount) VALUES (?, ?, ?, ?, ?)',
-                        [tax_rec_id, item.part_desc, item.price, item.unit_num, item.amount]
+                        'INSERT INTO invoices_rec (tax_rec_id, part_desc, price, unit_num, amount, raw_cdms_row) VALUES (?, ?, ?, ?, ?, ?)',
+                        [tax_rec_id, item.part_desc, item.price, item.unit_num, item.amount, item.raw_row]
                     );
                 }
             }
