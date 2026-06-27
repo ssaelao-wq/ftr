@@ -579,22 +579,49 @@ Matches missing-info.html style system and UX.
         <!-- Error Banner -->
         <div class="status-banner error" id="statusBanner"></div>
 
-        <!-- Tax ID -->
-        <div class="field-group">
-            <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
-            <div class="search-input-wrapper">
-                <input type="text" id="taxId" class="field-input" placeholder="13 หลัก"
-                       maxlength="13" inputmode="numeric" pattern="\d{13}"
-                       autocomplete="off" autocorrect="off">
-                <button class="btn-search" id="btnSearch">🔍 ค้นหา</button>
-            </div>
-        </div>
-
         <!-- Tax Record ID -->
         <div class="field-group">
             <div class="field-label">Tax Record ID <span class="req">*</span></div>
             <input type="text" id="taxRecId" class="field-input" placeholder="เช่น RF2605-00123"
                    autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+
+        <!-- Tax ID -->
+        <div class="field-group">
+            <div class="field-label">Tax ID (เลขประจำตัวผู้เสียภาษี) <span class="req">*</span></div>
+            <input type="text" id="taxId" class="field-input" placeholder="13 หลัก"
+                   maxlength="13" inputmode="numeric" pattern="\d{13}"
+                   autocomplete="off" autocorrect="off" disabled style="background-color: #f1f3f5; color: var(--grey-600);">
+            <button class="btn-search" id="btnSearch" style="display: none;">🔍 ค้นหา</button>
+        </div>
+
+        <!-- Customer Data Form (Same as Adding customer data) -->
+        <div id="customerFormSection" style="display: none; margin-top: 15px; border-top: 1px solid var(--grey-300); padding-top: 15px;">
+            <!-- Branch -->
+            <div class="field-group">
+                <div class="field-label">สาขา <span class="req">*</span></div>
+                <input type="text" id="customerBranch" class="field-input" readonly style="background-color: #f1f3f5; color: var(--grey-600);">
+            </div>
+            <!-- Customer Num -->
+            <div class="field-group">
+                <div class="field-label">รหัสลูกค้า</div>
+                <input type="text" id="customerNum" class="field-input" readonly style="background-color: #f1f3f5; color: var(--grey-600);">
+            </div>
+            <!-- Customer Name -->
+            <div class="field-group">
+                <div class="field-label">ชื่อจดทะเบียน (บริษัท / บุคคลธรรมดา) <span class="req">*</span></div>
+                <input type="text" id="customerName" class="field-input" readonly style="background-color: #f1f3f5; color: var(--grey-600);">
+            </div>
+            <!-- Address -->
+            <div class="field-group">
+                <div class="field-label">ที่อยู่ (ตามใบกำกับภาษี) <span class="req">*</span></div>
+                <textarea id="address" class="field-textarea" readonly style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid var(--grey-300); border-radius: var(--radius-sm); font-size: 0.95rem; font-family: inherit; resize: vertical; outline: none; background-color: #f1f3f5; color: var(--grey-600);"></textarea>
+            </div>
+            <!-- Container Num -->
+            <div class="field-group">
+                <div class="field-label">หมายเลขตู้สินค้า (ถ้ามี)</div>
+                <input type="text" id="containerNum" class="field-input" readonly style="background-color: #f1f3f5; color: var(--grey-600);">
+            </div>
         </div>
 
         <!-- Checking inline spinner -->
@@ -606,29 +633,30 @@ Matches missing-info.html style system and UX.
 
     <!-- Actions -->
     <div class="action-bar">
-        <button class="btn btn-ok" id="btnOk">ตกลง</button>
+        <button class="btn btn-ok" id="btnOk" disabled>ตกลง</button>
         <button class="btn btn-cancel" id="btnCancel">ยกเลิก</button>
     </div>
 </div>
 
-<!-- BOTTOM SHEET MODAL (Invoice Selection Checklist) -->
-<div class="overlay-backdrop" id="checklistBackdrop"></div>
-<div class="bottom-sheet" id="checklistSheet">
-    <div class="sheet-drag-handle"></div>
-    <h2>เลือกใบกำกับภาษี</h2>
-    <p class="sheet-sub">เลือกใบกำกับภาษีในรอบ 14 วันที่ต้องการขอ</p>
-
-    <!-- Checklist Container -->
-    <div id="checklistContainer" style="max-height: 250px; overflow-y: auto; margin-bottom: 16px; padding: 0 4px;">
-        <!-- Checkboxes dynamically rendered here -->
-    </div>
-
-    <div style="display: flex; gap: 10px;">
-        <button class="btn btn-ok" id="btnChecklistOk">ตกลง</button>
-        <button class="btn btn-cancel" id="btnChecklistCancel">ยกเลิก</button>
+<div class="footer-note" style="text-align: center; font-size: 0.85rem; color: #cc0000; font-weight: bold; margin-top: 15px; margin-bottom: 20px;">
+    สามารถขอใบกำกับภาษีได้ภายใน 7 วัน จากวันเข้ารับบริการ
+</div>
+<!-- Custom Alert/Confirm Modal -->
+<div id="customModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: white; border-radius: 12px; width: 100%; max-width: 400px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: modalFadeIn 0.2s ease;">
+        <div id="customModalContent" style="font-size: 1rem; color: #333; margin-bottom: 25px; white-space: pre-wrap; line-height: 1.6; text-align: center; font-weight: 500;"></div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="customModalCancelBtn" style="flex: 1; padding: 12px 20px; border: none; border-radius: 6px; background: #e9ecef; color: #495057; font-weight: 600; cursor: pointer; font-family: inherit;">ยกเลิก</button>
+            <button id="customModalOkBtn" style="flex: 1; padding: 12px 20px; border: none; border-radius: 6px; background: #00B900; color: white; font-weight: 600; cursor: pointer; font-family: inherit;">ตกลง</button>
+        </div>
     </div>
 </div>
-
+<style>
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>
 <!-- BOTTOM SHEET MODAL (Delivery Options) -->
 <div class="overlay-backdrop" id="deliveryBackdrop"></div>
 <div class="bottom-sheet" id="deliverySheet">
@@ -725,13 +753,14 @@ Matches missing-info.html style system and UX.
         loadingOverlay: document.getElementById('loadingOverlay'),
         toast: document.getElementById('toast'),
         
-        // New elements
         btnSearch: document.getElementById('btnSearch'),
-        checklistBackdrop: document.getElementById('checklistBackdrop'),
-        checklistSheet: document.getElementById('checklistSheet'),
-        checklistContainer: document.getElementById('checklistContainer'),
-        btnChecklistOk: document.getElementById('btnChecklistOk'),
-        btnChecklistCancel: document.getElementById('btnChecklistCancel')
+        // Customer info fields
+        customerFormSection: document.getElementById('customerFormSection'),
+        customerBranch: document.getElementById('customerBranch'),
+        customerNum: document.getElementById('customerNum'),
+        customerName: document.getElementById('customerName'),
+        address: document.getElementById('address'),
+        containerNum: document.getElementById('containerNum')
     };
 
     // Toast helper
@@ -752,9 +781,7 @@ Matches missing-info.html style system and UX.
         switch (newState) {
             case STATE.INITIAL:
                 elements.taxRecId.disabled = false;
-                elements.taxId.disabled = false;
-                elements.btnSearch.disabled = false;
-                elements.btnOk.disabled = false;
+                elements.taxId.disabled = true;
                 elements.btnCancel.disabled = false;
                 elements.checkingIndicator.style.display = 'none';
                 elements.statusBanner.style.display = 'none';
@@ -762,15 +789,12 @@ Matches missing-info.html style system and UX.
                 // Close Sheets
                 elements.deliveryBackdrop.style.display = 'none';
                 elements.deliverySheet.classList.remove('open');
-                elements.checklistBackdrop.style.display = 'none';
-                elements.checklistSheet.classList.remove('open');
                 elements.loadingOverlay.classList.remove('show');
                 break;
 
             case STATE.CHECKING:
                 elements.taxRecId.disabled = true;
                 elements.taxId.disabled = true;
-                elements.btnSearch.disabled = true;
                 elements.btnOk.disabled = true;
                 elements.btnCancel.disabled = true;
                 elements.checkingIndicator.style.display = 'flex';
@@ -780,8 +804,7 @@ Matches missing-info.html style system and UX.
 
             case STATE.ERROR:
                 elements.taxRecId.disabled = false;
-                elements.taxId.disabled = false;
-                elements.btnSearch.disabled = false;
+                elements.taxId.disabled = true;
                 elements.btnOk.disabled = false;
                 elements.btnCancel.disabled = false;
                 elements.checkingIndicator.style.display = 'none';
@@ -817,131 +840,67 @@ Matches missing-info.html style system and UX.
         }
     }
 
-    // Search action
-    async function searchInvoices() {
-        const taxIdVal = elements.taxId.value.trim();
-        if (!taxIdVal) {
-            showToast('กรุณากรอก Tax ID', 'error');
-            return;
-        }
-        if (taxIdVal.length !== 13 || !/^\d+$/.test(taxIdVal)) {
-            showToast('Tax ID ต้องเป็นตัวเลข 13 หลัก', 'error');
-            return;
-        }
-
-        elements.btnSearch.disabled = true;
-        elements.btnSearch.innerText = 'กำลังค้นหา...';
-
-        try {
-            const res = await fetch(`/api/customer/search-invoices?tax_id=${encodeURIComponent(taxIdVal)}`);
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                const invoices = data.invoices || [];
-                if (invoices.length === 0) {
-                    showToast('ไม่พบใบกำกับภาษีของ Tax ID นี้ในรอบ 14 วัน', 'error');
-                } else {
-                    renderChecklist(invoices);
-                    openChecklist();
-                }
-            } else {
-                showToast(data.message || 'เกิดข้อผิดพลาดในการค้นหา', 'error');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('ไม่สามารถติดต่อเซิร์ฟเวอร์ได้', 'error');
-        } finally {
-            elements.btnSearch.disabled = false;
-            elements.btnSearch.innerText = '🔍 ค้นหา';
-        }
-    }
-
-    function renderChecklist(invoices) {
-        const container = elements.checklistContainer;
-        container.innerHTML = '';
-
-        invoices.forEach(inv => {
-            const dateStr = inv.service_date ? new Date(inv.service_date).toLocaleDateString('th-TH') : '-';
-            const item = document.createElement('div');
-            item.className = 'checklist-item';
-            item.innerHTML = `
-                <input type="checkbox" value="${inv.tax_rec_id}">
-                <div class="checklist-item-details">
-                    <span class="checklist-item-title">${inv.tax_rec_id}</span>
-                    <span class="checklist-item-subtitle">วันที่บริการ: ${dateStr}</span>
-                </div>
-            `;
-            item.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'INPUT') {
-                    const cb = item.querySelector('input[type="checkbox"]');
-                    cb.checked = !cb.checked;
-                }
-            });
-            container.appendChild(item);
-        });
-    }
-
-    function openChecklist() {
-        elements.checklistBackdrop.style.display = 'block';
-        elements.checklistSheet.classList.add('open');
-    }
-
-    function closeChecklist() {
-        elements.checklistBackdrop.style.display = 'none';
-        elements.checklistSheet.classList.remove('open');
-    }
-
-    function applyChecklistSelection() {
-        const checkedBoxes = elements.checklistContainer.querySelectorAll('input[type="checkbox"]:checked');
-        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
-        if (selectedIds.length === 0) {
-            showToast('กรุณาเลือกใบกำกับภาษีอย่างน้อย 1 รายการ', 'error');
-            return;
-        }
-        elements.taxRecId.value = selectedIds.join(',');
-        closeChecklist();
-    }
-
-    // Handle verification
-    async function checkInvoice() {
+    // Unified search function triggered on blur/enter of taxRecId
+    async function doSearchRecord() {
         const taxRecIdVal = elements.taxRecId.value.trim();
-        const taxIdVal = elements.taxId.value.trim();
-
-        if (!taxRecIdVal) {
-            showToast('กรุณากรอก Tax Record ID', 'error');
-            return;
-        }
-        if (!taxIdVal) {
-            showToast('กรุณากรอก Tax ID', 'error');
-            return;
-        }
-        if (taxIdVal.length !== 13 || !/^\d+$/.test(taxIdVal)) {
-            showToast('Tax ID ต้องเป็นตัวเลข 13 หลัก', 'error');
-            return;
-        }
+        if (!taxRecIdVal) return;
 
         updateState(STATE.CHECKING);
+        elements.customerFormSection.style.display = 'none';
+        elements.btnOk.disabled = true;
 
         try {
-            const res = await fetch(`/api/customer/check-invoice?tax_rec_id=${encodeURIComponent(taxRecIdVal)}&tax_id=${encodeURIComponent(taxIdVal)}`);
+            const url = `/api/customer/search-record?tax_rec_id=${encodeURIComponent(taxRecIdVal)}`;
+            const res = await fetch(url);
             const data = await res.json();
 
-            if (res.ok && data.success) {
-                pdfState = data.pdf_state;
-                currentCustomerName = data.customer_name;
-                
-                if (data.excluded && data.excluded.length > 0) {
-                    showToast(`ข้ามเอกสารที่ไม่ตรงเงื่อนไข: ${data.excluded.join(', ')}`, 'warning');
-                    elements.taxRecId.value = data.valid.join(',');
+            updateState(STATE.INITIAL);
+
+            if (res.ok && data.success && data.found && data.record && data.record.existing_tax_id) {
+                const record = data.record;
+                elements.taxRecId.value = record.tax_rec_id || '';
+                elements.taxId.value = record.existing_tax_id || '';
+
+                // Check service date > 7 days
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const sDate = new Date(record.service_date);
+                sDate.setHours(0,0,0,0);
+                const diffDays = Math.floor((today - sDate) / (1000 * 60 * 60 * 24));
+
+                if (diffDays > 7) {
+                    await showCustomAlert(`ใบกำกับภาษี ${record.tax_rec_id} ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน`);
+                    elements.taxRecId.value = '';
+                    elements.taxId.value = '';
+                    elements.customerFormSection.style.display = 'none';
+                    elements.btnOk.disabled = true;
+                    elements.taxRecId.focus();
+                    return;
                 }
 
-                updateState(STATE.POPUP_OPEN, { customerName: data.customer_name });
+                // Found, populate data
+                elements.customerBranch.value = record.customer_branch || 'สำนักงานใหญ่';
+                elements.customerNum.value    = record.customer_num    || '';
+                elements.customerName.value   = record.customer_name   || '';
+                elements.address.value        = record.customer_addr   || '';
+                elements.containerNum.value   = record.container_num   || '';
+                elements.customerFormSection.style.display = 'block';
+
+                currentCustomerName = record.customer_name;
+                elements.btnOk.disabled = false;
             } else {
-                updateState(STATE.ERROR, { errorMessage: data.message || 'เกิดข้อผิดพลาดในการตรวจสอบ' });
+                // Not found OR has no TAX ID to match (no customer data)
+                await showCustomAlert("ใบกำกับภาษีนี้ยังไม่มีข้อมูลลูกค้า โปรดเพิ่มข้อมูลจากเมนู 'กรอกข้อมูลขอใบกำกับภาษี'");
+                elements.taxRecId.value = '';
+                elements.taxId.value = '';
+                elements.customerFormSection.style.display = 'none';
+                elements.btnOk.disabled = true;
+                elements.taxRecId.focus();
             }
         } catch (err) {
             console.error(err);
-            updateState(STATE.ERROR, { errorMessage: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง' });
+            updateState(STATE.INITIAL);
+            showToast('เกิดข้อผิดพลาดในการตรวจสอบข้อมูล', 'error');
         }
     }
 
@@ -990,7 +949,11 @@ Matches missing-info.html style system and UX.
     }
 
     // Event Listeners
-    elements.btnOk.addEventListener('click', checkInvoice);
+    elements.btnOk.addEventListener('click', () => {
+        if (!elements.btnOk.disabled) {
+            updateState(STATE.POPUP_OPEN, { customerName: currentCustomerName });
+        }
+    });
     
     elements.btnCancel.addEventListener('click', () => {
         try { liff.closeWindow(); } catch (e) {}
@@ -1004,18 +967,14 @@ Matches missing-info.html style system and UX.
         updateState(STATE.INITIAL);
     });
 
-    // Search Triggers
-    elements.btnSearch.addEventListener('click', searchInvoices);
+    // Blur / Enter listeners for input fields
+    elements.taxRecId.addEventListener('blur', doSearchRecord);
 
-    // Checklist triggers
-    elements.btnChecklistOk.addEventListener('click', applyChecklistSelection);
-    elements.btnChecklistCancel.addEventListener('click', () => {
-        closeChecklist();
-        elements.taxId.focus();
-    });
-    elements.checklistBackdrop.addEventListener('click', () => {
-        closeChecklist();
-        elements.taxId.focus();
+    elements.taxRecId.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            doSearchRecord();
+        }
     });
 
     // Send Email Trigger
@@ -1042,6 +1001,48 @@ Matches missing-info.html style system and UX.
         }
         submitRequest('line');
     });
+
+    function showCustomAlert(message) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('customModalOverlay');
+            const content = document.getElementById('customModalContent');
+            const cancelBtn = document.getElementById('customModalCancelBtn');
+            const okBtn = document.getElementById('customModalOkBtn');
+            
+            content.innerText = message;
+            cancelBtn.style.display = 'none';
+            okBtn.style.width = '100%';
+            overlay.style.display = 'flex';
+            
+            okBtn.onclick = () => {
+                overlay.style.display = 'none';
+                resolve();
+            };
+        });
+    }
+
+    function showCustomConfirm(message) {
+        return new Promise((resolve) => {
+            const overlay = document.getElementById('customModalOverlay');
+            const content = document.getElementById('customModalContent');
+            const cancelBtn = document.getElementById('customModalCancelBtn');
+            const okBtn = document.getElementById('customModalOkBtn');
+            
+            content.innerText = message;
+            cancelBtn.style.display = 'block';
+            okBtn.style.width = 'auto';
+            overlay.style.display = 'flex';
+            
+            okBtn.onclick = () => {
+                overlay.style.display = 'none';
+                resolve(true);
+            };
+            cancelBtn.onclick = () => {
+                overlay.style.display = 'none';
+                resolve(false);
+            };
+        });
+    }
 </script>
 </body>
 </html>

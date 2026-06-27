@@ -227,6 +227,9 @@
                     <table class="table-custom">
                         <thead>
                             <tr>
+                                <th class="action-cell">Action</th>
+                                <th>Accounting Export</th>
+                                <th>PDF Status</th>
                                 <th>Record ID</th>
                                 <th>Service Date</th>
                                 <th>Tax ID</th>
@@ -234,9 +237,6 @@
                                 <th>Cust Name</th>
                                 <th>Cust Address</th>
                                 <th>Cust Branch</th>
-                                <th>Accounting Export</th>
-                                <th>PDF Status</th>
-                                <th class="action-cell">Action</th>
                             </tr>
                         </thead>
                         <tbody id="resultsTableBody">
@@ -520,6 +520,13 @@
                 const pdfBadge = `<span class="badge ${pdfBadgeClass}">${pdfStatusText}</span>`;
 
                 tr.innerHTML = `
+                    <td class="action-cell">
+                        <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="openEditModal('${inv.tax_rec_id}')">
+                            Edit
+                        </button>
+                    </td>
+                    <td>${exportBadge}</td>
+                    <td>${pdfBadge}</td>
                     <td style="font-weight: 600; font-family: monospace;">${inv.tax_rec_id}</td>
                     <td>${formatDate(inv.service_date)}</td>
                     <td>${inv.tax_id || '-'}</td>
@@ -527,13 +534,6 @@
                     <td>${inv.customer || '-'}</td>
                     <td>${inv.customer_addr || '<span style="color:var(--text-muted);font-style:italic;">Incomplete</span>'}</td>
                     <td>${inv.customer_branch || '-'}</td>
-                    <td>${exportBadge}</td>
-                    <td>${pdfBadge}</td>
-                    <td class="action-cell">
-                        <button class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" onclick="openEditModal('${inv.tax_rec_id}')">
-                            Edit
-                        </button>
-                    </td>
                 `;
                 body.appendChild(tr);
             });

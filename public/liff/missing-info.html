@@ -270,10 +270,10 @@
 
         .btn {
             flex: 1;
-            padding: 12px 6px;
+            padding: 12px 2px;
             border: none;
             border-radius: var(--radius-sm);
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             font-weight: 600;
             font-family: inherit;
             cursor: pointer;
@@ -281,7 +281,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 2px;
+            white-space: nowrap;
         }
 
         .btn:active { transform: scale(0.97); }
@@ -307,6 +308,19 @@
         .btn-save:hover:not(:disabled) { background: var(--green-dark); }
 
         .btn-save:disabled {
+            background: var(--grey-300);
+            color: var(--grey-500);
+            cursor: not-allowed;
+        }
+
+        .btn-send {
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-send:hover:not(:disabled) { background: var(--green-dark); }
+
+        .btn-send:disabled {
             background: var(--grey-300);
             color: var(--grey-500);
             cursor: not-allowed;
@@ -850,9 +864,16 @@
         <button class="btn btn-save" id="btnSaveSend" disabled type="button">
             📨 บันทึกและส่ง
         </button>
+        <button class="btn btn-send" id="btnSend" disabled type="button">
+            📤 ส่ง
+        </button>
         <button class="btn btn-cancel" id="btnCancel" type="button">✕ ยกเลิก</button>
     </div>
 </div><!-- /.main-card -->
+
+<div class="footer-note" style="text-align: center; font-size: 0.85rem; color: #cc0000; font-weight: bold; margin-top: 15px; margin-bottom: 20px;">
+    สามารถขอใบกำกับภาษีได้ภายใน 7 วัน จากวันเข้ารับบริการ
+</div>
 
 <!-- ============================================================
      CUSTOMER SELECTION BOTTOM SHEET
@@ -913,6 +934,23 @@
     <p>กำลังดำเนินการ...</p>
 </div>
 
+<!-- Custom Alert/Confirm Modal -->
+<div id="customModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: white; border-radius: 12px; width: 100%; max-width: 400px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); animation: modalFadeIn 0.2s ease;">
+        <div id="customModalContent" style="font-size: 1rem; color: #333; margin-bottom: 25px; white-space: pre-wrap; line-height: 1.6; text-align: center; font-weight: 500;"></div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button id="customModalCancelBtn" style="flex: 1; padding: 12px 20px; border: none; border-radius: 6px; background: #e9ecef; color: #495057; font-weight: 600; cursor: pointer; font-family: inherit;">ยกเลิก</button>
+            <button id="customModalOkBtn" style="flex: 1; padding: 12px 20px; border: none; border-radius: 6px; background: #00B900; color: white; font-weight: 600; cursor: pointer; font-family: inherit;">ตกลง</button>
+        </div>
+    </div>
+</div>
+<style>
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -931,7 +969,9 @@ const STATE = {
     PROFILE_FOUND:    'PROFILE_FOUND',
     PROFILE_SELECTED: 'PROFILE_SELECTED',
     MANUAL_ENTRY:     'MANUAL_ENTRY',
-    READY:            'READY'
+    READY:            'READY',
+    SOME_NO_TAX_ID:   'SOME_NO_TAX_ID',
+    ALL_HAVE_TAX_ID:  'ALL_HAVE_TAX_ID'
 };
 
 let currentState = STATE.INITIAL;
@@ -963,6 +1003,7 @@ const el = {
     lockAddr:          $('lockAddr'),
     btnSaveOnly:       $('btnSaveOnly'),
     btnSaveSend:       $('btnSaveSend'),
+    btnSend:           $('btnSend'),
     btnCancel:         $('btnCancel'),
     // Sheet
     overlayBackdrop:   $('overlayBackdrop'),
@@ -1059,6 +1100,9 @@ function applyState(state) {
     el.lockName.style.display   = '';
     el.lockAddr.style.display   = '';
 
+    // Default Send button to disabled
+    el.btnSend.disabled = true;
+
     switch (state) {
 
         case STATE.INITIAL:
@@ -1095,7 +1139,7 @@ function applyState(state) {
             el.taxRecId.disabled = true;
             el.taxId.disabled    = true;
             el.btnSearch.disabled = true;
-            el.btnManual.disabled = false;
+            el.btnManual.disabled = true;
             el.searchIndicator.style.display = 'none';
             el.customerBranch.disabled = true; 
             el.customerNum.disabled    = true; 
@@ -1166,6 +1210,46 @@ function applyState(state) {
             el.btnSaveSend.disabled = false;
             el.btnManual.disabled = false;
             break;
+
+        case STATE.SOME_NO_TAX_ID:
+            el.taxRecId.disabled = false;
+            el.taxId.disabled    = false;
+            el.btnSearch.disabled = false;
+            el.btnManual.disabled = false;
+            el.searchIndicator.style.display = 'none';
+            el.customerBranch.disabled = true;
+            el.customerNum.disabled    = true;
+            el.customerName.disabled   = true;
+            el.address.disabled        = true;
+            el.containerNum.disabled   = true;
+            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+                .forEach(ic => ic.style.display = '');
+            
+            el.btnSaveOnly.disabled = false;
+            el.btnSaveSend.disabled = false;
+            el.btnCancel.disabled = false;
+            el.btnSend.disabled = true;
+            break;
+
+        case STATE.ALL_HAVE_TAX_ID:
+            el.taxRecId.disabled = false;
+            el.taxId.disabled    = true;
+            el.btnSearch.disabled = false;
+            el.btnManual.disabled = true;
+            el.searchIndicator.style.display = 'none';
+            el.customerBranch.disabled = true;
+            el.customerNum.disabled    = true;
+            el.customerName.disabled   = true;
+            el.address.disabled        = true;
+            el.containerNum.disabled   = true;
+            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+                .forEach(ic => ic.style.display = '');
+
+            el.btnSaveOnly.disabled = true;
+            el.btnSaveSend.disabled = true;
+            el.btnCancel.disabled = false;
+            el.btnSend.disabled = false;
+            break;
     }
 
     // Stop searching indicator unless actively searching
@@ -1196,6 +1280,215 @@ function checkManualReadiness() {
 // ============================================================
 // SEARCH / MANUAL BUTTON LOGIC
 // ============================================================
+// ============================================================
+// SEARCH / MANUAL BUTTON LOGIC
+// ============================================================
+let isSendOnlyMode = false;
+
+async function handleLookupResult(data, isAutoCheck) {
+    hideBanner();
+    const invoices = data.invoices || [];
+    if (invoices.length === 0) return;
+    const taxIdVal = el.taxId.value.trim();
+
+    if (invoices.length > 1) {
+        // MULTIPLE INVOICES FLOW
+        const hasSomeNoTaxId = invoices.some(inv => !inv.existing_tax_id);
+
+        if (hasSomeNoTaxId) {
+            // Some invoices lack tax_id
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const tax_rec_id_7days = [];
+            const tax_rec_id_proceed = [];
+            const tax_rec_id_hastaxid = [];
+
+            invoices.forEach(inv => {
+                const sDate = new Date(inv.service_date);
+                sDate.setHours(0,0,0,0);
+                const diffDays = Math.floor((today - sDate) / (1000 * 60 * 60 * 24));
+                if (diffDays > 7) {
+                    tax_rec_id_7days.push(inv);
+                } else if (!inv.existing_tax_id) {
+                    tax_rec_id_proceed.push(inv);
+                } else {
+                    tax_rec_id_hastaxid.push(inv);
+                }
+            });
+
+            const proceedList = tax_rec_id_proceed.map(inv => inv.tax_rec_id).join(', ');
+            const over7DaysList = tax_rec_id_7days.map(inv => inv.tax_rec_id).join(', ');
+
+            const msgLines = [];
+            if (tax_rec_id_7days.length > 0) {
+                msgLines.push(`${over7DaysList} ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน`);
+            }
+            if (tax_rec_id_proceed.length > 0) {
+                msgLines.push(`${proceedList} สามารถเพิ่มข้อมูลได้`);
+            }
+            if (tax_rec_id_hastaxid.length > 0) {
+                msgLines.push(`ใบกำกับภาษีที่เหลือมีข้อมูลแล้ว`);
+            }
+            const msg = msgLines.join('\n');
+
+            const ok = await showCustomConfirm(msg);
+            if (!ok) {
+                applyState(STATE.INITIAL);
+                el.taxRecId.focus();
+                return;
+            }
+
+            if (tax_rec_id_proceed.length === 0) {
+                applyState(STATE.INITIAL);
+                el.taxRecId.value = '';
+                el.taxRecId.focus();
+                return;
+            }
+
+            // Update taxRecId value to proceed list
+            el.taxRecId.value = proceedList;
+
+            isSendOnlyMode = false;
+            applyState(STATE.SOME_NO_TAX_ID);
+
+            if (!taxIdVal) {
+                showToast('กรุณากรอก Tax ID ก่อน', 'error');
+                el.taxId.focus();
+                return;
+            }
+
+            if (taxIdVal.length !== 13) {
+                showToast('Tax ID ต้องมี 13 หลัก', 'error');
+                el.taxId.focus();
+                return;
+            }
+
+            // Look up branches if tax_id is provided
+            if (data.branches && data.branches.length > 0) {
+                branchProfiles = data.branches;
+                selectedProfileIdx = -1;
+                buildCustomerSheet(branchProfiles);
+                openSheet();
+            } else {
+                applyState(STATE.MANUAL_ENTRY);
+                showToast('ไม่พบข้อมูลสำหรับ Tax ID นี้ กรุณากรอกข้อมูลเอง', 'default', 3500);
+            }
+        } else {
+            // All have tax_id
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const over7Days = [];
+            const customerNums = new Set();
+
+            invoices.forEach(inv => {
+                const sDate = new Date(inv.service_date);
+                sDate.setHours(0,0,0,0);
+                const diffDays = Math.floor((today - sDate) / (1000 * 60 * 60 * 24));
+                if (diffDays > 7) {
+                    over7Days.push(inv.tax_rec_id);
+                }
+                if (inv.customer_num) {
+                    customerNums.add(inv.customer_num);
+                }
+            });
+
+            let msg = '';
+            if (over7Days.length > 0) {
+                msg += `${over7Days.join(', ')} ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน\n`;
+            }
+            if (customerNums.size > 1) {
+                msg += `ใบกำกับภาษีบางหมายเลขเป็นคนละลูกค้า โปรดใส่เฉพาะหมายเลขที่มาจากลูกค้าเดียวกันเท่านั้น\n`;
+            }
+
+            if (msg) {
+                await showCustomAlert(msg.trim());
+                el.taxRecId.value = '';
+                el.taxRecId.focus();
+                applyState(STATE.INITIAL);
+                return;
+            }
+
+            isSendOnlyMode = true;
+            applyState(STATE.ALL_HAVE_TAX_ID);
+
+            // Populate the UI with existing customer info from the first invoice
+            const firstInv = invoices[0];
+            el.taxId.value = firstInv.existing_tax_id;
+            el.customerBranch.value = firstInv.customer_branch || 'สำนักงานใหญ่';
+            el.customerNum.value    = firstInv.customer_num    || '';
+            el.customerName.value   = firstInv.customer_name   || '';
+            el.address.value        = firstInv.customer_addr   || '';
+            el.containerNum.value   = firstInv.container_num   || '';
+        }
+    } else {
+        // SINGLE INVOICE FLOW
+        const inv = invoices[0];
+
+        // Age check for single invoice (both linked and unlinked)
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const sDate = new Date(inv.service_date);
+        sDate.setHours(0,0,0,0);
+        const diffDays = Math.floor((today - sDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 7) {
+            await showCustomAlert(`ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน`);
+            el.taxRecId.value = '';
+            el.taxRecId.focus();
+            applyState(STATE.INITIAL);
+            return;
+        }
+
+        if (!inv.existing_tax_id) {
+            // has no tax_id
+            if (isAutoCheck) {
+                applyState(STATE.SOME_NO_TAX_ID);
+                return;
+            }
+
+            isSendOnlyMode = false;
+            applyState(STATE.SOME_NO_TAX_ID);
+
+            if (!taxIdVal) {
+                showToast('กรุณากรอก Tax ID ก่อน', 'error');
+                el.taxId.focus();
+                return;
+            }
+
+            if (taxIdVal.length !== 13) {
+                showToast('Tax ID ต้องมี 13 หลัก', 'error');
+                el.taxId.focus();
+                return;
+            }
+
+            // Look up branches if tax_id is provided
+            if (data.branches && data.branches.length > 0) {
+                branchProfiles = data.branches;
+                selectedProfileIdx = -1;
+                buildCustomerSheet(branchProfiles);
+                openSheet();
+            } else {
+                applyState(STATE.MANUAL_ENTRY);
+                showToast('ไม่พบข้อมูลสำหรับ Tax ID นี้ กรุณากรอกข้อมูลเอง', 'default', 3500);
+            }
+        } else {
+            // has tax_id
+            isSendOnlyMode = true;
+            applyState(STATE.ALL_HAVE_TAX_ID);
+
+            // Populate existing profile
+            el.taxId.value = inv.existing_tax_id;
+            el.customerBranch.value = inv.customer_branch || 'สำนักงานใหญ่';
+            el.customerNum.value    = inv.customer_num    || '';
+            el.customerName.value   = inv.customer_name   || '';
+            el.address.value        = inv.customer_addr   || '';
+            el.containerNum.value   = inv.container_num   || '';
+        }
+    }
+}
+
 async function doLookup(forceManual = false, isAutoCheck = false) {
     const taxRecIdVal = el.taxRecId.value.trim();
     const taxIdVal    = el.taxId.value.trim();
@@ -1208,18 +1501,6 @@ async function doLookup(forceManual = false, isAutoCheck = false) {
         return;
     }
 
-    if (!isAutoCheck && !forceManual && !taxIdVal) {
-        showToast('กรุณากรอก Tax ID ก่อน', 'error');
-        el.taxId.focus();
-        return;
-    }
-
-    if (!isAutoCheck && !forceManual && taxIdVal.length !== 13) {
-        showToast('Tax ID ต้องมี 13 หลัก', 'error');
-        el.taxId.focus();
-        return;
-    }
-
     if (!isAutoCheck) applyState(STATE.SEARCHING);
 
     try {
@@ -1227,63 +1508,20 @@ async function doLookup(forceManual = false, isAutoCheck = false) {
         const resp = await fetch(url);
         const data = await resp.json();
 
-        if (isAutoCheck && (!resp.ok || !data.success || !data.existing_tax_id)) {
-            // Auto check silently ignores errors or non-linked states
-            if (!isAutoCheck) applyState(STATE.INITIAL);
-            return;
-        }
-
-        hideBanner();
-        isLockedRecord = data.is_locked || !!data.existing_tax_id;
-
-        if (data.existing_tax_id || data.status === 'ready') {
-            applyState(STATE.READONLY_LOCKED);
-            el.btnManual.disabled = true;
-            if (data.existing_tax_id) {
-                el.taxId.value = data.existing_tax_id;
-            }
-            if (data.existing_profile) {
-                el.customerBranch.value = data.existing_profile.customer_branch || 'สำนักงานใหญ่';
-                el.customerNum.value    = data.existing_profile.customer_num    || '';
-                el.customerName.value   = data.existing_profile.customer_name   || '';
-                el.address.value        = data.existing_profile.customer_addr   || '';
-            }
-            el.containerNum.value = data.existing_container_num || '';
-            showBanner('⚠️ ถ้าต้องการแก้ไขข้อมูลลูกค้า โปรดติดต่อ admin', 'warning');
-            
-            if (!isAutoCheck) {
-                if (data.status === 'ready') {
-                    showToast('ใบกำกับภาษีนี้เสร็จสมบูรณ์แล้ว ไม่สามารถแก้ไขได้', 'error');
-                } else if (forceManual) {
-                    showToast('ข้อมูลลูกค้านี้ถูกบันทึกแล้ว ไม่สามารถป้อนข้อมูลใหม่ได้ โปรดติดต่อ Admin', 'error');
-                }
-            }
-            return;
-        }
-
         if (!resp.ok || !data.success) {
-            applyState(STATE.INITIAL);
-            showBanner('❌ ' + (data.message || 'ไม่พบข้อมูล'), 'error');
+            if (!isAutoCheck) {
+                applyState(STATE.INITIAL);
+                showBanner('❌ ' + (data.message || 'ไม่พบข้อมูล'), 'error');
+            }
             return;
         }
 
         if (forceManual) {
-            // Manual entry — skip profile check
             applyState(STATE.MANUAL_ENTRY);
             return;
         }
 
-        if (data.branches && data.branches.length > 0) {
-            // Profile found — show selection sheet
-            branchProfiles = data.branches;
-            selectedProfileIdx = -1;
-            buildCustomerSheet(branchProfiles);
-            openSheet();
-        } else {
-            // No profile for this Tax ID — switch to manual entry
-            applyState(STATE.MANUAL_ENTRY);
-            showToast('ไม่พบข้อมูลสำหรับ Tax ID นี้ กรุณากรอกข้อมูลเอง', 'default', 3500);
-        }
+        await handleLookupResult(data, isAutoCheck);
 
     } catch (err) {
         console.error('Lookup error:', err);
@@ -1382,13 +1620,21 @@ el.btnSaveOnly.addEventListener('click', async () => {
         showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
         return;
     }
+    
+    // Check multiple IDs
+    const ids = el.taxRecId.value.split(',').map(id => id.trim()).filter(Boolean);
+    if (ids.length > 1) {
+        const ok = await showCustomConfirm("โปรดตรวจสอบความถูกต้องก่อนกดบันทึกข้อมูล สามารถขอแก้ไขได้ภายใน 3 วันโดยมีค่าใช้จ่ายกรุณาติดต่อแอดมิน");
+        if (!ok) return;
+    }
+
     await doSaveAndSend('save', null);
 });
 
 // ============================================================
 // SAVE & SEND BUTTON — open send modal
 // ============================================================
-el.btnSaveSend.addEventListener('click', () => {
+el.btnSaveSend.addEventListener('click', async () => {
     if (el.btnSaveSend.disabled) return;
     // Validate required fields
     if (!el.taxRecId.value.trim() || !el.taxId.value.trim() ||
@@ -1397,6 +1643,22 @@ el.btnSaveSend.addEventListener('click', () => {
         showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
         return;
     }
+
+    // Check multiple IDs
+    const ids = el.taxRecId.value.split(',').map(id => id.trim()).filter(Boolean);
+    if (ids.length > 1) {
+        const ok = await showCustomConfirm("โปรดตรวจสอบความถูกต้องก่อนกดบันทึกข้อมูล สามารถขอแก้ไขได้ภายใน 3 วันโดยมีค่าใช้จ่ายกรุณาติดต่อแอดมิน");
+        if (!ok) return;
+    }
+
+    openSendModal();
+});
+
+// ============================================================
+// SEND BUTTON (Send only, without save)
+// ============================================================
+el.btnSend.addEventListener('click', () => {
+    if (el.btnSend.disabled) return;
     openSendModal();
 });
 
@@ -1425,7 +1687,11 @@ el.btnSendEmail.addEventListener('click', async () => {
         return;
     }
     closeSendModal();
-    await doSaveAndSend('email', email);
+    if (isSendOnlyMode) {
+        await doSendOnly('email', email);
+    } else {
+        await doSaveAndSend('email', email);
+    }
 });
 
 // Send LINE
@@ -1435,7 +1701,11 @@ el.btnSendLine.addEventListener('click', async () => {
         return;
     }
     closeSendModal();
-    await doSaveAndSend('line', null);
+    if (isSendOnlyMode) {
+        await doSendOnly('line', null);
+    } else {
+        await doSaveAndSend('line', null);
+    }
 });
 
 // ============================================================
@@ -1472,6 +1742,8 @@ async function doSaveAndSend(sendMethod, emailAddress) {
             const msg = data.message || 'ได้บันทึกรายการแล้ว';
             showToast(msg, 'success', 5000);
             el.btnSaveSend.disabled = true;
+            el.btnSaveOnly.disabled = true;
+            el.btnSend.disabled = true;
             el.btnCancel.style.display = 'none';
             // Disable all fields — done
             [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
@@ -1501,6 +1773,57 @@ async function doSaveAndSend(sendMethod, emailAddress) {
 }
 
 // ============================================================
+// SEND ONLY API CALL
+// ============================================================
+async function doSendOnly(sendMethod, emailAddress) {
+    el.loadingOverlay.classList.add('show');
+
+    const payload = {
+        line_user_id:      lineUserId || 'mock_user_id_for_dev',
+        line_display_name: lineDisplayName || 'mock_user_name',
+        tax_rec_id:        el.taxRecId.value.trim(),
+        tax_id:            el.taxId.value.trim(),
+        send_method:       sendMethod,
+        email_sending:     emailAddress || ''
+    };
+
+    try {
+        const resp = await fetch('/api/customer/request-invoice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await resp.json();
+
+        el.loadingOverlay.classList.remove('show');
+
+        if (resp.ok && data.success) {
+            const msg = data.message || 'ได้ส่งข้อมูลแล้ว';
+            showToast(msg, 'success', 5000);
+            el.btnSend.disabled = true;
+            el.btnSaveSend.disabled = true;
+            el.btnSaveOnly.disabled = true;
+            el.btnCancel.style.display = 'none';
+            // Disable all fields — done
+            [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
+             el.customerName, el.address, el.containerNum]
+                .forEach(f => { f.disabled = true; });
+            el.btnSearch.disabled = true;
+            // Close LIFF after 5s
+            setTimeout(() => {
+                try { liff.closeWindow(); } catch(e) {}
+            }, 5500);
+        } else {
+            showToast('❌ ' + (data.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่'), 'error', 5000);
+        }
+    } catch (err) {
+        el.loadingOverlay.classList.remove('show');
+        console.error('Send-only error:', err);
+        showToast('❌ เกิดข้อผิดพลาดเครือข่าย กรุณาลองใหม่', 'error', 4000);
+    }
+}
+
+// ============================================================
 // UTILITIES
 // ============================================================
 function escHtml(str) {
@@ -1509,6 +1832,48 @@ function escHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function showCustomAlert(message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('customModalOverlay');
+        const content = document.getElementById('customModalContent');
+        const cancelBtn = document.getElementById('customModalCancelBtn');
+        const okBtn = document.getElementById('customModalOkBtn');
+        
+        content.innerText = message;
+        cancelBtn.style.display = 'none';
+        okBtn.style.width = '100%';
+        overlay.style.display = 'flex';
+        
+        okBtn.onclick = () => {
+            overlay.style.display = 'none';
+            resolve();
+        };
+    });
+}
+
+function showCustomConfirm(message) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('customModalOverlay');
+        const content = document.getElementById('customModalContent');
+        const cancelBtn = document.getElementById('customModalCancelBtn');
+        const okBtn = document.getElementById('customModalOkBtn');
+        
+        content.innerText = message;
+        cancelBtn.style.display = 'block';
+        okBtn.style.width = 'auto';
+        overlay.style.display = 'flex';
+        
+        okBtn.onclick = () => {
+            overlay.style.display = 'none';
+            resolve(true);
+        };
+        cancelBtn.onclick = () => {
+            overlay.style.display = 'none';
+            resolve(false);
+        };
+    });
 }
 </script>
 </body>

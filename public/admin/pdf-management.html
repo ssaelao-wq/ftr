@@ -239,12 +239,12 @@
                     <table class="table-custom">
                         <thead>
                             <tr>
+                                <th class="action-cell">Actions</th>
+                                <th>PDF Status</th>
                                 <th>Record ID</th>
                                 <th>Service Date</th>
                                 <th>Customer</th>
                                 <th>Tax ID</th>
-                                <th>PDF Status</th>
-                                <th class="action-cell">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="resultsTableBody">
@@ -456,11 +456,6 @@
                 const emailDisabled = !isReady ? 'disabled' : '';
 
                 tr.innerHTML = `
-                    <td style="font-weight: 600; font-family: monospace;">${inv.tax_rec_id}</td>
-                    <td>${formatDate(inv.service_date)}</td>
-                    <td>${inv.customer || '-'}</td>
-                    <td>${inv.tax_id || '-'}</td>
-                    <td>${pdfBadge}</td>
                     <td class="action-cell">
                         <div class="actions-group">
                             <button class="action-btn btn-gen" ${genDisabled} data-tooltip="${genTooltip}" onclick="generatePdfFile('${inv.tax_rec_id}', this)">
@@ -483,6 +478,11 @@
                             </button>
                         </div>
                     </td>
+                    <td>${pdfBadge}</td>
+                    <td style="font-weight: 600; font-family: monospace;">${inv.tax_rec_id}</td>
+                    <td>${formatDate(inv.service_date)}</td>
+                    <td>${inv.customer || '-'}</td>
+                    <td>${inv.tax_id || '-'}</td>
                 `;
                 body.appendChild(tr);
             });

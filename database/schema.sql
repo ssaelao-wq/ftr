@@ -79,6 +79,24 @@ CREATE TABLE `activity_logs` (
     PRIMARY KEY (`log_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insert Admin User: admin/admin123
+-- Insert Admin User: 
+/*
+admin / admin123
+ann.acc / ann123
+nam.acc / nam789
+ray.acc / ray456
+tuu.acc / tuu147
+aum / aum258
+patanida / patanida369
+*/
+
 INSERT INTO `admin_users` (`username`, `password_hash`) 
-VALUES ('admin', '$2b$10$X.zBWTh4BdxYakAmTTm.HumGGz31N7ZRJ5vSgV2/VIfmbLU6Oxpv6');
+VALUES
+('admin',   '$2b$10$X.zBWTh4BdxYakAmTTm.HumGGz31N7ZRJ5vSgV2/VIfmbLU6Oxpv6'),
+('ann.acc', '$2a$10$FHlUJsC6aFC6RObOj.Fru.Lx/K167zxCvnivTLqHYHuP2Ve9LUU3m'),
+('nam.acc', '$2a$10$ooHxxrnNzhwNo4ygQRFBD.iRI4/AKpP5tqYo3HPswfu2DAPQEjEym'),
+('ray.acc', '$2a$10$lq4AseRPs0SC9Dyj1A1q.ekP1dMNFyHISdLTubqRrF8nVZwxahsam'),
+('tuu.acc', '$2a$10$JGRBJeDFoTO6W4RSWsXEFu9lz.ohk5QUJh3GqSDwWsdaYx9P4Wk.m'),
+('aum',     '$2a$10$x3zwg.oKCcD9kGJk1xZnl.fVLO2S6GLb0TUWZt8yUTKFkviapfDIm'),
+('patanida','$2a$10$KswrsQJS0/7LdWZvgR4k..uu8nGSewufQfKt0uMGRaxYjye/SpRnO');
+

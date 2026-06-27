@@ -207,6 +207,7 @@
                     <table class="table-custom">
                         <thead>
                             <tr>
+                                <th>Accounting Export</th>
                                 <th>Cust Num</th>
                                 <th>Tax ID</th>
                                 <th>Cust Name</th>
@@ -214,7 +215,6 @@
                                 <th>Cust Email</th>
                                 <th>Cust Phone</th>
                                 <th>Cust Branch</th>
-                                <th>Accounting Export</th>
                                 <th>Created At</th>
                                 <th>Updated At</th>
                                 <th class="action-cell" style="display: none;">Action</th>
@@ -433,6 +433,7 @@
                     : '<span class="badge badge-pending">Pending</span>';
 
                 tr.innerHTML = `
+                    <td>${exportBadge}</td>
                     <td>${prof.customer_num || '-'}</td>
                     <td>${prof.tax_id || '-'}</td>
                     <td>${prof.customer_name || '-'}</td>
@@ -440,7 +441,6 @@
                     <td>${prof.customer_email || '-'}</td>
                     <td>${prof.customer_phone || '-'}</td>
                     <td>${prof.customer_branch || '-'}</td>
-                    <td>${exportBadge}</td>
                     <td>${formatDateTime(prof.created_at)}</td>
                     <td>${formatDateTime(prof.updated_at)}</td>
                     <td class="action-cell" style="display: none;">

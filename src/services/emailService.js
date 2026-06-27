@@ -144,14 +144,14 @@ async function sendInvoiceEmail(emailSending, arg2, arg3, arg4) {
                 <p>หากท่านมีข้อสงสัยหรือต้องการสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อ แผนกบัญชี โทรศัพท์ <strong>02-738-8914</strong> ในวันและเวลาทำการ เจ้าหน้าที่ของเรายินดีให้บริการ</p>
                 <br>
                 <p>ขอขอบพระคุณที่ไว้วางใจใช้บริการกับเรา</p>
-                <p style="color: #666; font-size: 12px;"><strong>หมายเหตุ:</strong> อีเมลฉบับนี้จัดส่งโดยระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้ หากต้องการติดต่อหรือสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อบริษัทผ่านช่องทางที่ระบุข้างต้น</p>
+                <p style="color: #666; font-size: 12px; font-weight: bold;"><strong>หมายเหตุ:</strong> อีเมลฉบับนี้จัดส่งโดยระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้ หากต้องการติดต่อหรือสอบถามข้อมูลเพิ่มเติม กรุณาติดต่อบริษัทผ่านช่องทางที่ระบุข้างต้น</p>
                 <br>
-                <p><img src="cid:unicon_signature_image" alt="Unicon Signature" style="max-width: 100%; height: auto; display: block; margin: 10px 0;" /></p>
+                <p><img src="cid:unicon_signature_image" alt="Unicon Signature" style="width: 250px; max-width: 100%; height: auto; display: block; margin: 10px 0;" /></p>
                 <br>
                 <p>Unicon Container Services Co.,Ltd.<br>
                 เปิดทำการ จันทร์-เสาร์ เวลา 08.00-18.00 น.<br>
                 Check booking <a href="http://150.95.90.37/bis" target="_blank">http://150.95.90.37/bis</a></p>
-                <p><img src="cid:unicon_qr" alt="Unicon QR" style="max-width: 150px; height: auto; display: block; margin: 10px 0;" /></p>
+                <p><img src="cid:unicon_qr" alt="Unicon QR" style="width: 250px; max-width: 100%; height: auto; display: block; margin: 10px 0;" /></p>
             </div>
         `,
         attachments: attachments

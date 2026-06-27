@@ -57,7 +57,8 @@ This stamps the version number onto your latest commit.
 	git push origin v1.0.1
 
 -----------
-# Please sync to Github as v1.0.2. Run following commands:
+# Sync to Github
+Please sync to Github as v1.0.3. Run following commands:
 	echo "Version: 1.0.3 - Fixbug and change wording" >> CHANGELOG.md
 	git add .
 	git commit -m "Release version 1.0.3"
@@ -80,12 +81,12 @@ This stamps the version number onto your latest commit.
 # Change coding: we need to build Docker image and run:
     1. Edit code locally 
     2. Upload code files + .env to /www/wwwroot/ftr/ (don't upload package.json/package-lock.json)
-    3. cd /www/server/panel/data/compose/ftr-app 
-    4. docker compose down 
-   [5. docker rm -f ftr-app 		(if needed)] 
+    3. cd /www/server/panel/data/compose/ftr-app
+    4. docker compose down
+   [5. docker rm -f ftr-app] 
     6. docker compose up -d --build 	(if code changed) 
        docker compose up -d         	(if only compose config changed) 
-    7. docker logs ftr-app --tail 20 	(verify) 
+    7. docker logs ftr-app --tail 20
 
 # Change .env only, we just restart the docker:
    docker compose restart web-app
@@ -149,7 +150,7 @@ cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
 
 
 ###########################
-# Create tunnel using ngrok.com
+# ngrok.com, create tunnel
 # Your Authtoken: use this personal Authtoken to authenticate ngrok agents, SDKs, 
 # and the Kubernetes Operator for your own projects.
 

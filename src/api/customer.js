@@ -164,45 +164,70 @@ router.get('/lookup-branches', async (req, res) => {
     if (!tax_rec_id || !tax_rec_id.trim()) {
         return res.status(400).json({ success: false, code: 'MISSING_PARAM', message: 'Tax Record ID is required.' });
     }
-    if (!tax_id || !tax_id.trim()) {
-        return res.status(400).json({ success: false, code: 'MISSING_PARAM', message: 'Tax ID is required.' });
-    }
 
     try {
-        // Check 1: Does this tax_rec_id exist in invoices?
+        const ids = tax_rec_id.split(',').map(id => id.trim()).filter(Boolean);
+        if (ids.length === 0) {
+            return res.status(400).json({ success: false, code: 'MISSING_PARAM', message: 'Tax Record ID is required.' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        // Check 1: Does this tax_rec_id exist in invoices and does it already have a customer profile linked?
         const [invoiceRows] = await db.execute(
-            'SELECT tax_rec_id, is_customer_data_updated FROM invoices WHERE tax_rec_id = ?',
-            [tax_rec_id.trim()]
+            `SELECT i.tax_rec_id, i.is_customer_data_updated, i.container_num, i.status, i.service_date,
+                    p.tax_id AS existing_tax_id, p.customer_branch, p.customer_num, p.customer_name, p.customer_addr
+             FROM invoices i
+             LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
+             WHERE i.tax_rec_id IN (${placeholders})`,
+            ids
         );
 
-        if (invoiceRows.length === 0) {
+        const foundIds = new Set(invoiceRows.map(r => r.tax_rec_id));
+        const missingIds = ids.filter(id => !foundIds.has(id));
+
+        if (missingIds.length > 0) {
             return res.status(404).json({
                 success: false,
                 code: 'NO_RECORD',
-                message: 'ไม่มีใบกำกับภาษีของหมายเลขนี้'
+                message: `ไม่พบใบกำกับภาษีหมายเลข: ${missingIds.join(', ')}`
             });
         }
 
-        // Check 2: 1-time lock — has customer already updated from Rich Menu?
-        if (invoiceRows[0].is_customer_data_updated) {
-            return res.status(403).json({
-                success: false,
-                code: 'LOCKED',
-                message: 'ไม่สามารถแก้ไขข้อมูลลูกค้าได้มากกว่า 1 ครั้ง โปรดติดต่อ admin'
-            });
+        let responsePayload = {
+            success: true,
+            invoices: invoiceRows,
+            branches: []
+        };
+
+        // Backward compatibility for single invoice lookup
+        if (ids.length === 1 && invoiceRows.length === 1) {
+            const inv = invoiceRows[0];
+            responsePayload.already_has_customer_data = !!inv.existing_tax_id;
+            responsePayload.is_locked = inv.is_customer_data_updated || !!inv.existing_tax_id;
+            responsePayload.status = inv.status;
+            responsePayload.existing_tax_id = inv.existing_tax_id;
+            responsePayload.existing_container_num = inv.container_num;
+            responsePayload.existing_profile = inv.existing_tax_id ? {
+                customer_branch: inv.customer_branch,
+                customer_num: inv.customer_num,
+                customer_name: inv.customer_name,
+                customer_addr: inv.customer_addr
+            } : null;
         }
 
-        // Look up customer profiles for this tax_id
-        const [rows] = await db.execute(
-            `SELECT customer_branch, customer_num, customer_name, customer_addr
-             FROM customer_profile
-             WHERE tax_id = ?
-             ORDER BY customer_branch = 'สำนักงานใหญ่' DESC, customer_branch ASC`,
-            [tax_id.trim()]
-        );
+        // Look up customer profiles for this tax_id if provided
+        if (tax_id && tax_id.trim()) {
+            const [rows] = await db.execute(
+                `SELECT customer_branch, customer_num, customer_name, customer_addr
+                 FROM customer_profile
+                 WHERE tax_id = ?
+                 ORDER BY customer_branch = 'สำนักงานใหญ่' DESC, customer_branch ASC`,
+                [tax_id.trim()]
+            );
+            responsePayload.branches = rows;
+        }
 
-        // Return branches (may be empty array — frontend handles empty = manual entry mode)
-        res.json({ success: true, branches: rows });
+        res.json(responsePayload);
 
     } catch (error) {
         console.error('Customer lookup-branches error:', error);
@@ -323,10 +348,16 @@ router.post('/save-and-send', async (req, res) => {
     }
 
     try {
-        // Check invoice exists and read lock flags
+        const ids = tax_rec_id.split(',').map(id => id.trim()).filter(Boolean);
+        if (ids.length === 0) {
+            return res.status(400).json({ success: false, message: 'No valid Tax Record IDs provided' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+        // Check invoices exist and read lock flags
         const [rows] = await db.execute(
-            'SELECT tax_rec_id, is_customer_data_updated, is_pdf_sent_from_richmenu FROM invoices WHERE tax_rec_id = ?',
-            [tax_rec_id]
+            `SELECT tax_rec_id, is_customer_data_updated, is_pdf_sent_from_richmenu FROM invoices WHERE tax_rec_id IN (${placeholders})`,
+            ids
         );
 
         if (rows.length === 0) {
@@ -336,24 +367,22 @@ router.post('/save-and-send', async (req, res) => {
             });
         }
 
-        const invoice = rows[0];
-
-        // 1-time lock: customer data
-        if (invoice.is_customer_data_updated) {
-            return res.status(403).json({
-                success: false,
-                code: 'DATA_LOCKED',
-                message: 'ไม่สามารถแก้ไขข้อมูลลูกค้าได้มากกว่า 1 ครั้ง โปรดติดต่อ admin'
-            });
-        }
-
-        // 1-time lock: PDF sending
-        if (invoice.is_pdf_sent_from_richmenu) {
-            return res.status(403).json({
-                success: false,
-                code: 'PDF_LOCKED',
-                message: 'ไม่สามารถสร้างใบกำกับภาษีในรูปแบบ PDF ได้มากกว่า 1 ครั้ง โปรดติดต่อ admin'
-            });
+        // 1-time lock checks
+        for (const invoice of rows) {
+            if (invoice.is_customer_data_updated) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'DATA_LOCKED',
+                    message: `ใบกำกับภาษีหมายเลข ${invoice.tax_rec_id} ไม่สามารถแก้ไขข้อมูลลูกค้าได้มากกว่า 1 ครั้ง โปรดติดต่อ admin`
+                });
+            }
+            if (invoice.is_pdf_sent_from_richmenu) {
+                return res.status(403).json({
+                    success: false,
+                    code: 'PDF_LOCKED',
+                    message: `ใบกำกับภาษีหมายเลข ${invoice.tax_rec_id} ไม่สามารถสร้างใบกำกับภาษีในรูปแบบ PDF ได้มากกว่า 1 ครั้ง โปรดติดต่อ admin`
+                });
+            }
         }
 
         // If Tax ID was found in customer_profile, get its customer_num
@@ -399,29 +428,31 @@ router.post('/save-and-send', async (req, res) => {
             );
         }
 
-        // --- Save customer data to invoices ---
+        // --- Save customer data to all invoices ---
         await db.execute(
             `UPDATE invoices
              SET customer_num = ?, container_num = ?,
                  is_accounting_exported = FALSE,
                  is_customer_data_updated = TRUE,
                  status = 'pending'
-             WHERE tax_rec_id = ?`,
+             WHERE tax_rec_id IN (${placeholders})`,
             [
                 activeCustomerNum,
                 container_num ? container_num.trim() : null,
-                tax_rec_id
+                ...ids
             ]
         );
 
-        logActivity('REQ_MISS_DATA', `${customer_name}:${address}:${tax_rec_id}`, lineUsername);
+        logActivity('REQ_MISS_DATA', `${customer_name}:${address}:${ids.join(',')}`, lineUsername);
 
         // --- Return immediate response so the UI doesn't hang ---
         let confirmMessage = 'ได้บันทึกรายการแล้ว';
         if (send_method === 'email') {
             confirmMessage = 'โปรดตรวจสอบอีเมล์ของคุณในอีก 1-2 นาที';
         } else if (send_method === 'line') {
-            confirmMessage = 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
+            confirmMessage = ids.length > 1
+                ? 'โปรดรอสักครู่ กำลังส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด'
+                : 'โปรดรอ 1-2 นาที เพื่อสร้างใบกำกับภาษีในรูปแบบ PDF และส่ง Link ให้คุณทางไลน์เพื่อดาวโหลด';
         }
 
         res.json({ success: true, message: confirmMessage });
@@ -430,25 +461,35 @@ router.post('/save-and-send', async (req, res) => {
         if (send_method === 'email' || send_method === 'line') {
             (async () => {
                 try {
-                    const generatedPdfPath = await generatePdf(tax_rec_id);
+                    const pdfData = [];
+                    for (const id of ids) {
+                        const generatedPdfPath = await generatePdf(id);
 
-                    // Mark PDF as sent from rich menu (1-time lock)
-                    await db.execute(
-                        'UPDATE invoices SET is_pdf_sent_from_richmenu = TRUE WHERE tax_rec_id = ?',
-                        [tax_rec_id]
-                    );
+                        // Mark PDF as sent from rich menu (1-time lock)
+                        await db.execute(
+                            'UPDATE invoices SET is_pdf_sent_from_richmenu = TRUE WHERE tax_rec_id = ?',
+                            [id]
+                        );
 
-                    logActivity('ONTHEFLY_GEN_PDF', `${tax_rec_id}:${tax_id}:${send_method}:${generatedPdfPath}`, lineUsername);
+                        logActivity('ONTHEFLY_GEN_PDF', `${id}:${tax_id}:${send_method}:${generatedPdfPath}`, lineUsername);
+
+                        pdfData.push({
+                            taxRecId: id,
+                            pdfRelPath: generatedPdfPath,
+                            pdfUrl: `${getBaseUrl(req)}${generatedPdfPath}`,
+                            companyName: customer_name.trim()
+                        });
+                    }
 
                     if (send_method === 'email') {
                         try {
-                            await sendInvoiceEmail(email_address, tax_rec_id, tax_id, generatedPdfPath);
-                            logActivity('SENDING_EMAIL', `${email_address}:${generatedPdfPath}`, lineUsername);
+                            await sendInvoiceEmail(email_address, tax_id, pdfData);
+                            logActivity('SENDING_EMAIL_MULTI', `${email_address}:${ids.join(',')}`, lineUsername);
 
                             // Send LINE notification message if line_user_id is available
                             if (line_user_id && line_user_id !== 'mock_user_id_for_dev') {
                                 try {
-                                    const textMsg = `เราได้ส่ง ใบกำกับภาษีแบบเต็ม ไปยัง Email: ${email_address} นี้แล้ว \nโปรดตรวจสอบ  email ของคุณในอีก 1-2นาที  \nขอขอบพระคุณที่ใช้บริการ`;
+                                    const textMsg = `${ids.join(', ')}\nเราได้ส่งใบกำกับภาษีแบบเต็ม\nไปยัง Email: ${email_address} นี้แล้ว\nโปรดตรวจสอบ email ของคุณในอีก 1-2นาที\nขอขอบพระคุณที่ใช้บริการ`;
                                     await sendLineTextMessage(line_user_id, textMsg);
                                 } catch (linePushErr) {
                                     console.error('[save-and-send] LINE notification push failed:', linePushErr.message);
@@ -459,12 +500,12 @@ router.post('/save-and-send', async (req, res) => {
                         }
                     } else if (send_method === 'line') {
                         try {
-                            // Build public PDF URL from the storage path using dynamic base URL helper
-                            const baseUrl = getBaseUrl(req);
-                            const pdfPublicUrl = `${baseUrl}${generatedPdfPath}`;
-
-                            await sendLinePdfLink(line_user_id, tax_rec_id, customer_name, pdfPublicUrl);
-                            logActivity('SENDING_LINE', `${tax_rec_id}:${pdfPublicUrl}`, lineUsername);
+                            if (ids.length > 1) {
+                                await sendLineMultiPdfLink(line_user_id, tax_id, customer_name, pdfData);
+                            } else {
+                                await sendLinePdfLink(line_user_id, ids[0], customer_name, pdfData[0].pdfUrl);
+                            }
+                            logActivity('SENDING_LINE_MULTI', `${ids.join(',')}:${line_user_id}`, lineUsername);
                         } catch (lineErr) {
                             console.error('[save-and-send] LINE push failed:', lineErr.message);
                         }
@@ -613,6 +654,46 @@ async function sendLineMultiPdfLink(lineUserId, taxId, customerName, invoiceLink
     );
     return response.data;
 }
+
+// ---------------------------------------------------------------------------
+// GET /api/customer/search-record
+// Search single record by either tax_rec_id or tax_id
+// ---------------------------------------------------------------------------
+router.get('/search-record', async (req, res) => {
+    const { tax_rec_id, tax_id } = req.query;
+
+    if ((!tax_rec_id || !tax_rec_id.trim()) && (!tax_id || !tax_id.trim())) {
+        return res.status(400).json({ success: false, message: 'Tax Record ID or Tax ID is required' });
+    }
+
+    try {
+        let sql = `
+            SELECT i.tax_rec_id, i.service_date, i.status,
+                   p.tax_id AS existing_tax_id, p.customer_branch, p.customer_num, p.customer_name, p.customer_addr,
+                   i.container_num
+            FROM invoices i
+            LEFT JOIN customer_profile p ON i.customer_num = p.customer_num
+        `;
+        let params = [];
+
+        if (tax_rec_id && tax_rec_id.trim()) {
+            sql += ' WHERE i.tax_rec_id = ?';
+            params.push(tax_rec_id.trim());
+        } else {
+            sql += ' WHERE p.tax_id = ? ORDER BY i.service_date DESC LIMIT 1';
+            params.push(tax_id.trim());
+        }
+
+        const [rows] = await db.execute(sql, params);
+        if (rows.length === 0) {
+            return res.json({ success: true, found: false });
+        }
+        return res.json({ success: true, found: true, record: rows[0] });
+    } catch (error) {
+        console.error('Error in search-record:', error);
+        return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
 
 // ---------------------------------------------------------------------------
 // GET /api/customer/search-invoices
@@ -842,7 +923,7 @@ router.post('/request-invoice', async (req, res) => {
                     // Send LINE notification message if line_user_id is available
                     if (line_user_id && line_user_id !== 'mock_user_id_for_dev') {
                         try {
-                            const textMsg = `เราได้ส่ง ใบกำกับภาษีแบบเต็ม ไปยัง Email: ${email_sending} นี้แล้ว \nโปรดตรวจสอบ  email ของคุณในอีก 1-2นาที  \nขอขอบพระคุณที่ใช้บริการ`;
+                            const textMsg = `${validTaxRecIds.join(', ')}\nเราได้ส่งใบกำกับภาษีแบบเต็ม\nไปยัง Email: ${email_sending} นี้แล้ว\nโปรดตรวจสอบ email ของคุณในอีก 1-2นาที\nขอขอบพระคุณที่ใช้บริการ`;
                             await sendLineTextMessage(line_user_id, textMsg);
                         } catch (linePushErr) {
                             console.error('[request-invoice] LINE notification push failed:', linePushErr.message);
