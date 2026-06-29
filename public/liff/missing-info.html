@@ -1294,13 +1294,17 @@ async function handleLookupResult(data, isAutoCheck) {
     if (invoices.length > 1) {
         // MULTIPLE INVOICES FLOW
         const hasSomeNoTaxId = invoices.some(inv => !inv.existing_tax_id);
+        const baseDate = invoices[0].service_date;
 
         if (hasSomeNoTaxId) {
-            // Some invoices lack tax_id
             const today = new Date();
             today.setHours(0,0,0,0);
-            
+            const unlinkedInvoices = invoices.filter(inv => !inv.existing_tax_id);
+            const unlinkedDates = new Set(unlinkedInvoices.map(inv => inv.service_date));
+            const hasMismatchedDates = unlinkedDates.size > 1;
+
             const tax_rec_id_7days = [];
+            const tax_rec_id_diffdate = [];
             const tax_rec_id_proceed = [];
             const tax_rec_id_hastaxid = [];
 
@@ -1311,7 +1315,11 @@ async function handleLookupResult(data, isAutoCheck) {
                 if (diffDays > 7) {
                     tax_rec_id_7days.push(inv);
                 } else if (!inv.existing_tax_id) {
-                    tax_rec_id_proceed.push(inv);
+                    if (hasMismatchedDates) {
+                        tax_rec_id_diffdate.push(inv);
+                    } else {
+                        tax_rec_id_proceed.push(inv);
+                    }
                 } else {
                     tax_rec_id_hastaxid.push(inv);
                 }
@@ -1319,10 +1327,14 @@ async function handleLookupResult(data, isAutoCheck) {
 
             const proceedList = tax_rec_id_proceed.map(inv => inv.tax_rec_id).join(', ');
             const over7DaysList = tax_rec_id_7days.map(inv => inv.tax_rec_id).join(', ');
+            const diffDateList = tax_rec_id_diffdate.map(inv => inv.tax_rec_id).join(', ');
 
             const msgLines = [];
             if (tax_rec_id_7days.length > 0) {
                 msgLines.push(`${over7DaysList} ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน`);
+            }
+            if (tax_rec_id_diffdate.length > 0) {
+                msgLines.push(`${diffDateList} ใบกำกับภาษีนี้มีวันที่ให้บริการต่างกัน โปรดใส่เฉพาะหมายเลขที่มีวันที่ให้บริการเดียวกันเท่านั้น`);
             }
             if (tax_rec_id_proceed.length > 0) {
                 msgLines.push(`${proceedList} สามารถเพิ่มข้อมูลได้`);
@@ -1339,7 +1351,7 @@ async function handleLookupResult(data, isAutoCheck) {
                 return;
             }
 
-            if (tax_rec_id_proceed.length === 0) {
+            if (tax_rec_id_proceed.length === 0 || tax_rec_id_diffdate.length > 0) {
                 applyState(STATE.INITIAL);
                 el.taxRecId.value = '';
                 el.taxRecId.focus();
@@ -1380,6 +1392,7 @@ async function handleLookupResult(data, isAutoCheck) {
             today.setHours(0,0,0,0);
             
             const over7Days = [];
+            const diffDate = [];
             const customerNums = new Set();
 
             invoices.forEach(inv => {
@@ -1388,6 +1401,8 @@ async function handleLookupResult(data, isAutoCheck) {
                 const diffDays = Math.floor((today - sDate) / (1000 * 60 * 60 * 24));
                 if (diffDays > 7) {
                     over7Days.push(inv.tax_rec_id);
+                } else if (inv.service_date !== baseDate) {
+                    diffDate.push(inv.tax_rec_id);
                 }
                 if (inv.customer_num) {
                     customerNums.add(inv.customer_num);
@@ -1397,6 +1412,9 @@ async function handleLookupResult(data, isAutoCheck) {
             let msg = '';
             if (over7Days.length > 0) {
                 msg += `${over7Days.join(', ')} ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน\n`;
+            }
+            if (diffDate.length > 0) {
+                msg += `${diffDate.join(', ')} ใบกำกับภาษีนี้มีวันที่ให้บริการต่างกัน โปรดใส่เฉพาะหมายเลขที่มีวันที่ให้บริการเดียวกันเท่านั้น\n`;
             }
             if (customerNums.size > 1) {
                 msg += `ใบกำกับภาษีบางหมายเลขเป็นคนละลูกค้า โปรดใส่เฉพาะหมายเลขที่มาจากลูกค้าเดียวกันเท่านั้น\n`;
@@ -1489,8 +1507,12 @@ async function handleLookupResult(data, isAutoCheck) {
     }
 }
 
+let lookupInProgress = false;
+
 async function doLookup(forceManual = false, isAutoCheck = false) {
-    const taxRecIdVal = el.taxRecId.value.trim();
+    if (lookupInProgress) return;
+    const taxRecIdVal = el.taxRecId.value.trim().toUpperCase();
+    el.taxRecId.value = taxRecIdVal;
     const taxIdVal    = el.taxId.value.trim();
 
     if (!taxRecIdVal) {
@@ -1502,6 +1524,7 @@ async function doLookup(forceManual = false, isAutoCheck = false) {
     }
 
     if (!isAutoCheck) applyState(STATE.SEARCHING);
+    lookupInProgress = true;
 
     try {
         const url = `/api/customer/lookup-branches?tax_rec_id=${encodeURIComponent(taxRecIdVal)}&tax_id=${encodeURIComponent(taxIdVal)}`;
@@ -1529,6 +1552,8 @@ async function doLookup(forceManual = false, isAutoCheck = false) {
             applyState(STATE.INITIAL);
             showBanner('❌ เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
         }
+    } finally {
+        lookupInProgress = false;
     }
 }
 

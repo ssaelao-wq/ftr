@@ -25,16 +25,18 @@ This document specifies the system architecture, design decisions, and implement
 * **Page:** `public/liff/missing-info.html`
 * **Inputs:** Accepts multiple `tax_rec_id`s separated by commas (e.g. `RF2606-0001, RF2606-0002`).
 * **Validation Partition Rules:**
-  * When looking up invoices, the system queries the database and groups the entered IDs into three categories based on priority:
-    1. **`tax_rec_id_7days` (Expired):** Any invoice older than 7 days (based on `service_date`), whether it already has a Tax ID linked or not.
-    2. **`tax_rec_id_proceed` (Valid & Unlinked):** Invoices that have no `tax_id` linked in the database and are within the 7-day limit.
-    3. **`tax_rec_id_hastaxid` (Valid & Linked):** Invoices that already have a `tax_id` linked in the database and are within the 7-day limit.
+  * When looking up invoices, the system queries the database and partitions the entered IDs into four categories using priority conditions (1. Expiration > 7 days, 2. Date diff among unlinked ones, 3. Tax ID link status):
+    1. **`tax_rec_id_7days` (Expired):** Any invoice older than 7 days (based on `service_date`), whether linked or unlinked (Condition 1).
+    2. **`tax_rec_id_diffdate` (Mismatched Service Date):** Unlinked unexpired invoices if there is a date mismatch among the unlinked invoices (Condition 2).
+    3. **`tax_rec_id_proceed` (Valid & Unlinked):** Invoices that have no `tax_id` linked, are <= 7 days, and share the same service date (Condition 3).
+    4. **`tax_rec_id_hastaxid` (Valid & Linked):** Invoices that already have a `tax_id` linked, are <= 7 days.
   * **Split Confirmation Dialog:** If at least one unlinked invoice is entered:
     * Displays a custom confirmation modal window with line-separated status updates:
       * `<tax_rec_id_7days> ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน` (only if any expired)
+      * `<tax_rec_id_diffdate> ใบกำกับภาษีนี้มีวันที่ให้บริการต่างกัน โปรดใส่เฉพาะหมายเลขที่มีวันที่ให้บริการเดียวกันเท่านั้น` (only if any service date mismatch among unlinked ones)
       * `<tax_rec_id_proceed> สามารถเพิ่มข้อมูลได้` (only if any proceedable)
       * `ใบกำกับภาษีที่เหลือมีข้อมูลแล้ว` (only if any already linked)
-    * If cancelled or if `tax_rec_id_proceed` is empty, the operation is aborted and values are cleared.
+    * If cancelled, or if `tax_rec_id_proceed` is empty, or if `tax_rec_id_diffdate.length > 0`, the operation is aborted and values are cleared.
     * If OK, updates the `taxRecId` field value to contain only `tax_rec_id_proceed`, enables the Tax ID and customer profile entry, activates **Save**, **Save & Send**, and **Cancel** buttons, and disables **Send**.
   * **All-Linked Expiration Dialog:** If all entered invoices already have a Tax ID, but some are older than 7 days, alerts the user with:
     * `"<tax_rec_id_7days> ใบกำกับภาษีนี้ขอเกินกำหนด 7 วัน กรุณาติดต่อแอดมิน"`

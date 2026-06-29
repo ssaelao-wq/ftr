@@ -842,7 +842,8 @@ Matches missing-info.html style system and UX.
 
     // Unified search function triggered on blur/enter of taxRecId
     async function doSearchRecord() {
-        const taxRecIdVal = elements.taxRecId.value.trim();
+        const taxRecIdVal = elements.taxRecId.value.trim().toUpperCase();
+        elements.taxRecId.value = taxRecIdVal;
         if (!taxRecIdVal) return;
 
         updateState(STATE.CHECKING);

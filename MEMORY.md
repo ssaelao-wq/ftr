@@ -12,6 +12,16 @@ This document serves as the persistent memory and active log for the Full Tax Re
 
 ## 3. Session & Task History
 
+### **[2026-06-29] Multi-Invoice Partition Refinements, Case-Insensitive Inputs, Custom Alert Overlays, and Race Condition Guards**
+* **Task Summary:** Refined the multiple invoices lookup logic, handled case insensitivity, resolved native dialog visual issues, and implemented race condition guards.
+  - **Priority-Based Split Grouping**: Updated lookup logic in `missing-info.html` to classify invoices based on priority: 1) Expiration (> 7 days), 2) Service date mismatches among unlinked invoices, 3) Linked profile status. Unlinked invoices with mismatched service dates are grouped in `tax_rec_id_diffdate` and prompt a clean warning instead of proceeding.
+  - **Case-Insensitive Inputs**: Automatically convert inputted `tax_rec_id` values to uppercase upon search/blur triggers in both LIFF apps to support mixed combinations of `RF`, `rf`, `Rf`, and `rF`.
+  - **Custom Modal Dialog Overlays**: Replaced native browser `alert()` and `confirm()` dialogs in LIFF pages with custom HTML `#customModalOverlay` components to eliminate server URLs from the top of alert dialog boxes.
+  - **Race Condition Guard**: Implemented a global `lookupInProgress` locking flag in the LIFF search workflow to prevent concurrent requests and double modal renderings when input blur and search buttons fire in rapid succession.
+  - **LINE Notification Wording**: Standardized LINE email dispatch messages on successful PDF deliveries.
+  - **Verification**: Validated all changes against the complete suite of 20+ user test scenarios, matching expected outputs exactly.
+  - **Documentation**: Synchronized all logic partitions and validation rules to `ftr_system_design.md` and this log.
+
 ### **[2026-06-19] Implement Date-based PDF Directory Storage and Data Cleanup Cron Job**
 * **Task Summary:** Implemented nested monthly and daily subfolder structures for generated PDFs and created a database/file data cleanup script.
   - **Date-based Folders**: Modified `pdfService.js` to extract the `created_at` timestamp from the invoice and save generated PDFs inside subdirectories named `/storage/pdfs/<YYYYMM>/<DD>/`. Folder creation is automatic and recursive.

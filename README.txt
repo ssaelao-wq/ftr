@@ -3,11 +3,13 @@
 ###########################
 # Run DB and Server locally
 
-# Start/Stop database: net <start/stop> <Database Service: MySQLSSL>
+# Start/Stop MySQL: start/stop
 	net start MySQLSSL
 
 # Run Webserver
-1. Run from the project folder
+1. Run commands from the project folder
+
+2. Run node server
 2.1 Start node directly:
 	node --watch src/index.js	# --watch = auto-restart when code change
       	
@@ -15,18 +17,18 @@
 # Install Nodemon
 	npm install --save-dev nodemon
 
-# Create info in package.json:
+# Setuppackage.json:
 	"scripts": {
        		"start": "node --watch src/index.js",
        		"dev": "nodemon src/index.js"
    	}
 
-# Then run on public as below
-	npm start 
-	or
-	npm run dev    			# auto-restart when code change
-	or
-	npx nodemon src/index.js	# auto-restart when code change
+# Run commands to start node server
+	npm start 					# --watch for aut-restart when code change
+	    or
+	npm run dev    				# nodemon for auto-restart when code change
+	    or
+	npx nodemon src/index.js	# nodemon for auto-restart when code change
 
 
 ###########################
@@ -57,22 +59,22 @@ This stamps the version number onto your latest commit.
 	git push origin v1.0.1
 
 -----------
-# Sync to Github
-Please sync to Github as v1.0.3. Run following commands:
-	echo "Version: 1.0.3 - Fixbug and change wording" >> CHANGELOG.md
+# Sync to Github, run commands together
+Please sync to Github as v1.0.5 by running following commands:
+	echo "Version: 1.0.5 - Fixing" >> CHANGELOG.md
 	git add .
-	git commit -m "Release version 1.0.3"
-	git tag -a v1.0.3 -m "Release version 1.0.3"
+	git commit -m "Release version 1.0.5"
+	git tag -a v1.0.5 -m "Release version 1.0.5"
 	git push origin main
-	git push origin v1.0.3
+	git push origin v1.0.5
 
----------------
+-----------
 # Go Backward Later: jump back to the exact version in the future.
 
-	Checkout code to existing folder:
+# Checkout code to existing folder:
 	git checkout v1.0.0
 	
-	Checkout code to a specific folder:
+# Checkout code to a specific folder:
 	git worktree add C:\Users\Somboon\LocalData\1-SSL\Dev\ftr-BK\test v1.0.0
 
 ###########################
@@ -122,7 +124,10 @@ Please sync to Github as v1.0.3. Run following commands:
     docker exec ftr-app node src/cron_batch.js
     docker exec ftr-app node src/ftr_cleanup_data.js
 
-# package.json
+-----------
+# Run cronjob from package.json
+
+# Setup package.json
 {
   "name": "ftr",
   "version": "1.0.0",
@@ -135,18 +140,8 @@ Please sync to Github as v1.0.3. Run following commands:
     "test": "echo \"Error: no test specified\" && exit 1"
 },
 
+# Command to run cronjob
 cd /www/wwwroot/ftr && npm run cleanup >> cron_cleanup.log 2>&1
-
-
-###########################
-# LINE OA
-# Point LINE OA LIFF endpoint to webserver to let Rich menu connect to webpage
-
-1. https://developers.line.biz/
-2. Login
-3. Select project "Unicon Container Services" -> Unicon_channel (LINE Login)
-4. Select LIFF app name
-5. Edit Endpoint URL = https://ftr.uniconwebapp.com
 
 
 ###########################
@@ -187,6 +182,18 @@ npx puppeteer browsers install chrome
 
 ###########################
 # LINE OA
+
+# LIFF endpoint
+# Point LINE OA LIFF endpoint to webserver to let Rich menu connect to webpage
+1. https://developers.line.biz/
+2. Login
+3. Select project "Unicon Container Services" -> Unicon_channel (LINE Login)
+4. Select LIFF app name
+5. Edit Endpoint URL = https://ftr.uniconwebapp.com
+
+
+----------------
+# Config values 
 
 Provider: "Unicon Container Services" 
 ProviderID: 2005147845
