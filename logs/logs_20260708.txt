@@ -1,0 +1,15 @@
+INFO: Server verification started
+2026-07-08 13:43:19|gate-in|RF2606-TEST1||CONT1234567
+2026-07-08 13:43:19|gate-out|RF2606-TEST2|BKG999|CONT9999999
+[Log] CRON_CLEANUP - 08-07-2026 13:43 - pdfs_deleted:0,invoices_deleted:0,logs_deleted:0,temp_dirs_deleted:0,daily_logs_deleted:1 (User: cron)
+INFO: Server verification started
+2026-07-08 14:19:43|gate-out|RF2606-TEST2|BKG999|CONT9999999
+2026-07-08 14:19:43|gate-in|RF2606-TEST1||CONT1234567
+[Log] CRON_CLEANUP - 08-07-2026 14:19 - pdfs_deleted:0,invoices_deleted:0,logs_deleted:0,temp_dirs_deleted:0,daily_logs_deleted:1 (User: cron)
+INFO: Server verification started
+2026-07-08 14:32:54|gate-in|RF2606-TEST1||CONT1234567
+2026-07-08 14:32:54|gate-out|RF2606-TEST2|BKG999|CONT9999999
+[Log] CRON_CLEANUP - 08-07-2026 14:32 - pdfs_deleted:0,invoices_deleted:0,logs_deleted:0,temp_dirs_deleted:0,daily_logs_deleted:1 (User: cron)
+[Log] REQ_UPLOAD_CUSTOMER - 08-07-2026 14:35 - admin:2 (User: admin)
+[Log] REQ_UPLOAD_CDMS - 08-07-2026 14:35 - admin:1 (User: admin)
+[Log] REQ_MISS_DATA - 08-07-2026 14:35 - Unicon Laem Chabang Branch:456 Harbor Rd, Chonburi (Address Edited by Client):RF2605-01109 (User: [c]Customer)

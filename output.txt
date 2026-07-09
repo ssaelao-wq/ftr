@@ -1,0 +1,1001 @@
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+Fetching REQ_MISS_DATA logs from today (06-07-2026)...
+Found 105 logs to process.
+Highest current valid temporary number in DB is TMP-000040
+
+Processing log ID 891 at 06-07-2026 06:43...
+- Customer: AMWAY (THAILAND) LTD.
+- Address: 1199/1 RAMKHAMHAENG ROAD.  HUAMARK, BANGKAPI, BANGKOK 10240
+- Invoices: RF2607-00369
+- Resolved Tax ID: 0105528010089
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-04530. Reusing.
+  -> Linked invoice RF2607-00369 (Updated rows: 1)
+
+Processing log ID 894 at 06-07-2026 06:45...
+- Customer: PERFECT COMPANION GROUP CO.,LTD.
+- Address: 169 MOO 16  BANGSAOTHONG, BANGSAOTHONG DISTRICT, SAMUTPRAKARN 10570
+- Invoices: RF2607-00372
+- Resolved Tax ID: 0105532054273
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00287. Reusing.
+  -> Linked invoice RF2607-00372 (Updated rows: 1)
+
+Processing log ID 897 at 06-07-2026 08:07...
+- Customer: BEST QUALITY RICH CO.,LTD
+- Address: 36 SOI POONNAWITHI 37,BANGCHAK SOB-DISTRICT,PRAKANONG DISTRICT,BANGKOK 10260
+- Invoices: RF2607-00234
+- Resolved Tax ID: 0105564128671
+- Found existing branch in DB: HEAD OFFICE
+- Profile already exists with customer_num: TMP-000013. Reusing.
+  -> Linked invoice RF2607-00234 (Updated rows: 1)
+
+Processing log ID 900 at 06-07-2026 08:08...
+- Customer: BEST QUALITY RICH CO.,LTD
+- Address: 36 SOI POONNAWITHI 37,BANGCHAK SOB-DISTRICT,PRAKANONG DISTRICT,BANGKOK 10260
+- Invoices: RF2607-00235
+- Resolved Tax ID: 0105564128671
+- Found existing branch in DB: HEAD OFFICE
+- Profile already exists with customer_num: TMP-000013. Reusing.
+  -> Linked invoice RF2607-00235 (Updated rows: 1)
+
+Processing log ID 903 at 06-07-2026 08:18...
+- Customer: OTEC (THAILAND) CO.,LTD.
+- Address: 258 MOO 2  TAMBOL KLONGJIG AMPHUR BANGPA-IN, PHRANAKORNSRIAYUTTHAYA 13160
+- Invoices: RF2607-00470, RF2607-00472, RF2607-00479
+- Resolved Tax ID: 0145540000292
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00201. Reusing.
+  -> Linked invoice RF2607-00470 (Updated rows: 1)
+  -> Linked invoice RF2607-00472 (Updated rows: 1)
+  -> Linked invoice RF2607-00479 (Updated rows: 1)
+
+Processing log ID 908 at 06-07-2026 08:27...
+- Customer: SCGJWD LOGISTICS PUBLIC COMPANY LIMITED
+- Address: 1 SIAM CEMENT ROAD,  BANGSUE, BANGSUE, BANGKOK 10800
+- Invoices: RF2606-03452
+- Resolved Tax ID: 0107557000306
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-04170. Reusing.
+  -> Linked invoice RF2606-03452 (Updated rows: 1)
+
+Processing log ID 911 at 06-07-2026 08:29...
+- Customer: INABATA THAI CO.,LTD.
+- Address: 89 AIA CAPITAL CENTER BUILDIND,4TH FLOOR,RATCHADAPISEK ROAD,  DINDAENG, DINDAENG, BANGKOK 10400
+- Invoices: RF2607-00458
+- Resolved Tax ID: 0105530000320
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00246. Reusing.
+  -> Linked invoice RF2607-00458 (Updated rows: 1)
+
+Processing log ID 914 at 06-07-2026 08:31...
+- Customer: INABATA THAI CO.,LTD.
+- Address: 89 AIA CAPITAL CENTER BUILDIND,4TH FLOOR,RATCHADAPISEK ROAD,  DINDAENG, DINDAENG, BANGKOK 10400
+- Invoices: RF2607-00454
+- Resolved Tax ID: 0105530000320
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00246. Reusing.
+  -> Linked invoice RF2607-00454 (Updated rows: 1)
+
+Processing log ID 917 at 06-07-2026 08:32...
+- Customer: KUEHNE + NAGEL LTD.
+- Address: 1788 SINGHA COMPLEX 29TH FLOOR NEW PHETCHABURI ROAD,  BANG KAPI, HUAI KHWANG, BANGKOK 10310
+- Invoices: RF2607-00046
+- Resolved Tax ID: 0105528008441
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01079. Reusing.
+  -> Linked invoice RF2607-00046 (Updated rows: 1)
+
+Processing log ID 920 at 06-07-2026 08:35...
+- Customer: INABATA THAI CO.,LTD.
+- Address: 89 AIA CAPITAL CENTER BUILDIND,4TH FLOOR,RATCHADAPISEK ROAD,  DINDAENG, DINDAENG, BANGKOK 10400
+- Invoices: RF2607-00457
+- Resolved Tax ID: 0105530000320
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00246. Reusing.
+  -> Linked invoice RF2607-00457 (Updated rows: 1)
+
+Processing log ID 923 at 06-07-2026 08:37...
+- Customer: INABATA THAI CO.,LTD.
+- Address: 89 AIA CAPITAL CENTER BUILDIND,4TH FLOOR,RATCHADAPISEK ROAD,  DINDAENG, DINDAENG, BANGKOK 10400
+- Invoices: RF2607-00463
+- Resolved Tax ID: 0105530000320
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00246. Reusing.
+  -> Linked invoice RF2607-00463 (Updated rows: 1)
+
+Processing log ID 926 at 06-07-2026 08:38...
+- Customer: INABATA THAI CO.,LTD.
+- Address: 89 AIA CAPITAL CENTER BUILDIND,4TH FLOOR,RATCHADAPISEK ROAD,  DINDAENG, DINDAENG, BANGKOK 10400
+- Invoices: RF2607-00484
+- Resolved Tax ID: 0105530000320
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00246. Reusing.
+  -> Linked invoice RF2607-00484 (Updated rows: 1)
+
+Processing log ID 944 at 06-07-2026 09:08...
+- Customer: DECATHLON (THAILAND) CO.,LTD.
+- Address: 19/501 MOO 13, DEBARATANA ROAD,  BANGKAEW, BANGPLEE, SAMUTPRAKARN 10540
+- Invoices: RF2607-00342
+- Resolved Tax ID: 0115558007311
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00115. Reusing.
+  -> Linked invoice RF2607-00342 (Updated rows: 1)
+
+Processing log ID 947 at 06-07-2026 09:08...
+- Customer: PORN PROM METAL PUBLIC CO.,LTD.
+- Address: 205/1 NAKHONRATCHASIMA ROAD,  DUSIT,  BANGKOK 10300
+- Invoices: RF2607-00200, RF2607-00210, RF2607-00227, RF2607-00252
+- Resolved Tax ID: 0107547000567
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03105. Reusing.
+  -> Linked invoice RF2607-00200 (Updated rows: 1)
+  -> Linked invoice RF2607-00210 (Updated rows: 1)
+  -> Linked invoice RF2607-00227 (Updated rows: 1)
+  -> Linked invoice RF2607-00252 (Updated rows: 1)
+
+Processing log ID 948 at 06-07-2026 09:08...
+- Customer: THAI PAPER CO.,LTD.
+- Address: 1 SIAM CEMENT ROAD,  BANGSUE, BANGSUE, BANGKOK 10800
+- Invoices: RF2606-03491
+- Resolved Tax ID: 0105560016852
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03300. Reusing.
+  -> Linked invoice RF2606-03491 (Updated rows: 1)
+
+Processing log ID 956 at 06-07-2026 09:17...
+- Customer: CAL-COMP ELECTRONICS(THAILAND)PUBLIC CO.,LTD
+- Address: 191/54,191/57 18FL,CTI TOWER,RACHADAPISEK RD,
+KLONGTOEY BANGKOK 10110
+- Invoices: RF2607-00461
+- Resolved Tax ID: 0107543000023
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01197. Reusing.
+  -> Linked invoice RF2607-00461 (Updated rows: 1)
+
+Processing log ID 959 at 06-07-2026 09:22...
+- Customer: AMCOR FLEXIBLES BANGKOK PUBLIC CO.,LTD.
+- Address: 91 MOO 13 KINGKAEW ROAD  T.RACHADHEWA  A.BANGPLEE  SAMUTPRAKARN 10540
+- Invoices: RF2607-00167
+- Resolved Tax ID: 0107536000501
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01026. Reusing.
+  -> Linked invoice RF2607-00167 (Updated rows: 1)
+
+Processing log ID 962 at 06-07-2026 09:26...
+- Customer: TECHNO-UMG ASIA CO.,LTD.
+- Address: 968 U CHU LIANG BUILDING, 28TH FLOOR, RAMA 4 ROAD,   SILOM, BANGRAK, BANGKOK 10500
+- Invoices: RF2607-00326, RF2607-00417
+- Resolved Tax ID: 0105537055821
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01293. Reusing.
+  -> Linked invoice RF2607-00326 (Updated rows: 1)
+  -> Linked invoice RF2607-00417 (Updated rows: 1)
+
+Processing log ID 966 at 06-07-2026 09:34...
+- Customer: CHOR RUNGSANG LIGHTING CO.,LTD.
+- Address: 58/5 MOO.21 ,  BANGPLEEYAI, BANGPLEE, SAMUTHPRAKARN 10540
+- Invoices: RF2606-03562
+- Resolved Tax ID: 0105535015279
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-06399. Reusing.
+  -> Linked invoice RF2606-03562 (Updated rows: 1)
+
+Processing log ID 971 at 06-07-2026 09:38...
+- Customer: CHOR RUNGSANG LIGHTING CO.,LTD.
+- Address: 58/5 MOO.21 ,  BANGPLEEYAI, BANGPLEE, SAMUTHPRAKARN 10540
+- Invoices: RF2606-03561
+- Resolved Tax ID: 0105535015279
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-06399. Reusing.
+  -> Linked invoice RF2606-03561 (Updated rows: 1)
+
+Processing log ID 976 at 06-07-2026 09:43...
+- Customer: FONG SHANN PRINTING CO.,LTD
+- Address: 78 MOO 2 JARANYNON RD,   T.BANGWUA A.BANGPAKONG, CHACHOENGSAO 24180
+- Invoices: RF2607-00478
+- Resolved Tax ID: 0745536000938
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-05025. Reusing.
+  -> Linked invoice RF2607-00478 (Updated rows: 1)
+
+Processing log ID 978 at 06-07-2026 09:43...
+- Customer: VEE TYRE AND RUBBER CO.,LTD.
+- Address: 924 RAMA  9 ROAD,  BANGKAPI HUAYKWANG BANGKOK 10310
+- Invoices: RF2607-00242
+- Resolved Tax ID: 0105534075553
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01410. Reusing.
+  -> Linked invoice RF2607-00242 (Updated rows: 1)
+
+Processing log ID 991 at 06-07-2026 09:54...
+- Customer: AGC FLAT GLASS (THAILAND) PUBLIC CO.,LTD.
+- Address: 200 MOO 1 SUKSAWAD ROAD PAKKHLONG   BANGPLAKOD  PHRASAMUTCHEDI SAMUTPRAKAN 10290
+- Invoices: RF2607-00381
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00381 (Updated rows: 1)
+
+Processing log ID 995 at 06-07-2026 09:55...
+- Customer: AGC FLAT GLASS (THAILAND) PUBLIC CO.,LTD.
+- Address: 200 MOO 1 SUKSAWAD ROAD PAKKHLONG   BANGPLAKOD  PHRASAMUTCHEDI SAMUTPRAKAN 10290
+- Invoices: RF2607-00382
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00382 (Updated rows: 1)
+
+Processing log ID 998 at 06-07-2026 09:56...
+- Customer: AGC FLAT GLASS (THAILAND) PUBLIC CO.,LTD.
+- Address: 200 MOO 1 SUKSAWAD ROAD PAKKHLONG   BANGPLAKOD  PHRASAMUTCHEDI SAMUTPRAKAN 10290
+- Invoices: RF2607-00399
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00399 (Updated rows: 1)
+
+Processing log ID 1001 at 06-07-2026 09:57...
+- Customer: บริษัท เฟดเดอรัล อีเลคตริค จำกัด
+- Address: 64/1 ม.4 ถ.กิ่งแก้ว ต.ราชาเทวะ อ.บางพลี จ.สมุทรปราการ 10540
+- Invoices: RF2607-00409
+- Resolved Tax ID: 0105521020208
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000041
+  -> Linked invoice RF2607-00409 (Updated rows: 1)
+
+Processing log ID 1004 at 06-07-2026 09:57...
+- Customer: AGC FLAT GLASS (THAILAND) PUBLIC CO.,LTD.
+- Address: 200 MOO 1 SUKSAWAD ROAD PAKKHLONG   BANGPLAKOD  PHRASAMUTCHEDI SAMUTPRAKAN 10290
+- Invoices: RF2607-00400
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00400 (Updated rows: 1)
+
+Processing log ID 1007 at 06-07-2026 10:05...
+- Customer: MAGNOLIA HOME FURNISHING (THAILAND) CO.,LTD.
+- Address: 99/9 MOO 3,   NONG CHUMPHON NUEA SUB-DISTRICT, KHAO YOI DISTRICT PHETCHABURI PROVINCE 76140
+- Invoices: RF2607-00361, RF2607-00390
+- Resolved Tax ID: 0105562177187
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00292. Reusing.
+  -> Linked invoice RF2607-00361 (Updated rows: 1)
+  -> Linked invoice RF2607-00390 (Updated rows: 1)
+
+Processing log ID 1011 at 06-07-2026 10:09...
+- Customer: MAGNOLIA HOME FURNISHING (THAILAND) CO.,LTD.
+- Address: 99/9 MOO 3,   NONG CHUMPHON NUEA SUB-DISTRICT, KHAO YOI DISTRICT PHETCHABURI PROVINCE 76140
+- Invoices: RF2607-00426
+- Resolved Tax ID: 0105562177187
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00292. Reusing.
+  -> Linked invoice RF2607-00426 (Updated rows: 1)
+
+Processing log ID 1014 at 06-07-2026 10:17...
+- Customer: PERFECT COMPANION GROUP CO,.LTD
+- Address: 169 MOO 16, BANGSAOTHONG, BANGSAOTHONG DISTRICT, SAMUTPRAKARN 10570
+- Invoices: RF2607-00311
+- Resolved Tax ID: 0105532054273
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00287. Reusing.
+  -> Linked invoice RF2607-00311 (Updated rows: 1)
+
+Processing log ID 1017 at 06-07-2026 10:18...
+- Customer: THAIHONDA CO.,LTD
+- Address: 149 MOO 1 RODRANGKHA.SAMSONG-TAI
+PHRAPRADAENG,SAMUTPRAKAN 10130
+TEL.02-7576111,02-3844335
+- Invoices: RF2607-00474
+- Resolved Tax ID: 0105564057022
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-04352. Reusing.
+  -> Linked invoice RF2607-00474 (Updated rows: 1)
+
+Processing log ID 1020 at 06-07-2026 10:19...
+- Customer: PERFECT COMPANION GROUP CO.,LTD.
+- Address: 169 MOO 16  BANGSAOTHONG, BANGSAOTHONG DISTRICT, SAMUTPRAKARN 10570
+- Invoices: RF2607-00303
+- Resolved Tax ID: 0105532054273
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00287. Reusing.
+  -> Linked invoice RF2607-00303 (Updated rows: 1)
+
+Processing log ID 1023 at 06-07-2026 10:19...
+- Customer: JONG STIT CO.,LTD.
+- Address: 470 BANGKUNTIEN-CHAITALAY RD.,  SAMAEDUM,   BANGKUNTIEN, BANGKOK 10150
+- Invoices: RF2607-00485
+- Resolved Tax ID: 0105523000336
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00338. Reusing.
+  -> Linked invoice RF2607-00485 (Updated rows: 1)
+
+Processing log ID 1026 at 06-07-2026 10:23...
+- Customer: CHOCKSAMUT MARINE CO.,LTD.
+- Address: 57/40 MOO 4,  T.KOKKHAM,     MUANG, SAMUTSAKHON 74000
+- Invoices: RF2607-00395
+- Resolved Tax ID: 0745543001260
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00659. Reusing.
+  -> Linked invoice RF2607-00395 (Updated rows: 1)
+
+Processing log ID 1029 at 06-07-2026 10:26...
+- Customer: RIKEN (THAILAND) CO.,LTD.
+- Address: 143 MOO 5 BANGKADI INDUSTRIAL PARK,TIVANOND RD,     BANGKADI , MUANGPATHUMTHANI, PATHUMTHANI 12000
+- Invoices: RF2607-00464
+- Resolved Tax ID: 0105532068592
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00285. Reusing.
+  -> Linked invoice RF2607-00464 (Updated rows: 1)
+
+Processing log ID 1032 at 06-07-2026 10:30...
+- Customer: T.K. INGOT & LIQUATION CO., LTD.
+- Address: 109 MOO 2 EAKACHAI RD,
+T.BANGNAMJUED, A.MUANG
+SAMUTSAKORN 74000 THAILAND
+- Invoices: RF2607-00170, RF2607-00198, RF2607-00251
+- Resolved Tax ID: 0745537000133
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000042
+  -> Linked invoice RF2607-00170 (Updated rows: 1)
+  -> Linked invoice RF2607-00198 (Updated rows: 1)
+  -> Linked invoice RF2607-00251 (Updated rows: 1)
+
+Processing log ID 1037 at 06-07-2026 10:32...
+- Customer: บริษัท นีโอ แฟคทอรี่ จำกัด
+- Address: 168 หมู่ที่ 5  ตำบล บึงคอไห อำเภอ ลำลูกกา จังหวัด ปทุมธานี 12150
+- Invoices: RF2607-00415
+- Resolved Tax ID: 0105532106346
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-07455. Reusing.
+  -> Linked invoice RF2607-00415 (Updated rows: 1)
+
+Processing log ID 1042 at 06-07-2026 10:33...
+- Customer: T.K. INGOT & LIQUATION CO., LTD.
+- Address: 109 MOO 2 EAKACHAI RD,
+T.BANGNAMJUED, A.MUANG
+SAMUTSAKORN 74000 THAILAND
+- Invoices: RF2607-00059, RF2607-00114
+- Resolved Tax ID: 0745537000133
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: TMP-000042. Reusing.
+  -> Linked invoice RF2607-00059 (Updated rows: 1)
+  -> Linked invoice RF2607-00114 (Updated rows: 1)
+
+Processing log ID 1046 at 06-07-2026 10:34...
+- Customer: เอจีซี แฟทกลาส(ประเทศไทย)จำกัด(มหาชน)
+- Address: 200 หมู่ที่1 ถนนสุขสวัสดิ์ ตำบลปากคลองบางปลากด อำเภอพระสมุทรเจดีย์ จังหวัดสมุทรปราการ 10290
+- Invoices: RF2607-00482
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00482 (Updated rows: 1)
+
+Processing log ID 1049 at 06-07-2026 10:37...
+- Customer: T.K. INGOT & LIQUATION CO., LTD.
+- Address: 109 MOO 2 EAKACHAI RD,
+T.BANGNAMJUED, A.MUANG
+SAMUTSAKORN 74000 THAILAND
+- Invoices: RF2607-00404
+- Resolved Tax ID: 0745537000133
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: TMP-000042. Reusing.
+  -> Linked invoice RF2607-00404 (Updated rows: 1)
+
+Processing log ID 1052 at 06-07-2026 10:38...
+- Customer: FIRST CANNED FOOD (THAI) CO.,LTD.
+- Address: 154 MOO 8  T. DONKRUAY, A.DUMNOEN SADUAK, RATCHABURI, 70130
+- Invoices: RF2607-00363
+- Resolved Tax ID: 0105531008413
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00912. Reusing.
+  -> Linked invoice RF2607-00363 (Updated rows: 1)
+
+Processing log ID 1055 at 06-07-2026 10:39...
+- Customer: T.K. INGOT & LIQUATION CO., LTD.
+- Address: 109 MOO 2 EAKACHAI RD,
+T.BANGNAMJUED, A.MUANG
+SAMUTSAKORN 74000 THAILAND
+- Invoices: RF2607-00468, RF2607-00492
+- Resolved Tax ID: 0745537000133
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: TMP-000042. Reusing.
+  -> Linked invoice RF2607-00468 (Updated rows: 1)
+  -> Linked invoice RF2607-00492 (Updated rows: 1)
+
+Processing log ID 1059 at 06-07-2026 10:42...
+- Customer: FIRST CANNED FOOD (THAI) CO.,LTD.
+- Address: 154 MOO 8  T. DONKRUAY, A.DUMNOEN SADUAK, RATCHABURI, 70130
+- Invoices: RF2607-00387
+- Resolved Tax ID: 0105531008413
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00912. Reusing.
+  -> Linked invoice RF2607-00387 (Updated rows: 1)
+
+Processing log ID 1062 at 06-07-2026 10:46...
+- Customer: DECATHLON (THAILAND) CO.,LTD.
+- Address: 19/501 MOO 13, DEBARATANA ROAD,  BANGKAEW, BANGPLEE, SAMUTPRAKARN 10540
+- Invoices: RF2607-00312
+- Resolved Tax ID: 0115558007311
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00115. Reusing.
+  -> Linked invoice RF2607-00312 (Updated rows: 1)
+
+Processing log ID 1065 at 06-07-2026 10:50...
+- Customer: FIRST CANNED FOOD (THAI) CO.,LTD.
+- Address: 154 MOO 8  T. DONKRUAY, A.DUMNOEN SADUAK, RATCHABURI, 70130
+- Invoices: RF2607-00520
+- Resolved Tax ID: 0105531008413
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00912. Reusing.
+  -> Linked invoice RF2607-00520 (Updated rows: 1)
+
+Processing log ID 1068 at 06-07-2026 10:51...
+- Customer: RADICON CO.,LTD
+- Address: 16/1 MOO2, SUWINTAWONG RD, LAM PHAK CHI, NONG CHOK, BANGKOK 10530 THAILAND
+- Invoices: RF2607-00391
+- Resolved Tax ID: 0105521015239
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000043
+  -> Linked invoice RF2607-00391 (Updated rows: 1)
+
+Processing log ID 1075 at 06-07-2026 10:57...
+- Customer: SIAM PACIFIC ELECTRIC WIRE&CABLE CO.,LTD.
+- Address: 2922/311-312 30TH FLOOR, CHARN ISSARA TOWER 2, NEW PETCHBURI RD.,  BANGKAPI, HUAY-KWANG, BANGKOK 10310
+- Invoices: RF2607-00403, RF2607-00414
+- Resolved Tax ID: 0105531049187
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02373. Reusing.
+  -> Linked invoice RF2607-00403 (Updated rows: 1)
+  -> Linked invoice RF2607-00414 (Updated rows: 1)
+
+Processing log ID 1079 at 06-07-2026 10:58...
+- Customer: SIAM PACIFIC ELECTRIC WIRE&CABLE CO.,LTD.
+- Address: 2922/311-312 30TH FLOOR, CHARN ISSARA TOWER 2, NEW PETCHBURI RD.,  BANGKAPI, HUAY-KWANG, BANGKOK 10310
+- Invoices: RF2607-00499
+- Resolved Tax ID: 0105531049187
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02373. Reusing.
+  -> Linked invoice RF2607-00499 (Updated rows: 1)
+
+Processing log ID 1082 at 06-07-2026 10:59...
+- Customer: FIRST CANNED FOOD (THAI) CO.,LTD.
+- Address: 154 MOO 8  T. DONKRUAY, A.DUMNOEN SADUAK, RATCHABURI, 70130
+- Invoices: RF2607-00518
+- Resolved Tax ID: 0105531008413
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00912. Reusing.
+  -> Linked invoice RF2607-00518 (Updated rows: 1)
+
+Processing log ID 1085 at 06-07-2026 11:11...
+- Customer: THAIGUARD PHARMA PACK CO.,LTD.
+- Address: 28/34 MOO 6, PHANTHAI NORASING SUBDISTRICT, MUEANG SAMUT SAKHON DISTRICT, SAMUT SAKHON PROVINCE 74000, THAILAND.
+- Invoices: RF2607-00179
+- Resolved Tax ID: 0105566208974
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000044
+  -> Linked invoice RF2607-00179 (Updated rows: 1)
+
+Processing log ID 1088 at 06-07-2026 11:17...
+- Customer: DELTA ELECTRONICS (THAILAND) PUBLIC COMPANY LIMITED.
+- Address: 909 MOO 4,SOI 9,BANGPOO INDUSTRIAL ESTATE (EPZ) PATTANA 1 ROAD,  TAMBOL PHRAKSA, AMPHUR MUANG, SAMUTPRAKARN 10280
+- Invoices: RF2607-00313
+- Resolved Tax ID: 0107537002559
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-05463. Reusing.
+  -> Linked invoice RF2607-00313 (Updated rows: 1)
+
+Processing log ID 1091 at 06-07-2026 11:18...
+- Customer: C.C. INTERTEC CO.,LTD.
+- Address: 33/1 MOO 19,   BANGPHLIYAI SUB-DISRICT, BANGPHI DISTRICT,  SAMUTPRAKAN 10540
+- Invoices: RF2607-00208, RF2607-00249
+- Resolved Tax ID: 0115542004562
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02141. Reusing.
+  -> Linked invoice RF2607-00208 (Updated rows: 1)
+  -> Linked invoice RF2607-00249 (Updated rows: 1)
+
+Processing log ID 1095 at 06-07-2026 11:21...
+- Customer: LA BICYCLE (THAILAND) CO.,LTD.
+- Address: 58 MOO 2 ,  OAM-YAI, SAMPRAN, NAKORNPATHOM 73160
+- Invoices: RF2607-00560
+- Resolved Tax ID: 0735545000368
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03729. Reusing.
+  -> Linked invoice RF2607-00560 (Updated rows: 1)
+
+Processing log ID 1098 at 06-07-2026 11:22...
+- Customer: S OKA IMPORT EXPORT CO.,LTD.
+- Address: 23/22 SOI KANCHANAPISEK 0010,  BANG KHAE SUB-DISTRICT, BANG KHAEDISTRICT, BANGKOK 10160
+- Invoices: RF2607-00397
+- Resolved Tax ID: 0125560019576
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02206. Reusing.
+  -> Linked invoice RF2607-00397 (Updated rows: 1)
+
+Processing log ID 1099 at 06-07-2026 11:22...
+- Customer: A.P.C. INDUSTRIES CO.,LTD.
+- Address: 233 SERITHAI RD., KANNAYAO, BANGKOK 10230
+- Invoices: RF2607-00449
+- Resolved Tax ID: 0105512002359
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000045
+  -> Linked invoice RF2607-00449 (Updated rows: 1)
+
+Processing log ID 1104 at 06-07-2026 11:23...
+- Customer: DEESTONE CORPORATION PUBLIC COMPANY LIMITED.
+- Address: 84 MOO 7 SOI PETCHKASEM 122 PETCHKASEM RD.,  OAMNOI SUB-DISTRICT, KRATHUMBAN DISTRICT, SAMUTSAKORN PROVINCE, 74130
+- Invoices: RF2607-00538, RF2607-00541, RF2607-00545, RF2607-00559
+- Resolved Tax ID: 0107564000375
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00768. Reusing.
+  -> Linked invoice RF2607-00538 (Updated rows: 1)
+  -> Linked invoice RF2607-00541 (Updated rows: 1)
+  -> Linked invoice RF2607-00545 (Updated rows: 1)
+  -> Linked invoice RF2607-00559 (Updated rows: 1)
+
+Processing log ID 1110 at 06-07-2026 11:26...
+- Customer: R & B FOOD SUPPLY PUBLIC CO.,LTD.
+- Address: 9 SOI PHO KAEW  3 YAEK 17  KLONGCHAN BANGKAPI BANGKOK 10240
+- Invoices: RF2607-00121
+- Resolved Tax ID: 0107561000374
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01189. Reusing.
+  -> Linked invoice RF2607-00121 (Updated rows: 1)
+
+Processing log ID 1113 at 06-07-2026 11:30...
+- Customer: DSV AIR & SEA LIMITED
+- Address: 1152 PUNN TOWER, UNIT NO.2501-2504 25TH FLOOR, RAMA 4 ROAD,  KLONGTOEI, KLONGTOEI, BANGKOK 10110
+- Invoices: RF2607-00448
+- Resolved Tax ID: 0105530026922
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00471. Reusing.
+  -> Linked invoice RF2607-00448 (Updated rows: 1)
+
+Processing log ID 1116 at 06-07-2026 11:33...
+- Customer: WIN CHE (THAILAND) CO.,LTD.
+- Address: 60 M.7   T.NONGCHUMPON, A.KHAOYAI, PETCHABURI 76140
+- Invoices: RF2607-00346
+- Resolved Tax ID: 0745550000133
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01500. Reusing.
+  -> Linked invoice RF2607-00346 (Updated rows: 1)
+
+Processing log ID 1119 at 06-07-2026 11:33...
+- Customer: SIAM STARCH (1996) CO.,LTD.
+- Address: 1168/18 LUMPINI TOWER,13TH FLOOR,RAMA IV ROAD, THUNG MAHA MEK,SATHOR,BANGKOK 10120,THAILAND
+- Invoices: RF2607-00364
+- Resolved Tax ID: 0105510000821
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000046
+  -> Linked invoice RF2607-00364 (Updated rows: 1)
+
+Processing log ID 1122 at 06-07-2026 11:35...
+- Customer: RIKEN (THAILAND) CO.,LTD.
+- Address: 143 MOO 5 BANGKADI INDUSTRIAL PARK,TIVANOND RD,     BANGKADI , MUANGPATHUMTHANI, PATHUMTHANI 12000
+- Invoices: RF2607-00302
+- Resolved Tax ID: 0105532068592
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00285. Reusing.
+  -> Linked invoice RF2607-00302 (Updated rows: 1)
+
+Processing log ID 1127 at 06-07-2026 11:37...
+- Customer: MASTERY TRADING CO.,LTD.
+- Address: 99/178 MOO 2,  TUMBOL PHANTAINORASING,  AMPHURMUANGSAMUTSAKORN  SAMUTSAKORN 74000
+- Invoices: RF2607-00434
+- Resolved Tax ID: 0105549110571
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00590. Reusing.
+  -> Linked invoice RF2607-00434 (Updated rows: 1)
+
+Processing log ID 1129 at 06-07-2026 11:38...
+- Customer: MASTERY TRADING CO.,LTD.
+- Address: 99/178 MOO 2,  TUMBOL PHANTAINORASING,  AMPHURMUANGSAMUTSAKORN  SAMUTSAKORN 74000
+- Invoices: RF2607-00021
+- Resolved Tax ID: 0105549110571
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00590. Reusing.
+  -> Linked invoice RF2607-00021 (Updated rows: 1)
+
+Processing log ID 1133 at 06-07-2026 11:58...
+- Customer: NEW ASIA SPORTS GOODS CO.LTD
+- Address: 55 MOO14 SUWINTAWONG KRATUMRAI NONGCHOK BANGKOK10530
+- Invoices: RF2607-00578
+- Resolved Tax ID: 0105533140416
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01347. Reusing.
+  -> Linked invoice RF2607-00578 (Updated rows: 1)
+
+Processing log ID 1135 at 06-07-2026 12:08...
+- Customer: MMI PRECISION FORMING (THAILAND) LIMITED
+- Address: 70/8-11 MOO 9 ROJANA INDUSTRIAL PARK   TAMBON THANU, AMPHUR UTHAI, AYUTTHAYA 13210
+- Invoices: RF2607-00579
+- Resolved Tax ID: 0105546061722
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00214. Reusing.
+  -> Linked invoice RF2607-00579 (Updated rows: 1)
+
+Processing log ID 1137 at 06-07-2026 12:08...
+- Customer: IMARFLEX INDUSTRIAL CO.,LTD
+- Address: 132 SOI RAMA 2 SOI 30,   BANGMOD, CHOMTHONG, BANGKOK 10150
+- Invoices: RF2607-00081
+- Resolved Tax ID: 0105538023418
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01125. Reusing.
+  -> Linked invoice RF2607-00081 (Updated rows: 1)
+
+Processing log ID 1139 at 06-07-2026 12:09...
+- Customer: MMI PRECISION FORMING (THAILAND) LIMITED
+- Address: 70/8-11 MOO 9 ROJANA INDUSTRIAL PARK   TAMBON THANU, AMPHUR UTHAI, AYUTTHAYA 13210
+- Invoices: RF2607-00585
+- Resolved Tax ID: 0105546061722
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00214. Reusing.
+  -> Linked invoice RF2607-00585 (Updated rows: 1)
+
+Processing log ID 1141 at 06-07-2026 12:13...
+- Customer: MURAMOTO ELECTRON (THAILAND) PUBLIC COMPANY LIMITED.
+- Address: 1 MU 6 BANGNA-TRAD ROAD, KM. 25, TAMBOL BANGSAOWTHONG,
+AMPHUR BANGSAOWTHONG, SAMUTPRAKARN 10570.
+TAX ID: 0107537000793 
+(BRANCH 00001)
+- Invoices: RF2607-00308
+- Resolved Tax ID: 0107537000793
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-04808. Reusing.
+  -> Linked invoice RF2607-00308 (Updated rows: 1)
+
+Processing log ID 1143 at 06-07-2026 12:34...
+- Customer: PERFECT COMPANION GROUP CO.,LTD.
+- Address: 169 MOO 16  BANGSAOTHONG, BANGSAOTHONG DISTRICT, SAMUTPRAKARN 10570
+- Invoices: RF2607-00375, RF2607-00376
+- Resolved Tax ID: 0105532054273
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00287. Reusing.
+  -> Linked invoice RF2607-00375 (Updated rows: 1)
+  -> Linked invoice RF2607-00376 (Updated rows: 1)
+
+Processing log ID 1146 at 06-07-2026 12:37...
+- Customer: KITITAN CO.,LTD.
+- Address: 175-177, 183, 137/1 SAWANG ROAD, MAHAPHRUET,  THARAM SUB-DISTRICT, BANGRAK DISTRICT, BANGKOK, 10500
+- Invoices: RF2607-00407
+- Resolved Tax ID: 0105520018382
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-06905. Reusing.
+  -> Linked invoice RF2607-00407 (Updated rows: 1)
+
+Processing log ID 1151 at 06-07-2026 13:13...
+- Customer: INNOVATIVE FOOD AND BEVERAGE (THAILAND) CO.,LTD
+- Address: 989 KINGBRIDGE TOWER, 21ST FLOOR , ROOM 2102, RAMA III ROAD,  BANG PHONGPHANG SUB-DISTRICT, YAN NAWA DISTRICT, BANGKOK 10120
+- Invoices: RF2607-00561, RF2607-00562
+- Resolved Tax ID: 0105566018211
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01307. Reusing.
+  -> Linked invoice RF2607-00561 (Updated rows: 1)
+  -> Linked invoice RF2607-00562 (Updated rows: 1)
+
+Processing log ID 1157 at 06-07-2026 13:25...
+- Customer: BETTER PHARMA CO.,LTD.
+- Address: 323 MOO 6  VIBHAVADI RANGSIT ROAD,  THUNGSONGHONG, LAKSI BANGKOK 10210
+- Invoices: RF2607-00525
+- Resolved Tax ID: 0105521018041
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00787. Reusing.
+  -> Linked invoice RF2607-00525 (Updated rows: 1)
+
+Processing log ID 1159 at 06-07-2026 13:27...
+- Customer: PHOENIX GROUP(BANGKOK) CO.,LTD.
+- Address: 123/15 MOO 5,  PHUNTAINORASING, MUANG SAMUTSAKHON, SAMUTSAKHON 74000
+- Invoices: RF2607-00504, RF2607-00529
+- Resolved Tax ID: 0745565009743
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-05974. Reusing.
+  -> Linked invoice RF2607-00504 (Updated rows: 1)
+  -> Linked invoice RF2607-00529 (Updated rows: 1)
+
+Processing log ID 1164 at 06-07-2026 13:31...
+- Customer: PHOENIX GROUP(BANGKOK) CO.,LTD.
+- Address: 123/15 MOO 5,  PHUNTAINORASING, MUANG SAMUTSAKHON, SAMUTSAKHON 74000
+- Invoices: RF2607-00401
+- Resolved Tax ID: 0745565009743
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-05974. Reusing.
+  -> Linked invoice RF2607-00401 (Updated rows: 1)
+
+Processing log ID 1166 at 06-07-2026 13:34...
+- Customer: V.T.GARMENT CO.,LTD.
+- Address: 602/50 SOI SATHUPRADIT 48,SATHUPRADIT ROAD,  BANGPONGPANG, YANNAWA, BANGKOK 10120
+- Invoices: RF2607-00523
+- Resolved Tax ID: 0105524011056
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03497. Reusing.
+  -> Linked invoice RF2607-00523 (Updated rows: 1)
+
+Processing log ID 1167 at 06-07-2026 13:34...
+- Customer: AMAZON PAPYRUS CHEMICALS(THAILAND) CO., LTD
+- Address: 9/261-262 MOO5, PHAHOLYOTHIN ROAD, KHLONG NUENG SUBDISTRICT, KHLONG LUANG DISTRICT, PATHUMTHANI 12120
+- Invoices: RF2607-00498
+- Resolved Tax ID: 0105543106466
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00376. Reusing.
+  -> Linked invoice RF2607-00498 (Updated rows: 1)
+
+Processing log ID 1171 at 06-07-2026 13:35...
+- Customer: M.C.S.STEEL PUBLIC COMPANY LIMITED
+- Address: 70 MOO 2  CHANGYAI, BANGSAI, AYUTTHAYA 13290
+- Invoices: RF2607-00501
+- Resolved Tax ID: 0107548000048
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01178. Reusing.
+  -> Linked invoice RF2607-00501 (Updated rows: 1)
+
+Processing log ID 1178 at 06-07-2026 13:37...
+- Customer: ADVANCE PHARMA CO.,LTD.
+- Address: 80,82,84,86,88,92 SOI CHAN 28.,CHAN RD,  TUNGWATDON, SATHON, BANGKOK 10120
+- Invoices: RF2607-00490
+- Resolved Tax ID: 0105514000426
+- Found existing branch in DB: 00007
+- Profile already exists with customer_num: CUS-03173. Reusing.
+  -> Linked invoice RF2607-00490 (Updated rows: 1)
+
+Processing log ID 1184 at 06-07-2026 13:40...
+- Customer: V.T.GARMENT CO.,LTD.
+- Address: 602/50 SOI SATHUPRADIT 48,SATHUPRADIT ROAD,  BANGPONGPANG, YANNAWA, BANGKOK 10120
+- Invoices: RF2607-00205
+- Resolved Tax ID: 0105524011056
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03497. Reusing.
+  -> Linked invoice RF2607-00205 (Updated rows: 1)
+
+Processing log ID 1186 at 06-07-2026 13:40...
+- Customer: V.T.GARMENT CO.,LTD.
+- Address: 602/50 SOI SATHUPRADIT 48,SATHUPRADIT ROAD,  BANGPONGPANG, YANNAWA, BANGKOK 10120
+- Invoices: RF2607-00503
+- Resolved Tax ID: 0105524011056
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03497. Reusing.
+  -> Linked invoice RF2607-00503 (Updated rows: 1)
+
+Processing log ID 1189 at 06-07-2026 13:44...
+- Customer: GOLDEN LIME PUBLIC COMPANY LIMITED
+- Address: 7 SOI 11 SAI 3 MOO 12, SARABURI-LOMSAK MAI  CHONGSARIKA, PATTANAKOM, LOPBURI 15220
+- Invoices: RF2607-00130
+- Resolved Tax ID: 0107556000248
+- Found existing branch in DB: 00002
+- Profile already exists with customer_num: CUS-04100. Reusing.
+  -> Linked invoice RF2607-00130 (Updated rows: 1)
+
+Processing log ID 1196 at 06-07-2026 14:04...
+- Customer: ONE ASIA COMPANY LIMITED
+- Address: 48/18 PREECHA COMPLEX,SOI RUNGRUENG(RATCHADAPISEK 20) RATCHADAPISEK ROAD SAMSENNORK HUAYKHWANG BANGKOK 10310
+- Invoices: RF2607-00487, RF2607-00532
+- Resolved Tax ID: 0135541002060
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00200. Reusing.
+  -> Linked invoice RF2607-00487 (Updated rows: 1)
+  -> Linked invoice RF2607-00532 (Updated rows: 1)
+
+Processing log ID 1201 at 06-07-2026 14:05...
+- Customer: AJINOMOTO CO., (THAILAND) LTD.
+- Address: 487/1 SI AYUTTHAYA ROAD, KHWAENG TANON PHAYA THAI, KHET RATCHATHEWI, BANGKOK 10400, THAILAND
+- Invoices: RF2607-00568, RF2607-00569, RF2607-00571, RF2607-00572, RF2607-00576, RF2607-00577
+- Resolved Tax ID: 0105503000586
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00441. Reusing.
+  -> Linked invoice RF2607-00568 (Updated rows: 1)
+  -> Linked invoice RF2607-00569 (Updated rows: 1)
+  -> Linked invoice RF2607-00571 (Updated rows: 1)
+  -> Linked invoice RF2607-00572 (Updated rows: 1)
+  -> Linked invoice RF2607-00576 (Updated rows: 1)
+  -> Linked invoice RF2607-00577 (Updated rows: 1)
+
+Processing log ID 1214 at 06-07-2026 14:09...
+- Customer: บริษัท เอนไก ไทย จำกัด
+- Address: 444 หมู่ที่ 17 ถนนเทพารักษ์  ตำบลบางเสาธง  อำเภอบางเสาธง  จ.สมุทรปราการ 10570
+- Invoices: RF2607-00267
+- Resolved Tax ID: 0105530021360
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-05083. Reusing.
+  -> Linked invoice RF2607-00267 (Updated rows: 1)
+
+Processing log ID 1216 at 06-07-2026 14:09...
+- Customer: V.T.GARMENT CO.,LTD.
+- Address: 602/50 SOI SATHUPRADIT 48,SATHUPRADIT ROAD,  BANGPONGPANG, YANNAWA, BANGKOK 10120
+- Invoices: RF2607-00394
+- Resolved Tax ID: 0105524011056
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-03497. Reusing.
+  -> Linked invoice RF2607-00394 (Updated rows: 1)
+
+Processing log ID 1219 at 06-07-2026 14:10...
+- Customer: THIPTANAPORN CO.,LTD.
+- Address: 46 SOI BANGNA-TRAD 25,  
+BANGNA NUEA, BANGNA, BANGKOK 10260
+- Invoices: RF2607-00522
+- Resolved Tax ID: 0105537009080
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-06864. Reusing.
+  -> Linked invoice RF2607-00522 (Updated rows: 1)
+
+Processing log ID 1222 at 06-07-2026 14:11...
+- Customer: TRANSTEC ENGINEERING CO.,LTD.
+- Address: 111 LADPRAO 29, LADPRAO ROAD,  CHANKASEM, CHATUJAK  BANGKOK 10900
+- Invoices: RF2607-00365
+- Resolved Tax ID: 0105526046655
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-01487. Reusing.
+  -> Linked invoice RF2607-00365 (Updated rows: 1)
+
+Processing log ID 1225 at 06-07-2026 14:14...
+- Customer: GOLDEN LIME PUBLIC COMPANY LIMITED
+- Address: 7 SOI 11 SAI 3 MOO 12, SARABURI-LOMSAK MAI  CHONGSARIKA, PATTANAKOM, LOPBURI 15220
+- Invoices: RF2607-00385
+- Resolved Tax ID: 0107556000248
+- Found existing branch in DB: 00002
+- Profile already exists with customer_num: CUS-04100. Reusing.
+  -> Linked invoice RF2607-00385 (Updated rows: 1)
+
+Processing log ID 1229 at 06-07-2026 14:18...
+- Customer: GOLDEN LIME PUBLIC COMPANY LIMITED
+- Address: 7 SOI 11 SAI 3 MOO 12, SARABURI-LOMSAK MAI  CHONGSARIKA, PATTANAKOM, LOPBURI 15220
+- Invoices: RF2607-00392
+- Resolved Tax ID: 0107556000248
+- Found existing branch in DB: 00002
+- Profile already exists with customer_num: CUS-04100. Reusing.
+  -> Linked invoice RF2607-00392 (Updated rows: 1)
+
+Processing log ID 1232 at 06-07-2026 14:25...
+- Customer: CHEMAX TECHNOLOGY (THAILAND) CO.,LTD.
+- Address: 2ND FLOOR, 66 RAMINTRA 99 ALLEY,  KANNAYAO, KANNAYAO, BANGKOK 10230
+- Invoices: RF2607-00435
+- Resolved Tax ID: 0105566109089
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-04020. Reusing.
+  -> Linked invoice RF2607-00435 (Updated rows: 1)
+
+Processing log ID 1238 at 06-07-2026 14:36...
+- Customer: Teamsale import export co.,ltd
+- Address: TEAMSALE IMPORT EXPORT CO.,LTD
+43/7 Moo2 ,Tambon Lat Lum Kaeo Lat Lum Kaeo Distric Pathumthani Province 13140 
+0135564018418
+- Invoices: RF2607-00277
+- Resolved Tax ID: 0115550007702
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000047
+  -> Linked invoice RF2607-00277 (Updated rows: 1)
+
+Processing log ID 1240 at 06-07-2026 14:49...
+- Customer: THAI INABA FOODS CO.,LTD.
+- Address: 190 MOO 7, NONG PLA KRADI ROAD,  NONG PLA MO, NONG KAE, SARABURI 18140
+- Invoices: RF2607-00078
+- Resolved Tax ID: 0105554151875
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02691. Reusing.
+  -> Linked invoice RF2607-00078 (Updated rows: 1)
+
+Processing log ID 1244 at 06-07-2026 14:51...
+- Customer: TOKYO ZAIRYO (THAILAND) CO.,LTD.
+- Address: No. 92 CENTRAL PARK OFFICES,9TH FLOOR,UNIT NO.LL0906,RAMA IV ROD,  SILOM, BANGRAK, BANGKOK 10500
+- Invoices: RF2607-00421
+- Resolved Tax ID: 0125544010608
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02847. Reusing.
+  -> Linked invoice RF2607-00421 (Updated rows: 1)
+
+Processing log ID 1246 at 06-07-2026 14:52...
+- Customer: AGC FLAT GLASS (THAILAND) PUBLIC CO.,LTD.
+- Address: 200 MOO 1 SUKSAWAD ROAD PAKKHLONG   BANGPLAKOD  PHRASAMUTCHEDI SAMUTPRAKAN 10290
+- Invoices: RF2607-00609
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00609 (Updated rows: 1)
+
+Processing log ID 1248 at 06-07-2026 14:53...
+- Customer: AGC FLAT GLASS (THAILAND) PUBLIC CO.,LTD.
+- Address: 200 MOO 1 SUKSAWAD ROAD PAKKHLONG   BANGPLAKOD  PHRASAMUTCHEDI SAMUTPRAKAN 10290
+- Invoices: RF2607-00610
+- Resolved Tax ID: 0107537002168
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00029. Reusing.
+  -> Linked invoice RF2607-00610 (Updated rows: 1)
+
+Processing log ID 1251 at 06-07-2026 14:56...
+- Customer: CALTECH CORPORATION LTD.
+- Address: 38/8 MOO 3,   T.BANGPLA, A.BANGPLEE, SAMUTPRAKARN 10540
+- Invoices: RF2607-00592
+- Resolved Tax ID: 0105534091699
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02460. Reusing.
+  -> Linked invoice RF2607-00592 (Updated rows: 1)
+
+Processing log ID 1254 at 06-07-2026 14:58...
+- Customer: OPPPLE LIGHTING (THAILAND) CO.,LTD.
+- Address: 79/2 FLOOR 7 SPD BUILDING, KRUNG THONBURI RD, KHLONG TON SAI SHLONG SAN, BANGKOK 10600
+TAX : 0105560141541
+- Invoices: RF2607-00206
+- Resolved Tax ID: 0105560141541
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000048
+  -> Linked invoice RF2607-00206 (Updated rows: 1)
+
+Processing log ID 1256 at 06-07-2026 14:59...
+- Customer: CROWN FOOD PACKAGING(THAILAND)PUBLIC CO.,LTD.
+- Address: 89/1 MOO 8 SOI WATSUANSOM,POOCHAO-SAMINGPRAI ROAD,   TAMBOL SAMRONGTAI, AMPHUR PRAPRADAENG  SAMUTPRAKARN 10130
+- Invoices: RF2607-00402
+- Resolved Tax ID: 0107537002427
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00043. Reusing.
+  -> Linked invoice RF2607-00402 (Updated rows: 1)
+
+Processing log ID 1259 at 06-07-2026 15:00...
+- Customer: บริษัท อายิโนะโมะโต๊ะ (ประเทศไทย) จำกัด
+- Address: เลขที่ 487/1 ถนนศรีอยุธยา   แขวงถนนพญาไท  เขตราชเทวี กรุงเทพมหาคร 10400
+- Invoices: RF2607-00596
+- Resolved Tax ID: 0105503000586
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-00441. Reusing.
+  -> Linked invoice RF2607-00596 (Updated rows: 1)
+
+Processing log ID 1263 at 06-07-2026 15:06...
+- Customer: COMPACT INTERNATIONAL (1994) CO.,LTD.
+- Address: 36 MOO 4, NONGCHUMPHON, KHAOYOI, PHETCHABURI, 76140 THAILAND
+- Invoices: RF2607-00491
+- Resolved Tax ID: 0105537082429
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000049
+  -> Linked invoice RF2607-00491 (Updated rows: 1)
+
+Processing log ID 1267 at 06-07-2026 15:14...
+- Customer: TRANSPOWER TECHNOLOGY CO.,LTD.
+- Address: 30/5 SOI RAMKHAMHAENG 182, MINBURI, MINBURI, BANGKOK 10510 THAILAND
+- Invoices: RF2607-00465, RF2607-00467
+- Resolved Tax ID: 0105549097108
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000050
+  -> Linked invoice RF2607-00465 (Updated rows: 1)
+  -> Linked invoice RF2607-00467 (Updated rows: 1)
+
+Processing log ID 1270 at 06-07-2026 15:18...
+- Customer: NEW PRINT CENTER CO.,LTD.
+- Address: 90/1 SOI LADPRAO 91 (KEASORN),KHLONGCHAOKHUNSING,WANGTHONGLANG,BANGKOK 10310
+- Invoices: RF2607-00220
+- Resolved Tax ID: 0105567248180
+- Defaulting branch to: สำนักงานใหญ่
+- Creating new profile with customer_num: TMP-000051
+  -> Linked invoice RF2607-00220 (Updated rows: 1)
+
+Processing log ID 1272 at 06-07-2026 15:21...
+- Customer: TOPOCEAN (THAILAND) LIMITED
+- Address: 3388/51 FLOOR 15TH, SIRINRATBUILDING, RAMA 4 ROAD,  KLONGTON, KLONGTOEY, BANGKOK 10110
+- Invoices: RF2607-00086, RF2607-00088, RF2607-00090
+- Resolved Tax ID: 0105554046061
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-06042. Reusing.
+  -> Linked invoice RF2607-00086 (Updated rows: 1)
+  -> Linked invoice RF2607-00088 (Updated rows: 1)
+  -> Linked invoice RF2607-00090 (Updated rows: 1)
+
+Processing log ID 1278 at 06-07-2026 15:25...
+- Customer: THAI INABA FOODS CO.,LTD.
+- Address: 190 MOO 7, NONG PLA KRADI ROAD,  NONG PLA MO, NONG KAE, SARABURI 18140
+- Invoices: RF2607-00077
+- Resolved Tax ID: 0105554151875
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-02691. Reusing.
+  -> Linked invoice RF2607-00077 (Updated rows: 1)
+
+Processing log ID 1281 at 06-07-2026 15:57...
+- Customer: SAHASILP HITECH CO. LTD
+- Address: 105 MOO8.8,  THASAO, KRATUMBAN, SAMUTSAKORN 74100
+- Invoices: RF2607-00507
+- Resolved Tax ID: 0105535049980
+- Found existing branch in DB: สำนักงานใหญ่
+- Profile already exists with customer_num: CUS-07114. Reusing.
+  -> Linked invoice RF2607-00507 (Updated rows: 1)
+
+Cleaning up erroneous TMP-XXXXXX profiles...
+Deleted 1 erroneous profiles.
+
+Recovery completed successfully!
+root@Uniconcontainer-lmvc:~# 

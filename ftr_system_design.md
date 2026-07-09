@@ -7,12 +7,14 @@ This document specifies the system architecture, design decisions, and implement
 ## 1. Database Schema & Reversions (REQ#01 & REQ#02)
 
 ### 1.1 `invoices.created_at` Timestamp
+
 * **Requirement:** Revert insertion query adjustments to keep the record creation datetime automatically controlled by the database.
 * **Specification:** All SQL `INSERT INTO invoices` queries omit setting `created_at` explicitly, allowing it to default to `CURRENT_TIMESTAMP` at the MySQL database level.
 
 ### 1.2 `invoices.service_date`
+
 * **Requirement:** Parse the service date from the 4th column of imported invoice data and show it on the screens.
-* **Specification:** 
+* **Specification:**
   * Format: `DD/MM/YYYY`.
   * Saved to the `service_date` field in the database during invoice imports.
   * Rendered as the "Service Date" column on the admin web portal grids instead of record creation datetime.
@@ -22,6 +24,7 @@ This document specifies the system architecture, design decisions, and implement
 ## 2. Adding Customer Data Rich Menu (REQ#03)
 
 ### 2.1 Multi-Invoice Input & Validation Flow
+
 * **Page:** `public/liff/missing-info.html`
 * **Inputs:** Accepts multiple `tax_rec_id`s separated by commas (e.g. `RF2606-0001, RF2606-0002`).
 * **Validation Partition Rules:**
@@ -46,6 +49,7 @@ This document specifies the system architecture, design decisions, and implement
     * Resets the form.
 
 ### 2.2 Action Bar & Save Warnings
+
 * **Send (ส่ง) Button:** A new button added to the LIFF action bar.
   * **Enabled:** Only when all entered invoices already have a linked Tax ID, are within the 7-day limit, and belong to the same customer profile. (Used to dispatch PDFs without modifying database profile links).
   * **Disabled/Greyed-out:** When manual entry is activated or when editing profile details.
@@ -55,6 +59,7 @@ This document specifies the system architecture, design decisions, and implement
   * `"สามารถขอใบกำกับภาษีได้ภายใน 7 วัน จากวันเข้ารับบริการ"`
 
 ### 2.3 Backend Batch Processing & Multi-PDF Generation
+
 * **Endpoint:** `/api/customer/save-and-send`
 * **Specification:**
   * Bulk updates the company profile metadata on all unlinked invoices.
@@ -67,6 +72,7 @@ This document specifies the system architecture, design decisions, and implement
 ## 3. Request Full Tax Invoice Rich Menu (REQ#04)
 
 ### 3.1 Layout & Input Adjustments
+
 * **Page:** `public/liff/request-invoice.html`
 * **Field Reordering:** `TAX RECORD ID` input is shifted to the top field, followed by `TAX ID` below it.
 * **Invisible Search Button:** The lookup search button (`btnSearch`) is hidden.
@@ -74,6 +80,7 @@ This document specifies the system architecture, design decisions, and implement
 * **Lookup Trigger:** Lookup is triggered on `TAX RECORD ID` field `blur` or when the `Enter` key is pressed.
 
 ### 3.2 Search & Verification Logic
+
 * **Endpoint:** `/api/customer/search-record`
 * **Validations:**
   * **No Customer Data / Not Found:** If the invoice record does not exist or lacks an `existing_tax_id` link in the database, shows popup alert:
@@ -88,12 +95,14 @@ This document specifies the system architecture, design decisions, and implement
 ## 4. Email Layout & Portal Adjustments
 
 ### 4.1 Email Signature Layout
+
 * **Service:** `src/services/emailService.js`
 * **Specification:**
   * Resized company logo, signature image, and QR code to a clean width of `250px`.
   * Bolded the footer notes section.
 
 ### 4.2 Web Portal Column Layouts
+
 * **Pages:** `customers.html`, `customer-profiles.html`, `pdf-management.html`
 * **Specification:** Moved all Action and Accounting-specific columns (edit, delete, view PDF, regenerate PDF) to the leftmost positions (Indices 0, 1, 2) for better screen visibility on desktop monitors.
 
@@ -102,6 +111,7 @@ This document specifies the system architecture, design decisions, and implement
 ## 5. Custom Dialog UI Overlays (UX Improvement)
 
 ### 5.1 Prevention of Server URL Prefix Header
+
 * **Specification:**
   * Browser native `alert()` and `confirm()` windows show the server's domain/URL (e.g. `localhost:3000 says:` or `liff.line.me says:`) in webviews and mobile devices.
   * Replaced all native dialog boxes with custom-styled, absolute-positioned HTML/CSS modal overlays (`#customModalOverlay`) inside both LIFF files (`missing-info.html` and `request-invoice.html`).

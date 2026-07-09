@@ -783,7 +783,7 @@
 
         <!-- Tax Record ID -->
         <div class="field-group">
-            <div class="field-label">Tax Record ID <span class="req">*</span></div>
+            <div class="field-label">Tax Record ID <span class="req">*</span> <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-left: 5px;">(กรณีใส่หลายหมายเลขให้คั่นด้วย ",")</span></div>
             <input type="text" id="taxRecId" class="field-input" placeholder="เช่น RF2605-00123"
                    autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
         </div>
@@ -796,7 +796,7 @@
                        maxlength="13" inputmode="numeric" pattern="\d{13}"
                        autocomplete="off" autocorrect="off">
                 <button class="icon-btn btn-search" id="btnSearch" type="button" title="ค้นหา">🔍</button>
-                <button class="btn btn-cancel" id="btnManual" type="button" style="width: auto; padding: 0 12px; height: 44px; flex: initial; font-size: 0.9rem;" title="ป้อนข้อมูล">ป้อนข้อมูล</button>
+                <button class="btn btn-cancel" id="btnManual" type="button" style="width: auto; padding: 0 12px; height: 44px; flex: initial; font-size: 0.9rem;" title="เพิ่มชื่อใหม่">เพิ่มชื่อใหม่</button>
             </div>
             <!-- Searching indicator -->
             <div class="searching-indicator" id="searchingIndicator">
@@ -848,23 +848,19 @@
             <textarea id="address" class="field-input" placeholder="—" disabled rows="3"></textarea>
         </div>
 
-        <!-- Container Number (hidden — now managed via Gate-In/Gate-Out uploads) -->
-        <div class="field-group" style="display: none;">
-            <div class="field-label">หมายเลขตู้ (Container Number)</div>
-            <textarea id="containerNum" class="field-input" placeholder="เช่น TCNU1234567" rows="2" disabled></textarea>
-        </div>
+
 
     </div><!-- /.card-body -->
 
     <!-- BOTTOM ACTION BAR -->
     <div class="action-bar">
-        <button class="btn btn-save-only" id="btnSaveOnly" disabled type="button">
+        <button class="btn btn-save-only" id="btnSaveOnly" disabled type="button" style="display: none;">
             💾 บันทึก
         </button>
         <button class="btn btn-save" id="btnSaveSend" disabled type="button">
             📨 บันทึกและส่ง
         </button>
-        <button class="btn btn-send" id="btnSend" disabled type="button">
+        <button class="btn btn-send" id="btnSend" disabled type="button" style="display: none;">
             📤 ส่ง
         </button>
         <button class="btn btn-cancel" id="btnCancel" type="button">✕ ยกเลิก</button>
@@ -996,7 +992,6 @@ const el = {
     customerNum:       $('customerNum'),
     customerName:      $('customerName'),
     address:           $('address'),
-    containerNum:      $('containerNum'),
     lockBranch:        $('lockBranch'),
     lockNum:           $('lockNum'),
     lockName:          $('lockName'),
@@ -1110,13 +1105,12 @@ function applyState(state) {
             el.taxRecId.disabled = false;
             el.taxId.disabled    = false;
             el.btnSearch.disabled = false;
-            el.btnManual.disabled = false;
+            el.btnManual.disabled = true;
             el.customerBranch.value = '';
             el.customerNum.value    = '';
             el.customerName.value   = '';
             el.address.value        = '';
-            el.containerNum.value   = '';
-            [el.customerBranch, el.customerNum, el.customerName, el.address, el.containerNum]
+            [el.customerBranch, el.customerNum, el.customerName, el.address]
                 .forEach(f => { f.disabled = true; f.readOnly = false; });
             el.btnSaveOnly.disabled = true;
             el.btnSaveSend.disabled = true;
@@ -1126,7 +1120,7 @@ function applyState(state) {
         case STATE.LOCKED:
             // Everything locked; top fields read-only too
             [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
-             el.customerName, el.address, el.containerNum]
+             el.customerName, el.address]
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;
             el.btnManual.disabled = true;
@@ -1145,7 +1139,6 @@ function applyState(state) {
             el.customerNum.disabled    = true; 
             el.customerName.disabled   = true; 
             el.address.disabled        = true; 
-            el.containerNum.disabled   = true; 
             [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = 'none');
             el.btnSaveOnly.disabled = true;
@@ -1161,7 +1154,7 @@ function applyState(state) {
             break;
 
         case STATE.PROFILE_SELECTED:
-            // Customer data read-only; container editable
+            // Customer data read-only
             el.taxRecId.disabled = false;
             el.taxId.disabled    = false;
             el.btnSearch.disabled = false;
@@ -1171,7 +1164,6 @@ function applyState(state) {
             el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
             el.customerName.disabled   = false; el.customerName.readOnly   = true;
             el.address.disabled        = false; el.address.readOnly        = true;
-            el.containerNum.disabled   = false; el.containerNum.readOnly   = false;
             [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = 'none');
             el.btnSaveOnly.disabled = false;
@@ -1179,7 +1171,7 @@ function applyState(state) {
             break;
 
         case STATE.MANUAL_ENTRY:
-            // Branch, Name, Address editable; Num = TMP-00000 (readonly)
+            // Branch, Name, Address editable
             el.taxRecId.disabled = false;
             el.taxId.disabled    = false;
             el.btnSearch.disabled = false;
@@ -1188,17 +1180,13 @@ function applyState(state) {
             el.customerBranch.disabled = false; el.customerBranch.readOnly = false;
             el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
             
-            const now = new Date();
-            const yy = String(now.getFullYear()).slice(-2);
-            const mm = String(now.getMonth() + 1).padStart(2, '0');
-            const dd = String(now.getDate()).padStart(2, '0');
-            const hh = String(now.getHours()).padStart(2, '0');
-            const min = String(now.getMinutes()).padStart(2, '0');
-            const ss = String(now.getSeconds()).padStart(2, '0');
-            el.customerNum.value = `TMP-${yy}${mm}${dd}${hh}${min}${ss}`;
+            el.customerNum.value = 'TMP-XXXXXX';
+            if (!el.taxId.value) {
+                el.taxId.value = 'TMP-XXXXXX';
+            }
+            
             el.customerName.disabled   = false; el.customerName.readOnly   = false;
             el.address.disabled        = false; el.address.readOnly        = false;
-            el.containerNum.disabled   = false; el.containerNum.readOnly   = false;
             [el.lockBranch, el.lockName, el.lockAddr, el.lockNum]
                 .forEach(ic => ic.style.display = 'none');
             el.lockNum.style.display = ''; // keep lock on num
@@ -1221,7 +1209,6 @@ function applyState(state) {
             el.customerNum.disabled    = true;
             el.customerName.disabled   = true;
             el.address.disabled        = true;
-            el.containerNum.disabled   = true;
             [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = '');
             
@@ -1234,14 +1221,13 @@ function applyState(state) {
         case STATE.ALL_HAVE_TAX_ID:
             el.taxRecId.disabled = false;
             el.taxId.disabled    = true;
-            el.btnSearch.disabled = false;
+            el.btnSearch.disabled = true;
             el.btnManual.disabled = true;
             el.searchIndicator.style.display = 'none';
             el.customerBranch.disabled = true;
             el.customerNum.disabled    = true;
             el.customerName.disabled   = true;
             el.address.disabled        = true;
-            el.containerNum.disabled   = true;
             [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = '');
 
@@ -1276,6 +1262,12 @@ function checkManualReadiness() {
         if (currentState === STATE.MANUAL_ENTRY) checkManualReadiness();
     });
 });
+
+if (el.taxId) {
+    el.taxId.addEventListener('input', () => {
+        el.btnManual.disabled = true;
+    });
+}
 
 // ============================================================
 // SEARCH / MANUAL BUTTON LOGIC
@@ -1383,8 +1375,15 @@ async function handleLookupResult(data, isAutoCheck) {
                 buildCustomerSheet(branchProfiles);
                 openSheet();
             } else {
-                applyState(STATE.MANUAL_ENTRY);
-                showToast('ไม่พบข้อมูลสำหรับ Tax ID นี้ กรุณากรอกข้อมูลเอง', 'default', 3500);
+                const ok = await showCustomConfirm("กดปุ่ม 'เพิ่มชื่อใหม่' เพื่อเพิ่มข้อมูลลูกค้า");
+                if (!ok) {
+                    el.taxId.value = '';
+                    applyState(STATE.INITIAL);
+                    el.btnManual.disabled = true;
+                } else {
+                    applyState(STATE.SOME_NO_TAX_ID);
+                    el.btnManual.disabled = false;
+                }
             }
         } else {
             // All have tax_id
@@ -1438,7 +1437,6 @@ async function handleLookupResult(data, isAutoCheck) {
             el.customerNum.value    = firstInv.customer_num    || '';
             el.customerName.value   = firstInv.customer_name   || '';
             el.address.value        = firstInv.customer_addr   || '';
-            el.containerNum.value   = firstInv.container_num   || '';
         }
     } else {
         // SINGLE INVOICE FLOW
@@ -1488,8 +1486,15 @@ async function handleLookupResult(data, isAutoCheck) {
                 buildCustomerSheet(branchProfiles);
                 openSheet();
             } else {
-                applyState(STATE.MANUAL_ENTRY);
-                showToast('ไม่พบข้อมูลสำหรับ Tax ID นี้ กรุณากรอกข้อมูลเอง', 'default', 3500);
+                const ok = await showCustomConfirm("กดปุ่ม 'เพิ่มชื่อใหม่' เพื่อเพิ่มข้อมูลลูกค้า");
+                if (!ok) {
+                    el.taxId.value = '';
+                    applyState(STATE.INITIAL);
+                    el.btnManual.disabled = true;
+                } else {
+                    applyState(STATE.SOME_NO_TAX_ID);
+                    el.btnManual.disabled = false;
+                }
             }
         } else {
             // has tax_id
@@ -1502,7 +1507,6 @@ async function handleLookupResult(data, isAutoCheck) {
             el.customerNum.value    = inv.customer_num    || '';
             el.customerName.value   = inv.customer_name   || '';
             el.address.value        = inv.customer_addr   || '';
-            el.containerNum.value   = inv.container_num   || '';
         }
     }
 }
@@ -1511,6 +1515,13 @@ let lookupInProgress = false;
 
 async function doLookup(forceManual = false, isAutoCheck = false) {
     if (lookupInProgress) return;
+    
+    // Clear customer fields to prevent carrying over stale data from previous searches
+    el.customerBranch.value = '';
+    el.customerNum.value    = '';
+    el.customerName.value   = '';
+    el.address.value        = '';
+
     const taxRecIdVal = el.taxRecId.value.trim().toUpperCase();
     el.taxRecId.value = taxRecIdVal;
     const taxIdVal    = el.taxId.value.trim();
@@ -1748,7 +1759,6 @@ async function doSaveAndSend(sendMethod, emailAddress) {
         customer_num:    el.customerNum.value.trim(),
         customer_name:   el.customerName.value.trim(),
         address:         el.address.value.trim(),
-        container_num:   el.containerNum.value.trim(),
         send_method:     sendMethod,
         email_address:   emailAddress || ''
     };
@@ -1772,7 +1782,7 @@ async function doSaveAndSend(sendMethod, emailAddress) {
             el.btnCancel.style.display = 'none';
             // Disable all fields — done
             [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
-             el.customerName, el.address, el.containerNum]
+             el.customerName, el.address]
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;
             // Close LIFF after 5s
@@ -1831,7 +1841,7 @@ async function doSendOnly(sendMethod, emailAddress) {
             el.btnCancel.style.display = 'none';
             // Disable all fields — done
             [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
-             el.customerName, el.address, el.containerNum]
+             el.customerName, el.address]
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;
             // Close LIFF after 5s

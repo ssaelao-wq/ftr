@@ -446,8 +446,8 @@
                 // Set up tooltips and disabled attributes for each action
                 const genTooltip = !isComplete 
                     ? 'Profile incomplete (Customer details missing)' 
-                    : (isReady ? 'PDF already generated' : 'Generate PDF Invoice');
-                const genDisabled = (!isComplete || isReady) ? 'disabled' : '';
+                    : 'Generate PDF Invoice';
+                const genDisabled = !isComplete ? 'disabled' : '';
 
                 const downloadTooltip = !isReady ? 'PDF not generated yet' : 'Download PDF';
                 const downloadDisabled = !isReady ? 'disabled' : '';

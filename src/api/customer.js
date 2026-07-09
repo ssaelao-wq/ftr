@@ -5,6 +5,7 @@ const db = require('../db');
 const { logActivity } = require('../logger');
 const { generatePdf } = require('../services/pdfService');
 const { sendInvoiceEmail } = require('../services/emailService');
+const { generateUniqueTmpCustomerNum } = require('../utils/customer');
 
 // ---------------------------------------------------------------------------
 // Helper: Send LINE Flex Message (PDF download link)
@@ -304,10 +305,11 @@ router.post('/update-profile', async (req, res) => {
         // Link the invoice, mark as updated
         await db.execute(
             `UPDATE invoices
-             SET customer_num = ?, container_num = ?,
+             SET customer_num = ?, 
+                 container_num = IF(container_num IS NULL OR container_num = '', ?, container_num),
                  is_accounting_exported = FALSE, is_customer_data_updated = TRUE, status = 'pending'
              WHERE tax_rec_id = ?`,
-            [profileCustNum, container_num ? container_num.trim() : null, tax_rec_id]
+            [profileCustNum, container_num && container_num.trim() ? container_num.trim() : null, tax_rec_id]
         );
 
         logActivity('REQ_MISS_DATA', `${profileName}:${address}:${tax_rec_id}`, lineUsername);
@@ -405,8 +407,8 @@ router.post('/save-and-send', async (req, res) => {
 
         if (existingProfile.length === 0) {
             // New profile row (manual entry or first-time customer)
-            if (!activeCustomerNum || activeCustomerNum === 'TMP-00000') {
-                activeCustomerNum = 'TMP-' + Date.now();
+            if (!activeCustomerNum || activeCustomerNum === 'TMP-00000' || activeCustomerNum === 'TMP-XXXXXX' || activeCustomerNum.startsWith('TMP-')) {
+                activeCustomerNum = await generateUniqueTmpCustomerNum(db);
             }
             await db.execute(
                 `INSERT INTO customer_profile (tax_id, customer_num, customer_name, customer_addr, customer_branch, is_accounting_exported)
@@ -421,24 +423,29 @@ router.post('/save-and-send', async (req, res) => {
             );
         } else {
             // Update existing profile
-            activeCustomerNum = existingProfile[0].customer_num || activeCustomerNum || ('TMP-' + Date.now());
+            const oldCustomerNum = existingProfile[0].customer_num;
+            activeCustomerNum = oldCustomerNum || activeCustomerNum;
+            if (!activeCustomerNum || activeCustomerNum === 'TMP-00000' || activeCustomerNum === 'TMP-XXXXXX' || activeCustomerNum.startsWith('TMP-')) {
+                activeCustomerNum = await generateUniqueTmpCustomerNum(db);
+            }
             await db.execute(
                 'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, customer_num = ?, is_accounting_exported = FALSE WHERE customer_num = ?',
-                [customer_name.trim(), address.trim(), activeCustomerNum, activeCustomerNum]
+                [customer_name.trim(), address.trim(), activeCustomerNum, oldCustomerNum || activeCustomerNum]
             );
         }
 
         // --- Save customer data to all invoices ---
         await db.execute(
             `UPDATE invoices
-             SET customer_num = ?, container_num = ?,
+             SET customer_num = ?, 
+                 container_num = IF(container_num IS NULL OR container_num = '', ?, container_num),
                  is_accounting_exported = FALSE,
                  is_customer_data_updated = TRUE,
                  status = 'pending'
              WHERE tax_rec_id IN (${placeholders})`,
             [
                 activeCustomerNum,
-                container_num ? container_num.trim() : null,
+                container_num && container_num.trim() ? container_num.trim() : null,
                 ...ids
             ]
         );

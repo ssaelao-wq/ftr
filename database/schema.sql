@@ -7,7 +7,7 @@ USE ftr_db;
 CREATE TABLE `customer_profile` (
     `id`                      INT          AUTO_INCREMENT NOT NULL,
     `tax_id`                  VARCHAR(50)  NOT NULL,             -- e.g. 0107547001032
-    `customer_num`            VARCHAR(50)  DEFAULT NULL,         -- e.g. CUS-00098, TMP-YYMMDDHHMMSS for manual entry (UNIQUE, used as join key with invoices)
+    `customer_num`            VARCHAR(50)  DEFAULT NULL,         -- e.g. CUS-00098, TMP-xxxxxx for manual entry (UNIQUE, used as join key with invoices)
     `customer_name`           TEXT         DEFAULT NULL,
     `customer_addr`           TEXT         DEFAULT NULL,
     `customer_email`          VARCHAR(50)  DEFAULT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE `activity_logs` (
 
 -- Insert Admin User: 
 /*
-admin / admin123
+admin / admin369
 ann.acc / ann123
 nam.acc / nam789
 ray.acc / ray456
@@ -92,7 +92,7 @@ patanida / patanida369
 
 INSERT INTO `admin_users` (`username`, `password_hash`) 
 VALUES
-('admin',   '$2b$10$X.zBWTh4BdxYakAmTTm.HumGGz31N7ZRJ5vSgV2/VIfmbLU6Oxpv6'),
+('admin',   '$2a$10$FTYiwRhgvzUyagELOC6gAe1EBOx.A0CD/0Dlprjx0wGJYI.6C8fnq'),
 ('ann.acc', '$2a$10$FHlUJsC6aFC6RObOj.Fru.Lx/K167zxCvnivTLqHYHuP2Ve9LUU3m'),
 ('nam.acc', '$2a$10$ooHxxrnNzhwNo4ygQRFBD.iRI4/AKpP5tqYo3HPswfu2DAPQEjEym'),
 ('ray.acc', '$2a$10$lq4AseRPs0SC9Dyj1A1q.ekP1dMNFyHISdLTubqRrF8nVZwxahsam'),

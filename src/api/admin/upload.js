@@ -2,8 +2,10 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
+const fs = require('fs');
+const path = require('path');
 const db = require('../../db');
-const { logActivity } = require('../../logger');
+const { logActivity, logGateTransaction } = require('../../logger');
 const config = require('../../config');
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -421,8 +423,8 @@ function appendDedup(existing, newVal) {
 }
 
 // POST /api/admin/upload/gate-in
-// Gate-In file: 7th column (index 6) = Receipt No. -> match invoices.tax_rec_id
-//               4th column (index 3) = Container No. -> append to invoices.container_num
+// Gate-In file: matches "Receipt No." -> invoices.tax_rec_id
+//               matches "Container No." -> append to invoices.container_num
 router.post('/gate-in', upload.single('file'), async (req, res) => {
     const username = req.session.adminUser ? req.session.adminUser.username : 'system';
     
@@ -451,7 +453,19 @@ router.post('/gate-in', upload.single('file'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'File is empty or missing data rows.' });
         }
 
-        // Skip header row (index 0), process data rows
+        // Dynamically resolve column indices from headers
+        const headers = rawRecords[0].map(h => h.trim());
+        const receiptNoIdx = headers.indexOf('Receipt No.');
+        const containerNoIdx = headers.indexOf('Container No.');
+
+        if (receiptNoIdx === -1 || containerNoIdx === -1) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Invalid CSV structure. Missing required headers. Found: ${headers.join(', ')}` 
+            });
+        }
+
+        // Process data rows
         let matchedCount = 0;
         let unmatchedCount = 0;
 
@@ -463,8 +477,8 @@ router.post('/gate-in', upload.single('file'), async (req, res) => {
 
             for (let i = 1; i < rawRecords.length; i++) {
                 const row = rawRecords[i];
-                const receiptNo = row[6] ? row[6].trim() : '';       // 7th column (index 6)
-                const containerNo = row[3] ? row[3].trim() : '';     // 4th column (index 3)
+                const receiptNo = row[receiptNoIdx] ? row[receiptNoIdx].trim() : '';
+                const containerNo = row[containerNoIdx] ? row[containerNoIdx].trim() : '';
 
                 if (!receiptNo) {
                     unmatchedCount++;
@@ -482,13 +496,37 @@ router.post('/gate-in', upload.single('file'), async (req, res) => {
                     continue;
                 }
 
-                const invoice = invoices[0];
-                const updatedContainer = appendDedup(invoice.container_num, containerNo);
+                const existingContainerNum = invoices[0].container_num;
+                const newContainerNum = appendDedup(existingContainerNum, containerNo);
+
+                // Delete existing generated PDF (both physical file and database log) to force recreation with new numbers
+                const [pdfRows] = await connection.execute(
+                    'SELECT pdf_folder FROM generated_documents WHERE tax_rec_id = ?',
+                    [receiptNo]
+                );
+                if (pdfRows.length > 0) {
+                    const relativePath = pdfRows[0].pdf_folder;
+                    const absolutePath = path.join(__dirname, '../../..', relativePath);
+                    if (fs.existsSync(absolutePath)) {
+                        try {
+                            fs.unlinkSync(absolutePath);
+                        } catch (err) {
+                            console.error(`Failed to delete physical PDF for ${receiptNo}:`, err);
+                        }
+                    }
+                    await connection.execute(
+                        'DELETE FROM generated_documents WHERE tax_rec_id = ?',
+                        [receiptNo]
+                    );
+                }
 
                 await connection.execute(
-                    'UPDATE invoices SET container_num = ? WHERE tax_rec_id = ?',
-                    [updatedContainer, receiptNo]
+                    "UPDATE invoices SET container_num = ?, status = 'pending' WHERE tax_rec_id = ?",
+                    [newContainerNum, receiptNo]
                 );
+
+                // Log the transaction
+                logGateTransaction('gate-in', receiptNo, null, containerNo);
                 matchedCount++;
             }
 
@@ -516,9 +554,9 @@ router.post('/gate-in', upload.single('file'), async (req, res) => {
 });
 
 // POST /api/admin/upload/gate-out
-// Gate-Out file: 9th column (index 8) = Receipt No. -> match invoices.tax_rec_id
-//                3rd column (index 2) = BKG# -> append to invoices.booking_num
-//                6th column (index 5) = Container No. -> append to invoices.container_num
+// Gate-Out file: matches "Receipt No." -> invoices.tax_rec_id
+//                matches "BKG#" -> append to invoices.booking_num
+//                matches "Container No." -> append to invoices.container_num
 router.post('/gate-out', upload.single('file'), async (req, res) => {
     const username = req.session.adminUser ? req.session.adminUser.username : 'system';
     
@@ -547,7 +585,20 @@ router.post('/gate-out', upload.single('file'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'File is empty or missing data rows.' });
         }
 
-        // Skip header row (index 0), process data rows
+        // Dynamically resolve column indices from headers
+        const headers = rawRecords[0].map(h => h.trim());
+        const receiptNoIdx = headers.indexOf('Receipt No.');
+        const bookingNoIdx = headers.indexOf('BKG#');
+        const containerNoIdx = headers.indexOf('Container No.');
+
+        if (receiptNoIdx === -1 || bookingNoIdx === -1 || containerNoIdx === -1) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Invalid CSV structure. Missing required headers. Found: ${headers.join(', ')}` 
+            });
+        }
+
+        // Process data rows
         let matchedCount = 0;
         let unmatchedCount = 0;
 
@@ -559,9 +610,9 @@ router.post('/gate-out', upload.single('file'), async (req, res) => {
 
             for (let i = 1; i < rawRecords.length; i++) {
                 const row = rawRecords[i];
-                const receiptNo = row[8] ? row[8].trim() : '';       // 9th column (index 8)
-                const bookingNo = row[2] ? row[2].trim() : '';       // 3rd column (index 2)
-                const containerNo = row[5] ? row[5].trim() : '';     // 6th column (index 5)
+                const receiptNo = row[receiptNoIdx] ? row[receiptNoIdx].trim() : '';
+                const bookingNo = row[bookingNoIdx] ? row[bookingNoIdx].trim() : '';
+                const containerNo = row[containerNoIdx] ? row[containerNoIdx].trim() : '';
 
                 if (!receiptNo) {
                     unmatchedCount++;
@@ -579,14 +630,39 @@ router.post('/gate-out', upload.single('file'), async (req, res) => {
                     continue;
                 }
 
-                const invoice = invoices[0];
-                const updatedBooking = appendDedup(invoice.booking_num, bookingNo);
-                const updatedContainer = appendDedup(invoice.container_num, containerNo);
+                const existingBookingNum = invoices[0].booking_num;
+                const existingContainerNum = invoices[0].container_num;
+                const newBookingNum = appendDedup(existingBookingNum, bookingNo);
+                const newContainerNum = appendDedup(existingContainerNum, containerNo);
+
+                // Delete existing generated PDF (both physical file and database log) to force recreation with new numbers
+                const [pdfRows] = await connection.execute(
+                    'SELECT pdf_folder FROM generated_documents WHERE tax_rec_id = ?',
+                    [receiptNo]
+                );
+                if (pdfRows.length > 0) {
+                    const relativePath = pdfRows[0].pdf_folder;
+                    const absolutePath = path.join(__dirname, '../../..', relativePath);
+                    if (fs.existsSync(absolutePath)) {
+                        try {
+                            fs.unlinkSync(absolutePath);
+                        } catch (err) {
+                            console.error(`Failed to delete physical PDF for ${receiptNo}:`, err);
+                        }
+                    }
+                    await connection.execute(
+                        'DELETE FROM generated_documents WHERE tax_rec_id = ?',
+                        [receiptNo]
+                    );
+                }
 
                 await connection.execute(
-                    'UPDATE invoices SET booking_num = ?, container_num = ? WHERE tax_rec_id = ?',
-                    [updatedBooking, updatedContainer, receiptNo]
+                    "UPDATE invoices SET booking_num = ?, container_num = ?, status = 'pending' WHERE tax_rec_id = ?",
+                    [newBookingNum, newContainerNum, receiptNo]
                 );
+
+                // Log the transaction
+                logGateTransaction('gate-out', receiptNo, bookingNo, containerNo);
                 matchedCount++;
             }
 

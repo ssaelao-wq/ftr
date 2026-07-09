@@ -21,3 +21,4 @@ services:
     volumes:
       - /www/wwwroot/ftr/storage/pdfs:/app/storage/pdfs
       - /www/wwwroot/ftr/.env:/app/.env
+      - /www/wwwroot/ftr/logs:/app/logs

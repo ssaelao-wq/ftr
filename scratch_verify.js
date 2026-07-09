@@ -93,7 +93,7 @@ async function runTests() {
         const loginRes = await fetch(`${baseUrl}/api/admin/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            body: JSON.stringify({ username: 'admin', password: 'admin369' })
         });
         
         const loginData = await loginRes.json();

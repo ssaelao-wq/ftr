@@ -6,6 +6,7 @@ const { logActivity } = require('../../logger');
 const { getBKKDate, formatBKKDateISO } = require('../../utils/timezone');
 const { generatePdf } = require('../../services/pdfService');
 const { sendInvoiceEmail } = require('../../services/emailService');
+const { generateUniqueTmpCustomerNum } = require('../../utils/customer');
 
 // GET /api/admin/customers/stats
 router.get('/stats', async (req, res) => {
@@ -180,13 +181,13 @@ router.put('/:tax_rec_id', async (req, res) => {
         let profileRows = [];
         if (customer_num && customer_num.trim()) {
             const [rows] = await connection.execute(
-                'SELECT customer_num, customer_name, customer_addr FROM customer_profile WHERE customer_num = ? LIMIT 1',
+                'SELECT customer_num, customer_name, customer_addr, tax_id, customer_branch FROM customer_profile WHERE customer_num = ? LIMIT 1',
                 [customer_num.trim()]
             );
             profileRows = rows;
         } else {
             const [rows] = await connection.execute(
-                'SELECT customer_num, customer_name, customer_addr FROM customer_profile WHERE tax_id = ? AND customer_branch = ? LIMIT 1',
+                'SELECT customer_num, customer_name, customer_addr, tax_id, customer_branch FROM customer_profile WHERE tax_id = ? AND customer_branch = ? LIMIT 1',
                 [tax_id.trim(), finalBranch.trim()]
             );
             profileRows = rows;
@@ -198,32 +199,36 @@ router.put('/:tax_rec_id', async (req, res) => {
         if (profileRows.length > 0) {
             const existingProfile = profileRows[0];
             
-            // Check if name or address has changed
+            // Check if name, address, tax_id, or branch has changed
             const nameChanged = (existingProfile.customer_name || '').trim() !== finalCustomer.trim();
             const addrChanged = (existingProfile.customer_addr || '').trim() !== address.trim();
+            const taxIdChanged = (existingProfile.tax_id || '').trim() !== tax_id.trim();
+            const branchChanged = (existingProfile.customer_branch || '').trim() !== finalBranch.trim();
 
-            if (nameChanged || addrChanged) {
-                // If any field changed, we treat it as an edit -> create a new TMP record
-                shouldCreateNew = true;
-            } else {
-                // No changes, use the existing profile as is (no update/export trigger for customer_profile)
-                targetCustomerNum = existingProfile.customer_num;
+            if (nameChanged || addrChanged || taxIdChanged || branchChanged) {
+                // Update the existing profile record in-place
+                await connection.execute(
+                    `UPDATE customer_profile 
+                     SET customer_name = ?, customer_addr = ?, tax_id = ?, customer_branch = ?, is_accounting_exported = FALSE 
+                     WHERE customer_num = ?`,
+                    [
+                        finalCustomer.trim(),
+                        address.trim(),
+                        tax_id.trim(),
+                        finalBranch.trim(),
+                        existingProfile.customer_num
+                    ]
+                );
             }
+            targetCustomerNum = existingProfile.customer_num;
         } else {
             // No profile exists for this Tax ID + Branch combo at all
             shouldCreateNew = true;
         }
 
         if (shouldCreateNew) {
-            // Generate a brand new TMP- customer_num
-            const now = getBKKDate();
-            const yy = String(now.getUTCFullYear()).slice(-2);
-            const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
-            const dd = String(now.getUTCDate()).padStart(2, '0');
-            const hh = String(now.getUTCHours()).padStart(2, '0');
-            const min = String(now.getUTCMinutes()).padStart(2, '0');
-            const ss = String(now.getUTCSeconds()).padStart(2, '0');
-            targetCustomerNum = `TMP-${yy}${mm}${dd}${hh}${min}${ss}`;
+            // Generate a brand new unique 6-digit TMP- customer_num
+            targetCustomerNum = await generateUniqueTmpCustomerNum(connection);
 
             await connection.execute(
                 `INSERT INTO customer_profile 
@@ -242,11 +247,11 @@ router.put('/:tax_rec_id', async (req, res) => {
         // 3. Update the invoice record with the targetCustomerNum, container_num, and status
         await connection.execute(
             `UPDATE invoices 
-             SET customer_num = ?, container_num = ?, status = 'pending', is_accounting_exported = FALSE 
+             SET customer_num = ?, container_num = COALESCE(?, container_num), status = 'pending', is_accounting_exported = FALSE 
              WHERE tax_rec_id = ?`,
             [
                 targetCustomerNum,
-                container_num ? container_num.trim() : null,
+                container_num && container_num.trim() ? container_num.trim() : null,
                 tax_rec_id
             ]
         );

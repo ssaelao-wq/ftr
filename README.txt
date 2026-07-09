@@ -60,13 +60,13 @@ This stamps the version number onto your latest commit.
 
 -----------
 # Sync to Github, run commands together
-Please sync to Github as v1.0.5 by running following commands:
-	echo "Version: 1.0.5 - Fixing" >> CHANGELOG.md
+Please sync to Github as v1.0.6 by running following commands:
+	echo "Version: 1.0.6 - Fixing" >> CHANGELOG.md
 	git add .
-	git commit -m "Release version 1.0.5"
-	git tag -a v1.0.5 -m "Release version 1.0.5"
+	git commit -m "Release version 1.0.6"
+	git tag -a v1.0.6 -m "Release version 1.0.6"
 	git push origin main
-	git push origin v1.0.5
+	git push origin v1.0.6
 
 -----------
 # Go Backward Later: jump back to the exact version in the future.

@@ -32,7 +32,7 @@ TRUNCATE TABLE generated_documents;
 SET FOREIGN_KEY_CHECKS = 1;
 */
 
-/* schema for DB server
+/* Clean up all data. Schema for DB server. Run inside ftr_db
 SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM invoices;
 DELETE FROM invoices_rec;

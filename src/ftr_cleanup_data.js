@@ -162,8 +162,41 @@ async function runCleanup(shouldEndPool = true) {
             }
         }
 
+        // 4.5. Delete daily transaction log files older than DAILY_LOG_MAX_DAYS
+        let deletedDailyLogsCount = 0;
+        const dailyLogMaxDays = cleanupConfig.DAILY_LOG_MAX_DAYS || 7;
+        const logsDir = config.LOGS_DIR;
+        if (fs.existsSync(logsDir)) {
+            const logFileRegex = /^logs_(\d{8})\.txt$/;
+            const entries = fs.readdirSync(logsDir);
+            for (const entry of entries) {
+                const match = entry.match(logFileRegex);
+                if (match) {
+                    const dateStr = match[1]; // YYYYMMDD
+                    const year = parseInt(dateStr.substring(0, 4));
+                    const month = parseInt(dateStr.substring(4, 6)) - 1;
+                    const day = parseInt(dateStr.substring(6, 8));
+                    
+                    const logFileMidnight = new Date(Date.UTC(year, month, day));
+                    const diffTime = todayMidnight - logFileMidnight;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays > dailyLogMaxDays) {
+                        const fullPath = path.join(logsDir, entry);
+                        try {
+                            fs.unlinkSync(fullPath);
+                            deletedDailyLogsCount++;
+                            console.log(`Deleted old daily log file: ${entry} (age: ${diffDays} days)`);
+                        } catch (err) {
+                            console.error(`Error deleting log file ${fullPath}:`, err.message);
+                        }
+                    }
+                }
+            }
+        }
+
         // 5. Log cleanup run to DB
-        const logValues = `pdfs_deleted:${deletedPdfsCount},invoices_deleted:${deletedInvoicesCount},logs_deleted:${deletedLogsCount},temp_dirs_deleted:${deletedTempDirsCount}`;
+        const logValues = `pdfs_deleted:${deletedPdfsCount},invoices_deleted:${deletedInvoicesCount},logs_deleted:${deletedLogsCount},temp_dirs_deleted:${deletedTempDirsCount},daily_logs_deleted:${deletedDailyLogsCount}`;
         await logActivity('CRON_CLEANUP', logValues, 'cron');
         console.log(`✅ Cleanup job finished successfully. Logged: ${logValues}`);
 
