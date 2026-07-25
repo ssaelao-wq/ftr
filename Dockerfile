@@ -1,8 +1,7 @@
-# Use the official Puppeteer image which includes Node.js and all Chromium dependencies
-FROM ghcr.io/puppeteer/puppeteer:latest
-
-# Switch to root to ensure we can create directories and set permissions
-USER root
+# Use official Puppeteer image (includes Node.js, Chromium & pptruser user)
+# Pinned to match the puppeteer npm dependency (^25.1.0) — avoid `:latest` so
+# Chromium/Node don't drift out from under PDF rendering unexpectedly.
+FROM ghcr.io/puppeteer/puppeteer:25.3.0
 
 # Set working directory
 WORKDIR /app
@@ -10,26 +9,21 @@ WORKDIR /app
 # Set Puppeteer cache directory environment variable
 ENV PUPPETEER_CACHE_DIR=/home/pptruser/.cache/puppeteer
 
-# Ensure cache directory exists and is owned by pptruser before/after npm ci
-RUN mkdir -p /home/pptruser/.cache/puppeteer && chown -R pptruser:pptruser /home/pptruser/.cache
+# Copy package files with correct ownership directly (eliminates separate chown step)
+COPY --chown=pptruser:pptruser package*.json ./
 
-# Copy package files
-COPY package*.json ./
+# Install production dependencies only (skip devDependencies like nodemon)
+RUN npm ci --omit=dev
 
-# Install dependencies (runs as root, downloads Chrome to PUPPETEER_CACHE_DIR)
-RUN npm ci
+# Copy application source code with correct ownership directly
+COPY --chown=pptruser:pptruser . .
 
-# Copy application source code
-COPY . .
-
-# Change ownership of the app directory and Puppeteer cache directory to pptruser
-RUN chown -R pptruser:pptruser /app && chown -R pptruser:pptruser /home/pptruser/.cache
-
-# Switch back to the non-root user provided by the Puppeteer image
-USER pptruser
-
-# Expose the application port
+# Expose application port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Verify the app is responding, not just that the process is alive
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+
+# Start application directly so Node receives signals as PID 1
+CMD ["node", "src/index.js"]
