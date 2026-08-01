@@ -2,11 +2,20 @@ const express = require('express');
 const router = express.Router();
 const db = require('../../db');
 
+// Validates a strict YYYY-MM-DD date string, rejecting malformed input
+// (e.g. a stray extra digit typed into a date picker's year segment, like "52026-07-24").
+function isValidDateString(str) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+    const d = new Date(str);
+    return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === str;
+}
+
 // GET /api/admin/logs
 router.get('/', async (req, res) => {
     const action = req.query.action;
     const date_from = req.query.date_from; // YYYY-MM-DD
     const date_to = req.query.date_to;     // YYYY-MM-DD
+    const keyword = req.query.keyword;     // free-text search within log_values (e.g. a tax_rec_id or tax_id)
     let page = parseInt(req.query.page, 10) || 1;
     if (page < 1) page = 1;
     if (page > 10) page = 10; // Cap at max 10 pages
@@ -24,14 +33,25 @@ router.get('/', async (req, res) => {
         }
 
         if (date_from) {
+            if (!isValidDateString(date_from)) {
+                return res.status(400).json({ success: false, message: `Invalid "Date From" value: "${date_from}". Expected format YYYY-MM-DD.` });
+            }
             // Convert log_datetime string "dd-mm-yyyy HH:MM" to MySQL DateTime format
             whereClause += " AND STR_TO_DATE(log_datetime, '%d-%m-%Y %H:%i') >= ?";
             params.push(`${date_from} 00:00:00`);
         }
 
         if (date_to) {
+            if (!isValidDateString(date_to)) {
+                return res.status(400).json({ success: false, message: `Invalid "Date To" value: "${date_to}". Expected format YYYY-MM-DD.` });
+            }
             whereClause += " AND STR_TO_DATE(log_datetime, '%d-%m-%Y %H:%i') <= ?";
             params.push(`${date_to} 23:59:59`);
+        }
+
+        if (keyword && keyword.trim()) {
+            whereClause += ' AND log_values LIKE ?';
+            params.push(`%${keyword.trim()}%`);
         }
 
         // Count total matching logs, capped at 500
@@ -93,14 +113,52 @@ router.get('/actions', async (req, res) => {
 });
 
 // GET /api/admin/logs/export
-// Exports last N activity logs in a pipe-delimited CSV format
+// Exports last N activity logs in a pipe-delimited CSV format matching search filters
 router.get('/export', async (req, res) => {
+    const action = req.query.action;
+    const date_from = req.query.date_from; // YYYY-MM-DD
+    const date_to = req.query.date_to;     // YYYY-MM-DD
+    const keyword = req.query.keyword;     // free-text search within log_values
+
     try {
         const limit = parseInt(process.env.EXPORT_LOGS_LIMIT, 10) || 200;
 
+        let whereClause = 'WHERE 1=1';
+        const params = [];
+
+        if (action && action !== 'all') {
+            whereClause += ' AND log_action = ?';
+            params.push(action);
+        }
+
+        if (date_from) {
+            if (!isValidDateString(date_from)) {
+                return res.status(400).json({ success: false, message: `Invalid "Date From" value: "${date_from}". Expected format YYYY-MM-DD.` });
+            }
+            whereClause += " AND STR_TO_DATE(log_datetime, '%d-%m-%Y %H:%i') >= ?";
+            params.push(`${date_from} 00:00:00`);
+        }
+
+        if (date_to) {
+            if (!isValidDateString(date_to)) {
+                return res.status(400).json({ success: false, message: `Invalid "Date To" value: "${date_to}". Expected format YYYY-MM-DD.` });
+            }
+            whereClause += " AND STR_TO_DATE(log_datetime, '%d-%m-%Y %H:%i') <= ?";
+            params.push(`${date_to} 23:59:59`);
+        }
+
+        if (keyword && keyword.trim()) {
+            whereClause += ' AND log_values LIKE ?';
+            params.push(`%${keyword.trim()}%`);
+        }
+
         const [rows] = await db.query(
-            'SELECT log_id, log_action, log_datetime, log_values, username FROM activity_logs ORDER BY log_id DESC LIMIT ?',
-            [limit]
+            `SELECT log_id, log_action, log_datetime, log_values, username
+             FROM activity_logs
+             ${whereClause}
+             ORDER BY log_id DESC
+             LIMIT ?`,
+            [...params, limit]
         );
 
         // UTF-8 BOM to avoid corruption of Thai characters in Excel

@@ -234,23 +234,43 @@
         }
 
         function parseAndPreviewCsv(text) {
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
-            if (lines.length === 0) {
+            const rawLines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+            if (rawLines.length === 0) {
                 showAlert('danger', 'The uploaded file is empty.');
                 return;
             }
 
-            // Auto-detect delimiter
-            let delimiter = '|';
-            const firstLine = lines[0];
-            const commaCount = (firstLine.match(/,/g) || []).length;
-            const pipeCount = (firstLine.match(/\|/g) || []).length;
-            if (commaCount > pipeCount) {
-                delimiter = ',';
+            const uploadType = document.getElementById('uploadType').value;
+
+            // Locate header row for customer profile report headers
+            let headerLineIndex = -1;
+            for (let i = 0; i < Math.min(20, rawLines.length); i++) {
+                if (rawLines[i].includes('รหัสลูกค้า') && rawLines[i].includes('เลขประจำตัวผู้เสียภาษี')) {
+                    headerLineIndex = i;
+                    break;
+                }
             }
 
+            let lines = rawLines;
+            if (uploadType === 'customer' && headerLineIndex > 0) {
+                lines = rawLines.slice(headerLineIndex);
+            }
+
+            // Auto-detect delimiter
+            let delimiter = '|';
+            if (uploadType === 'customer') {
+                delimiter = '|'; // strictly force pipe for customer profiles
+            } else {
+                const firstLine = lines[0];
+                const commaCount = (firstLine.match(/,/g) || []).length;
+                const pipeCount = (firstLine.match(/\|/g) || []).length;
+                if (commaCount > pipeCount) {
+                    delimiter = ',';
+                }
+            }
+
+            const firstLine = lines[0];
             const headers = splitCsvLine(firstLine, delimiter);
-            const uploadType = document.getElementById('uploadType').value;
             
             let requiredColumns = [];
             if (uploadType === 'cdms') {
@@ -333,10 +353,13 @@
                     const branchVal = cols[idxBranchVal] || '';
 
                     let customerBranch = 'สำนักงานใหญ่';
-                    if (branchType === 'สาขาย่อย') {
-                        customerBranch = branchVal || '';
-                    } else if (branchType && branchType !== 'สำนักงานใหญ่') {
-                        customerBranch = branchType;
+                    const cleanType = (branchType || '').trim().toUpperCase();
+                    if (cleanType === 'สำนักงานใหญ่' || cleanType === 'HEAD OFFICE') {
+                        customerBranch = branchType.trim();
+                    } else if (cleanType === 'สาขาย่อย' || cleanType === 'BRANCH') {
+                        customerBranch = (branchVal || '').trim();
+                    } else if (branchType) {
+                        customerBranch = branchType.trim();
                     }
 
                     validRows.push([customerNum, taxId, customerName, customerAddr, customerEmail, customerPhone, customerBranch]);

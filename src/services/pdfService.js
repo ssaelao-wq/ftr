@@ -47,13 +47,51 @@ function formatQty(value) {
     return Number(value).toFixed(2);
 }
 
+/**
+ * Formats and wraps a comma-separated container string into lines of maxLineChars.
+ * Splits on whitespace, commas, semicolons, and newlines to extract clean container numbers.
+ * Re-joins them with a comma and a space, and chunks them to fit the character limits.
+ * @param {string} containerStr 
+ * @param {number} maxLineChars 
+ * @returns {string[]}
+ */
+function wrapContainerNumbers(containerStr, maxLineChars = 40) {
+    if (!containerStr) return [];
+    const rawTokens = containerStr.split(/[\s,;\n\r/]+/);
+    const containers = rawTokens.map(t => t.trim()).filter(t => t.length > 0);
+    
+    const lines = [];
+    let currentLine = [];
+    let currentLength = 0;
+    
+    for (const container of containers) {
+        const addedLength = container.length + (currentLine.length > 0 ? 2 : 0);
+        if (currentLength + addedLength <= maxLineChars) {
+            currentLine.push(container);
+            currentLength += addedLength;
+        } else {
+            if (currentLine.length > 0) {
+                lines.push(currentLine.join(', '));
+            }
+            currentLine = [container];
+            currentLength = container.length;
+        }
+    }
+    if (currentLine.length > 0) {
+        lines.push(currentLine.join(', '));
+    }
+    return lines;
+}
+
+
 
 /**
  * Core function to generate PDF from database record
  * @param {string} taxRecId - The ID of the invoice record
+ * @param {object} [existingBrowser=null] - Optional pre-launched Puppeteer browser instance
  * @returns {Promise<string>} Path to the generated PDF
  */
-async function generatePdf(taxRecId) {
+async function generatePdf(taxRecId, existingBrowser = null) {
     // 1. Fetch Header Info with joined customer profile details
     const [headerRows] = await db.execute(`
         SELECT i.tax_rec_id, p.tax_id, p.customer_branch, i.container_num, i.booking_num, i.service_date, i.status, i.created_at,
@@ -86,10 +124,18 @@ async function generatePdf(taxRecId) {
     });
 
     const bookingNum = (header.booking_num || '').trim();
-    const containerNum = (header.container_num || '').trim();
     const hasBkg = bookingNum.length > 0;
-    const hasCntr = containerNum.length > 0;
+
+    // Format & wrap container numbers
+    const rawContainerNum = (header.container_num || '');
+    const cntrLines = wrapContainerNumbers(rawContainerNum, 40);
+    const hasCntr = cntrLines.length > 0;
     const hasBkgCntr = hasBkg || hasCntr;
+
+    // Calculate how many rows BKG & CNTR lines will occupy
+    let extraRowsCount = 0;
+    if (hasBkg) extraRowsCount += 1;
+    if (hasCntr) extraRowsCount += cntrLines.length;
 
     // Chunking logic to split items into pages
     const MAX_ROWS_PER_PAGE = 9;
@@ -97,16 +143,16 @@ async function generatePdf(taxRecId) {
     const tempItems = [...itemObjects];
 
     if (hasBkgCntr) {
-        // If there are BKG or CNTR values, they take up 2 rows and must stay together at the end.
-        if (tempItems.length <= 7) {
+        const lastPageThreshold = Math.max(1, MAX_ROWS_PER_PAGE - extraRowsCount);
+        if (tempItems.length <= lastPageThreshold) {
             pages.push({
                 items: tempItems,
                 hasBkgCntr: true
             });
         } else {
-            while (tempItems.length > 7) {
+            while (tempItems.length > lastPageThreshold) {
                 pages.push({
-                    items: tempItems.splice(0, 9),
+                    items: tempItems.splice(0, MAX_ROWS_PER_PAGE),
                     hasBkgCntr: false
                 });
             }
@@ -124,7 +170,7 @@ async function generatePdf(taxRecId) {
         } else {
             while (tempItems.length > 0) {
                 pages.push({
-                    items: tempItems.splice(0, 9),
+                    items: tempItems.splice(0, MAX_ROWS_PER_PAGE),
                     hasBkgCntr: false
                 });
             }
@@ -183,25 +229,35 @@ async function generatePdf(taxRecId) {
 
         // Append BKG and CNTR rows if needed on this page
         if (pageData.hasBkgCntr) {
-            itemsHtml += `
-                <tr style="height: 22px;">
-                    <td class="text-center">&nbsp;</td>
-                    <td class="text-left" style="padding-left: 20px;">BKG: ${bookingNum}</td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-right"></td>
-                    <td class="text-right"></td>
-                </tr>
-                <tr style="height: 22px;">
-                    <td class="text-center">&nbsp;</td>
-                    <td class="text-left" style="padding-left: 20px;">CNTR: ${containerNum}</td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-right"></td>
-                    <td class="text-right"></td>
-                </tr>
-            `;
-            rowCount += 2;
+            if (hasBkg) {
+                itemsHtml += `
+                    <tr style="height: 22px;">
+                        <td class="text-center">&nbsp;</td>
+                        <td class="text-left" style="padding-left: 20px;">BKG: ${bookingNum}</td>
+                        <td class="text-center"></td>
+                        <td class="text-center"></td>
+                        <td class="text-right"></td>
+                        <td class="text-right"></td>
+                    </tr>
+                `;
+                rowCount++;
+            }
+            if (hasCntr) {
+                cntrLines.forEach((line, lineIdx) => {
+                    const prefix = lineIdx === 0 ? 'CNTR: ' : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+                    itemsHtml += `
+                        <tr style="height: 22px;">
+                            <td class="text-center">&nbsp;</td>
+                            <td class="text-left" style="padding-left: 20px;">${prefix}${line}</td>
+                            <td class="text-center"></td>
+                            <td class="text-center"></td>
+                            <td class="text-right"></td>
+                            <td class="text-right"></td>
+                        </tr>
+                    `;
+                    rowCount++;
+                });
+            }
         }
 
         // Pad table with empty rows
@@ -271,9 +327,66 @@ async function generatePdf(taxRecId) {
     const relativePdfPath = `/${relativePdfDir}/Unicon_${taxRecId}.pdf`;
 
     // 6. Generate PDF via Puppeteer
-    // Determine Chrome executable path. Prefer system-installed Chrome so we
-    // don't rely on the puppeteer cache (which may point to a different user's
-    // home directory if `npm install` was run under a different account).
+    let browser = existingBrowser;
+    let createdBrowserLocally = false;
+
+    if (!browser) {
+        browser = await getBrowserInstance();
+        createdBrowserLocally = true;
+    }
+
+    try {
+        const page = await browser.newPage();
+        try {
+            await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
+            await page.pdf({
+                path: pdfPath,
+                format: 'A4',
+                printBackground: true,
+                margin: {
+                    top: '10mm',
+                    bottom: '8mm',
+                    left: '12mm',
+                    right: '12mm'
+                }
+            });
+        } finally {
+            await page.close().catch(() => {});
+        }
+    } finally {
+        if (createdBrowserLocally && browser) {
+            const userDataDir = browser._userDataDir;
+            await browser.close().catch(() => {});
+            if (userDataDir && fs.existsSync(userDataDir)) {
+                try { fs.rmSync(userDataDir, { recursive: true, force: true }); } catch (e) {}
+            }
+        }
+    }
+
+    // 7. Write to generated_documents & update status
+    // Check if doc metadata already exists
+    const [existingDocs] = await db.execute('SELECT id FROM generated_documents WHERE tax_rec_id = ?', [taxRecId]);
+    if (existingDocs.length === 0) {
+        await db.execute(
+            'INSERT INTO generated_documents (tax_rec_id, pdf_folder) VALUES (?, ?)',
+            [taxRecId, relativePdfPath]
+        );
+    } else {
+        await db.execute(
+            'UPDATE generated_documents SET pdf_folder = ?, generated_at = CURRENT_TIMESTAMP WHERE tax_rec_id = ?',
+            [relativePdfPath, taxRecId]
+        );
+    }
+
+    await db.execute('UPDATE invoices SET status = ? WHERE tax_rec_id = ?', ['ready', taxRecId]);
+
+    return relativePdfPath;
+}
+
+/**
+ * Creates and launches a shared Puppeteer browser instance optimized for server batch operations.
+ */
+async function getBrowserInstance() {
     const os = require('os');
     const chromePaths = process.platform === 'win32'
         ? [
@@ -297,11 +410,11 @@ async function generatePdf(taxRecId) {
             }
         }
     }
-    // Fall back to puppeteer's bundled path (may fail if cache is wrong user)
-    // Note: in puppeteer v22+, executablePath() returns a Promise — must await it.
     if (!executablePath) {
         executablePath = await puppeteer.executablePath();
     }
+
+    const userDataDir = path.join(os.tmpdir(), 'puppeteer_profile_' + Date.now() + '_' + Math.floor(Math.random() * 10000));
 
     const browser = await puppeteer.launch({
         headless: 'new',
@@ -309,50 +422,23 @@ async function generatePdf(taxRecId) {
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            `--user-data-dir=${path.join(os.tmpdir(), 'puppeteer_profile_' + Date.now())}`
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--disable-crash-reporter',
+            '--disable-breakpad',
+            `--user-data-dir=${userDataDir}`
         ]
     });
-    
-    try {
-        const page = await browser.newPage();
-        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
-        await page.pdf({
-            path: pdfPath,
-            format: 'A4',
-            printBackground: true,
-            margin: {
-                top: '10mm',
-                bottom: '8mm',
-                left: '12mm',
-                right: '12mm'
-            }
-        });
-    } finally {
-        await browser.close();
-    }
 
-    // 7. Write to generated_documents & update status
-    // Check if doc metadata already exists
-    const [existingDocs] = await db.execute('SELECT id FROM generated_documents WHERE tax_rec_id = ?', [taxRecId]);
-    if (existingDocs.length === 0) {
-        await db.execute(
-            'INSERT INTO generated_documents (tax_rec_id, pdf_folder) VALUES (?, ?)',
-            [taxRecId, relativePdfPath]
-        );
-    } else {
-        await db.execute(
-            'UPDATE generated_documents SET pdf_folder = ?, generated_at = CURRENT_TIMESTAMP WHERE tax_rec_id = ?',
-            [relativePdfPath, taxRecId]
-        );
-    }
-
-    await db.execute('UPDATE invoices SET status = ? WHERE tax_rec_id = ?', ['ready', taxRecId]);
-
-    return relativePdfPath;
+    browser._userDataDir = userDataDir;
+    return browser;
 }
 
 module.exports = {
     generatePdf,
+    getBrowserInstance,
     formatCurrency,
     formatDateInvoice
 };
+

@@ -60,13 +60,13 @@ This stamps the version number onto your latest commit.
 
 -----------
 # Sync to Github, run commands together
-Please sync to Github as v1.0.6 by running following commands:
-	echo "Version: 1.0.6 - Fixing" >> CHANGELOG.md
+Please sync to Github as v1.0.7 by running following commands:
+	echo "Version: 1.0.7 - Fixing" >> CHANGELOG.md
 	git add .
-	git commit -m "Release version 1.0.6"
-	git tag -a v1.0.6 -m "Release version 1.0.6"
+	git commit -m "Release version 1.0.7"
+	git tag -a v1.0.7 -m "Release version 1.0.7"
 	git push origin main
-	git push origin v1.0.6
+	git push origin v1.0.7
 
 -----------
 # Go Backward Later: jump back to the exact version in the future.
@@ -89,6 +89,10 @@ Please sync to Github as v1.0.6 by running following commands:
     6. docker compose up -d --build 	(if code changed) 
        docker compose up -d         	(if only compose config changed) 
     7. docker logs ftr-app --tail 20
+
+Worth a quick sanity check after your next deploy: "docker exec ftr-app id" and "docker exec ftr-app ls -la /app" 
+to confirm "node_modules/src" are "pptruser-owned" and the app starts without EACCES errors
+ — but I'd expect this to be fine and your build time to drop substantially.
 
 # Change .env only, we just restart the docker:
    docker compose restart web-app

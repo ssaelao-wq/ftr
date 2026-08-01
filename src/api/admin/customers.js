@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const path = require('path');
+const archiver = require('archiver');
 const db = require('../../db');
 const { logActivity } = require('../../logger');
 const { getBKKDate, formatBKKDateISO } = require('../../utils/timezone');
@@ -154,6 +155,7 @@ router.put('/:tax_rec_id', async (req, res) => {
     const { customer, company_name, address, tax_id, customer_branch, container_num, customer_num } = req.body;
     const finalCustomer = customer || company_name;
     const finalBranch = customer_branch || 'สำนักงานใหญ่';
+    const username = req.session.adminUser ? req.session.adminUser.username : 'system';
 
     if (!finalCustomer || !address || !tax_id) {
         return res.status(400).json({ success: false, message: 'Customer Name, Address, and Tax ID are required.' });
@@ -177,28 +179,24 @@ router.put('/:tax_rec_id', async (req, res) => {
 
         const currentCustomerNum = invoiceRows[0].customer_num;
 
-        // 2. Check if a profile with the submitted customer_num or tax_id and customer_branch already exists
-        let profileRows = [];
-        if (customer_num && customer_num.trim()) {
-            const [rows] = await connection.execute(
+        // 2. Check if a profile with the customer_num already exists
+        const lookupCustomerNum = (customer_num && customer_num.trim()) ? customer_num.trim() : (currentCustomerNum && currentCustomerNum.trim() ? currentCustomerNum.trim() : null);
+
+        let existingProfile = null;
+        if (lookupCustomerNum && lookupCustomerNum !== 'TMP-00000' && lookupCustomerNum !== 'TMP-XXXXXX') {
+            const [profileRows] = await connection.execute(
                 'SELECT customer_num, customer_name, customer_addr, tax_id, customer_branch FROM customer_profile WHERE customer_num = ? LIMIT 1',
-                [customer_num.trim()]
+                [lookupCustomerNum]
             );
-            profileRows = rows;
-        } else {
-            const [rows] = await connection.execute(
-                'SELECT customer_num, customer_name, customer_addr, tax_id, customer_branch FROM customer_profile WHERE tax_id = ? AND customer_branch = ? LIMIT 1',
-                [tax_id.trim(), finalBranch.trim()]
-            );
-            profileRows = rows;
+            if (profileRows.length > 0) {
+                existingProfile = profileRows[0];
+            }
         }
 
         let targetCustomerNum;
-        let shouldCreateNew = false;
+        let profileChangeLog = null;
 
-        if (profileRows.length > 0) {
-            const existingProfile = profileRows[0];
-            
+        if (existingProfile) {
             // Check if name, address, tax_id, or branch has changed
             const nameChanged = (existingProfile.customer_name || '').trim() !== finalCustomer.trim();
             const addrChanged = (existingProfile.customer_addr || '').trim() !== address.trim();
@@ -206,10 +204,10 @@ router.put('/:tax_rec_id', async (req, res) => {
             const branchChanged = (existingProfile.customer_branch || '').trim() !== finalBranch.trim();
 
             if (nameChanged || addrChanged || taxIdChanged || branchChanged) {
-                // Update the existing profile record in-place
+                // Update the existing profile record in-place by customer_num
                 await connection.execute(
-                    `UPDATE customer_profile 
-                     SET customer_name = ?, customer_addr = ?, tax_id = ?, customer_branch = ?, is_accounting_exported = FALSE 
+                    `UPDATE customer_profile
+                     SET customer_name = ?, customer_addr = ?, tax_id = ?, customer_branch = ?, is_accounting_exported = FALSE
                      WHERE customer_num = ?`,
                     [
                         finalCustomer.trim(),
@@ -219,20 +217,18 @@ router.put('/:tax_rec_id', async (req, res) => {
                         existingProfile.customer_num
                     ]
                 );
+
+                profileChangeLog = `Code: ${existingProfile.customer_num} | Existing: {TaxID: "${existingProfile.tax_id || ''}", Name: "${existingProfile.customer_name || ''}", Addr: "${existingProfile.customer_addr || ''}", Branch: "${existingProfile.customer_branch || ''}"} -> Updated to: {TaxID: "${tax_id.trim()}", Name: "${finalCustomer.trim()}", Addr: "${address.trim()}", Branch: "${finalBranch.trim()}"} (via invoice ${tax_rec_id})`;
             }
             targetCustomerNum = existingProfile.customer_num;
         } else {
-            // No profile exists for this Tax ID + Branch combo at all
-            shouldCreateNew = true;
-        }
-
-        if (shouldCreateNew) {
+            // No profile exists or it was a placeholder/not supplied: Create a new profile record
             // Generate a brand new unique 6-digit TMP- customer_num
             targetCustomerNum = await generateUniqueTmpCustomerNum(connection);
 
             await connection.execute(
-                `INSERT INTO customer_profile 
-                 (tax_id, customer_num, customer_name, customer_addr, customer_branch, is_accounting_exported) 
+                `INSERT INTO customer_profile
+                 (tax_id, customer_num, customer_name, customer_addr, customer_branch, is_accounting_exported)
                  VALUES (?, ?, ?, ?, ?, FALSE)`,
                 [
                     tax_id.trim(),
@@ -242,12 +238,18 @@ router.put('/:tax_rec_id', async (req, res) => {
                     finalBranch.trim()
                 ]
             );
+
+            profileChangeLog = `Code: ${targetCustomerNum} | New profile created: {TaxID: "${tax_id.trim()}", Name: "${finalCustomer.trim()}", Addr: "${address.trim()}", Branch: "${finalBranch.trim()}"} (via invoice ${tax_rec_id})`;
         }
 
         // 3. Update the invoice record with the targetCustomerNum, container_num, and status
+        const customerNumChanged = (currentCustomerNum || '') !== targetCustomerNum;
         await connection.execute(
-            `UPDATE invoices 
-             SET customer_num = ?, container_num = COALESCE(?, container_num), status = 'pending', is_accounting_exported = FALSE 
+            `UPDATE invoices
+             SET customer_num = ?,
+                 container_num = COALESCE(?, container_num),
+                 status = IF(status = 'ready', 'ready', 'pending'),
+                 is_accounting_exported = FALSE
              WHERE tax_rec_id = ?`,
             [
                 targetCustomerNum,
@@ -257,6 +259,14 @@ router.put('/:tax_rec_id', async (req, res) => {
         );
 
         await connection.commit();
+
+        if (customerNumChanged) {
+            await logActivity('EDIT_CUSTOMER', `Invoice ${tax_rec_id} relinked: customer_num "${currentCustomerNum || '(none)'}" -> "${targetCustomerNum}"`, username);
+        }
+        if (profileChangeLog) {
+            await logActivity('EDIT_CUSTOMER', profileChangeLog, username);
+        }
+
         res.json({ success: true, message: 'Invoice customer link and profile updated successfully.' });
     } catch (error) {
         if (transactionStarted) {
@@ -305,9 +315,27 @@ router.post('/export', async (req, res) => {
             return res.status(400).json({ success: false, message: 'No completed customer profiles match the filter criteria for export.' });
         }
 
-        // 3. Format CSV content with | delimiter and 47-column Winspeed structure
-        let csvContent = '\uFEFF'; // UTF-8 BOM to avoid corruption of Thai characters in Excel
-        const header = [
+        // 3. Generate three CSV contents with UTF-8 BOM
+        const clean = (val) => {
+            if (val === undefined || val === null) return '';
+            return String(val).replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
+        };
+
+        const longDigits = `${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+        const formatDateForCsv = (dateInput) => {
+            if (!dateInput) return '';
+            const d = new Date(dateInput);
+            if (isNaN(d.getTime())) return String(dateInput);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yyyy = d.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        };
+
+        // --- FILE 1: Cash-Sale_01-Detail ---
+        let csvContent1 = '\uFEFF';
+        const headers1 = [
             'brchcode', 'shipmentno', 'shipmentdate', 'invoiceno', 'invoicedate',
             'customercode', 'customername', 'customerpo', 'creditstartdate', 'creditdays',
             'creditenddate', 'duedate', 'senddate', 'transpcode', 'salecode',
@@ -317,12 +345,11 @@ router.post('/export', async (req, res) => {
             'billdiscount', 'billafterdiscount', 'basevat', 'vatrate', 'vatamount',
             'netamount', 'vatcode', 'vatgroup', 'goodtype', 'fob',
             'stockflag', 'commission', 'incoterm', 'bookcode', 'bookno',
-            'description'
+            'trandate', 'description'
         ].join('|');
+        csvContent1 += headers1 + '\r\n';
 
-        csvContent += header + '\r\n';
-        
-        const csvRows = rows.map(r => {
+        const csvRows1 = rows.map(r => {
             let cdms = {};
             if (r.raw_cdms_row) {
                 try {
@@ -332,168 +359,67 @@ router.post('/export', async (req, res) => {
                 }
             }
 
-            // Helper to get raw CDMS column value or fallback
             const getVal = (cdmsKey, fallbackVal = '') => {
                 return (cdms[cdmsKey] !== undefined && cdms[cdmsKey] !== null) ? String(cdms[cdmsKey]).trim() : String(fallbackVal).trim();
             };
 
-            // Cleaner wrapper to strip newlines and pipes
-            const clean = (val) => {
-                if (!val) return '';
-                return val.replace(/[\r\n]+/g, ' ').replace(/\|/g, '\\|');
-            };
-
-            // 1. brchcode
             let brchcode = '00000';
-            if (r.customer_branch && r.customer_branch.trim() !== 'สำนักงานใหญ่') {
+            if (r.customer_branch && 
+                r.customer_branch.trim() !== 'สำนักงานใหญ่' && 
+                r.customer_branch.trim().toUpperCase() !== 'HEAD OFFICE') {
                 brchcode = r.customer_branch.trim();
             }
 
-            // 2. shipmentno
             const shipmentno = getVal('ShipmentNo', r.tax_rec_id);
-
-            // 3. shipmentdate (format DD/MM/YYYY)
-            let fallbackDate = '';
-            if (r.service_date) {
-                const d = new Date(r.service_date);
-                if (!isNaN(d.getTime())) {
-                    const dd = String(d.getDate()).padStart(2, '0');
-                    const mm = String(d.getMonth() + 1).padStart(2, '0');
-                    const yyyy = d.getFullYear();
-                    fallbackDate = `${dd}/${mm}/${yyyy}`;
-                }
-            }
+            const fallbackDate = formatDateForCsv(r.service_date);
             const shipmentdate = getVal('ShipmentDate', fallbackDate);
-
-            // 4. invoiceno
             const invoiceno = getVal('InvoiceNo', r.tax_rec_id);
-
-            // 5. invoicedate
             const invoicedate = getVal('InvoiceDate', fallbackDate);
-
-            // 6. customercode
             const customercode = r.customer_code || '';
-
-            // 7. customername
             const customername = r.company_name || '';
-
-            // 8. customerpo
             const customerpo = '';
-
-            // 9. creditstartdate
             const creditstartdate = '';
-
-            // 10. creditdays
             const creditdays = '';
-
-            // 11. creditenddate
             const creditenddate = '';
-
-            // 12. duedate
             const duedate = '';
-
-            // 13. senddate
             const senddate = '';
-
-            // 14. transpcode
             const transpcode = '';
-
-            // 15. salecode
             const salecode = '';
-
-            // 16. salename
             const salename = '';
-
-            // 17. partnumber
             const partnumber = getVal('PartNumber', '');
-
-            // 18. partname
             const partname = getVal('PartName', r.part_desc || '');
-
-            // 19. inventory
             const inventory = getVal('Inventory', '');
-
-            // 20. location
             const location = getVal('Location', '');
-
-            // 21. unit
             const unit = getVal('Unit', '');
-
-            // 22. qty
             const qty = getVal('Qty', r.unit_num || '0');
-
-            // 23. price
             const price = getVal('Price', r.price || '0');
-
-            // 24. discount
             const discount = '';
-
-            // 25. amount
             const amount = getVal('Amount', r.amount || '0');
-
-            // 26. jobcode
             const jobcode = '';
-
-            // 27. jobname
             const jobname = '';
-
-            // 28. unitrate
             const unitrate = getVal('UnitRate', '1');
-
-            // 29. vattype
             const vattype = getVal('VatType', '');
-
-            // 30. sumgoodamount (from BaseVat)
             const sumgoodamount = getVal('BaseVat', r.amount || '0');
-
-            // 31. billdiscount
             const billdiscount = '';
-
-            // 32. billafterdiscount (from BaseVat)
             const billafterdiscount = getVal('BaseVat', r.amount || '0');
-
-            // 33. basevat (from BaseVat)
             const basevat = getVal('BaseVat', r.amount || '0');
-
-            // 34. vatrate
             const vatrate = getVal('VatRate', '7');
-
-            // 35. vatamount
             const vatamount = getVal('VatAmount', '0');
 
-            // 36. netamount (BaseVat + VatAmount)
             const baseVatNum = parseFloat(getVal('BaseVat', r.amount || '0')) || 0;
             const vatAmtNum = parseFloat(getVal('VatAmount', '0')) || 0;
             const netamount = (baseVatNum + vatAmtNum).toFixed(2);
 
-            // 37. vatcode
             const vatcode = getVal('VatCode', '');
-
-            // 38. vatgroup
             const vatgroup = getVal('VatGroup', '');
-
-            // 39. goodtype
             const goodtype = getVal('GoodType', '');
-
-            // 40. fob
             const fob = '';
-
-            // 41. stockflag
             const stockflag = getVal('StockFlag', '');
-
-            // 42. commission
             const commission = '';
-
-            // 43. incoterm
             const incoterm = '';
-
-            // 44. bookcode
             const bookcode = 'SA01';
-
-            // 45. bookno
             const bookno = '4902105005';
-
-            // 46. description
+            const trandate = invoicedate;
             const description = '';
 
             return [
@@ -542,11 +468,112 @@ router.post('/export', async (req, res) => {
                 clean(incoterm),
                 clean(bookcode),
                 clean(bookno),
+                clean(trandate),
                 clean(description)
             ].join('|');
         }).join('\r\n');
+        csvContent1 += csvRows1 + '\r\n';
 
-        csvContent += csvRows + '\r\n';
+        // Group rows by unique tax_rec_id for File 2 (Cash-Sale_03-VAT) and File 3 (Cash-Sale_05-Transfer)
+        const uniqueInvoicesMap = new Map();
+        rows.forEach(r => {
+            if (!uniqueInvoicesMap.has(r.tax_rec_id)) {
+                uniqueInvoicesMap.set(r.tax_rec_id, r);
+            }
+        });
+        const uniqueInvoices = Array.from(uniqueInvoicesMap.values());
+
+        // --- FILE 2: Cash-Sale_03-VAT ---
+        let csvContent2 = '\uFEFF';
+        const headers2 = [
+            'shipmentno', 'invoiceno', 'invoicedate', 'vatremark', 'taxid',
+            'brchname', 'brchnameeng', 'basevat', 'vatrate', 'vatamount'
+        ].join('|');
+        csvContent2 += headers2 + '\r\n';
+
+        const csvRows2 = uniqueInvoices.map(r => {
+            let cdms = {};
+            if (r.raw_cdms_row) {
+                try {
+                    cdms = JSON.parse(r.raw_cdms_row);
+                } catch (e) {
+                    console.error('Failed to parse raw_cdms_row JSON:', e);
+                }
+            }
+
+            const getVal = (cdmsKey, fallbackVal = '') => {
+                return (cdms[cdmsKey] !== undefined && cdms[cdmsKey] !== null) ? String(cdms[cdmsKey]).trim() : String(fallbackVal).trim();
+            };
+
+            const fallbackDate = formatDateForCsv(r.service_date);
+            const shipmentno = getVal('ShipmentNo', r.tax_rec_id);
+            const invoiceno = getVal('InvoiceNo', r.tax_rec_id);
+            const invoicedate = getVal('InvoiceDate', fallbackDate);
+            const vatremark = 'ขายเงินสดให้xx';
+            const taxid = '';
+            const brchname = '';
+            const brchnameeng = '';
+            const basevat = getVal('BaseVat', r.amount || '0');
+            const vatrate = getVal('VatRate', '7');
+            const vatamount = getVal('VatAmount', '0');
+
+            return [
+                clean(shipmentno),
+                clean(invoiceno),
+                clean(invoicedate),
+                clean(vatremark),
+                clean(taxid),
+                clean(brchname),
+                clean(brchnameeng),
+                clean(basevat),
+                clean(vatrate),
+                clean(vatamount)
+            ].join('|');
+        }).join('\r\n');
+        csvContent2 += csvRows2 + '\r\n';
+
+        // --- FILE 3: Cash-Sale_05-Transfer ---
+        let csvContent3 = '\uFEFF';
+        const headers3 = [
+            'invoiceno', 'bookcode', 'bookno', 'trandate', 'amount', 'remark'
+        ].join('|');
+        csvContent3 += headers3 + '\r\n';
+
+        const csvRows3 = uniqueInvoices.map(r => {
+            let cdms = {};
+            if (r.raw_cdms_row) {
+                try {
+                    cdms = JSON.parse(r.raw_cdms_row);
+                } catch (e) {
+                    console.error('Failed to parse raw_cdms_row JSON:', e);
+                }
+            }
+
+            const getVal = (cdmsKey, fallbackVal = '') => {
+                return (cdms[cdmsKey] !== undefined && cdms[cdmsKey] !== null) ? String(cdms[cdmsKey]).trim() : String(fallbackVal).trim();
+            };
+
+            const fallbackDate = formatDateForCsv(r.service_date);
+            const invoiceno = getVal('InvoiceNo', r.tax_rec_id);
+            const bookcode = 'SA01';
+            const bookno = '4902105005';
+            const trandate = getVal('InvoiceDate', fallbackDate);
+            
+            const baseVatNum = parseFloat(getVal('BaseVat', r.amount || '0')) || 0;
+            const vatAmtNum = parseFloat(getVal('VatAmount', '0')) || 0;
+            const amount = (baseVatNum + vatAmtNum).toFixed(2);
+            const remark = '';
+
+            return [
+                clean(invoiceno),
+                clean(bookcode),
+                clean(bookno),
+                clean(trandate),
+                clean(amount),
+                clean(remark)
+            ].join('|');
+        }).join('\r\n');
+        csvContent3 += csvRows3 + '\r\n';
 
         // 4. Update the database flag is_accounting_exported = TRUE inside a transaction (using unique IDs)
         const taxRecIds = [...new Set(rows.map(r => r.tax_rec_id))];
@@ -556,7 +583,6 @@ router.post('/export', async (req, res) => {
         try {
             await connection.beginTransaction();
             transactionStarted = true;
-            // Bulk update matching records
             await connection.query(
                 'UPDATE invoices SET is_accounting_exported = TRUE WHERE tax_rec_id IN (?)',
                 [taxRecIds]
@@ -574,11 +600,33 @@ router.post('/export', async (req, res) => {
         // 5. Log download activity (Non-blocking)
         await logActivity('REQ_DOWNLOAD_MISS', `${username}:${taxRecIds.length}`, username);
 
-        // 6. Return file download stream
-        const filename = `invoice_data_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.csv`;
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-        res.status(200).send(csvContent);
+        // 6. Return file download ZIP stream
+        const zipFilename = `invoice_data_${formatBKKDateISO().replace(/-/g,'')}_${Date.now()}.zip`;
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename=${zipFilename}`);
+
+        const archive = new archiver.ZipArchive({ zlib: { level: 9 } });
+        
+        archive.on('warning', (err) => {
+            if (err.code === 'ENOENT') {
+                console.warn('Archiver warning:', err);
+            } else {
+                throw err;
+            }
+        });
+        
+        archive.on('error', (err) => {
+            console.error('Archiver error:', err);
+            res.status(500).end();
+        });
+
+        archive.pipe(res);
+
+        archive.append(csvContent1, { name: `Cash-Sale_01-Detail_${longDigits}.csv` });
+        archive.append(csvContent2, { name: `Cash-Sale_03-VAT_${longDigits}.csv` });
+        archive.append(csvContent3, { name: `Cash-Sale_05-Transfer_${longDigits}.csv` });
+
+        await archive.finalize();
 
     } catch (error) {
         console.error('CSV export error:', error);
@@ -622,7 +670,7 @@ router.post('/:tax_rec_id/generate-pdf', async (req, res) => {
         
     } catch (error) {
         console.error('Manual PDF generation error:', error);
-        res.status(500).json({ success: false, message: 'Internal server error during manual PDF generation.' });
+        res.status(500).json({ success: false, message: `Failed to generate PDF: ${error.message || 'Internal server error'}` });
     }
 });
 

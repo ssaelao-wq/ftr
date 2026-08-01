@@ -78,7 +78,7 @@ router.get('/lookup', async (req, res) => {
 
     try {
         const [rows] = await db.execute(
-            'SELECT id, tax_id, customer_num, customer_name, customer_addr, customer_branch, customer_email, customer_phone, is_accounting_exported FROM customer_profile WHERE tax_id = ? ORDER BY customer_branch = \'สำนักงานใหญ่\' DESC, customer_branch ASC, id DESC',
+            'SELECT id, tax_id, customer_num, customer_name, customer_addr, customer_branch, customer_email, customer_phone, is_accounting_exported FROM customer_profile WHERE tax_id = ? ORDER BY customer_branch = \'สำนักงานใหญ่\' DESC, customer_branch = \'HEAD OFFICE\' DESC, customer_branch ASC, id DESC',
             [tax_id.trim()]
         );
         res.json({ success: true, profiles: rows });
@@ -101,7 +101,7 @@ router.put('/:id', async (req, res) => {
 
     try {
         // Validate record exists
-        const [existing] = await db.execute('SELECT tax_id, customer_num, customer_branch FROM customer_profile WHERE id = ?', [id]);
+        const [existing] = await db.execute('SELECT customer_num, customer_name, customer_addr, customer_email, customer_phone, customer_branch FROM customer_profile WHERE id = ?', [id]);
         if (existing.length === 0) {
             return res.status(404).json({ success: false, message: 'Customer profile not found.' });
         }
@@ -126,9 +126,9 @@ router.put('/:id', async (req, res) => {
             // 2. Propagate updates to matching invoices via customer_num
             await connection.execute(`
                 UPDATE invoices 
-                SET customer_branch = ?, status = 'pending', is_accounting_exported = FALSE 
+                SET status = IF(status = 'ready', 'ready', 'pending'), is_accounting_exported = FALSE 
                 WHERE customer_num = ?
-            `, [newBranch, oldProfile.customer_num]);
+            `, [oldProfile.customer_num]);
 
             await connection.commit();
         } catch (txErr) {
@@ -140,7 +140,8 @@ router.put('/:id', async (req, res) => {
             connection.release();
         }
 
-        await logActivity('EDIT_PROFILE', `${username}:${oldProfile.tax_id}:${newBranch || ''}`, username);
+        const profileChangeLog = `Code: ${oldProfile.customer_num} | Existing: {Name: "${oldProfile.customer_name || ''}", Addr: "${oldProfile.customer_addr || ''}", Email: "${oldProfile.customer_email || ''}", Phone: "${oldProfile.customer_phone || ''}", Branch: "${oldProfile.customer_branch || ''}"} -> Updated to: {Name: "${customer_name.trim()}", Addr: "${customer_addr.trim()}", Email: "${customer_email ? customer_email.trim() : ''}", Phone: "${customer_phone ? customer_phone.trim() : ''}", Branch: "${newBranch}"}`;
+        await logActivity('EDIT_PROFILE', profileChangeLog, username);
 
         res.json({ success: true, message: 'Customer profile updated successfully and invoice links updated.' });
     } catch (error) {

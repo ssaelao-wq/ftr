@@ -189,6 +189,17 @@
             cursor: not-allowed;
         }
 
+        select.field-input {
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23495057' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 36px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
         textarea.field-input {
             resize: none;
             min-height: 70px;
@@ -783,7 +794,7 @@
 
         <!-- Tax Record ID -->
         <div class="field-group">
-            <div class="field-label">Tax Record ID <span class="req">*</span> <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-left: 5px;">(กรณีใส่หลายหมายเลขให้คั่นด้วย ",")</span></div>
+            <div class="field-label">Tax Record ID <span class="req">*</span> <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-left: 5px;">(กรณีใส่หลายหมายเลขให้คั่นด้วย , )</span></div>
             <input type="text" id="taxRecId" class="field-input" placeholder="เช่น RF2605-00123"
                    autocomplete="off" autocorrect="off" spellcheck="false" inputmode="text">
         </div>
@@ -818,7 +829,22 @@
                 สาขา (Customer Branch)
                 <span class="lock-icon" id="lockBranch">🔒</span>
             </div>
-            <input type="text" id="customerBranch" class="field-input" placeholder="—" disabled autocomplete="off">
+            <select id="customerBranch" class="field-input" disabled>
+                <option value="">— เลือกประเภทสาขา —</option>
+                <option value="HEAD OFFICE">HEAD OFFICE</option>
+                <option value="สำนักงานใหญ่">สำนักงานใหญ่</option>
+                <option value="BRANCH">BRANCH</option>
+                <option value="สาขาย่อย">สาขาย่อย</option>
+            </select>
+        </div>
+
+        <!-- Branch Number -->
+        <div class="field-group" id="branchNumberGroup">
+            <div class="field-label">
+                เลขสาขาย่อย (Branch Number)
+                <span class="lock-icon" id="lockBranchNum">🔒</span>
+            </div>
+            <input type="text" id="branchNumber" class="field-input" placeholder="—" disabled autocomplete="off" maxlength="5" inputmode="numeric" pattern="[0-9]*">
         </div>
 
         <!-- Customer Number -->
@@ -989,10 +1015,12 @@ const el = {
     searchIndicator:   $('searchingIndicator'),
     statusBanner:      $('statusBanner'),
     customerBranch:    $('customerBranch'),
+    branchNumber:      $('branchNumber'),
     customerNum:       $('customerNum'),
     customerName:      $('customerName'),
     address:           $('address'),
     lockBranch:        $('lockBranch'),
+    lockBranchNum:     $('lockBranchNum'),
     lockNum:           $('lockNum'),
     lockName:          $('lockName'),
     lockAddr:          $('lockAddr'),
@@ -1090,10 +1118,11 @@ function applyState(state) {
     hideBanner();
 
     // Reset lock icons
-    el.lockBranch.style.display = '';
-    el.lockNum.style.display    = '';
-    el.lockName.style.display   = '';
-    el.lockAddr.style.display   = '';
+    el.lockBranch.style.display    = '';
+    el.lockBranchNum.style.display = '';
+    el.lockNum.style.display       = '';
+    el.lockName.style.display      = '';
+    el.lockAddr.style.display      = '';
 
     // Default Send button to disabled
     el.btnSend.disabled = true;
@@ -1107,10 +1136,11 @@ function applyState(state) {
             el.btnSearch.disabled = false;
             el.btnManual.disabled = true;
             el.customerBranch.value = '';
+            el.branchNumber.value   = '';
             el.customerNum.value    = '';
             el.customerName.value   = '';
             el.address.value        = '';
-            [el.customerBranch, el.customerNum, el.customerName, el.address]
+            [el.customerBranch, el.branchNumber, el.customerNum, el.customerName, el.address]
                 .forEach(f => { f.disabled = true; f.readOnly = false; });
             el.btnSaveOnly.disabled = true;
             el.btnSaveSend.disabled = true;
@@ -1119,7 +1149,7 @@ function applyState(state) {
 
         case STATE.LOCKED:
             // Everything locked; top fields read-only too
-            [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
+            [el.taxRecId, el.taxId, el.customerBranch, el.branchNumber, el.customerNum,
              el.customerName, el.address]
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;
@@ -1136,10 +1166,11 @@ function applyState(state) {
             el.btnManual.disabled = true;
             el.searchIndicator.style.display = 'none';
             el.customerBranch.disabled = true; 
+            el.branchNumber.disabled   = true; 
             el.customerNum.disabled    = true; 
             el.customerName.disabled   = true; 
             el.address.disabled        = true; 
-            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+            [el.lockBranch, el.lockBranchNum, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = 'none');
             el.btnSaveOnly.disabled = true;
             el.btnSaveSend.disabled = true;
@@ -1160,11 +1191,12 @@ function applyState(state) {
             el.btnSearch.disabled = false;
             el.btnManual.disabled = false;
             el.searchIndicator.style.display = 'none';
-            el.customerBranch.disabled = false; el.customerBranch.readOnly = true;
+            el.customerBranch.disabled = true; // select disabled for read-only style
+            el.branchNumber.disabled   = true; // branch number disabled
             el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
             el.customerName.disabled   = false; el.customerName.readOnly   = true;
             el.address.disabled        = false; el.address.readOnly        = true;
-            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+            [el.lockBranch, el.lockBranchNum, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = 'none');
             el.btnSaveOnly.disabled = false;
             el.btnSaveSend.disabled = false;
@@ -1177,9 +1209,18 @@ function applyState(state) {
             el.btnSearch.disabled = false;
             el.btnManual.disabled = false;
             el.searchIndicator.style.display = 'none';
-            el.customerBranch.disabled = false; el.customerBranch.readOnly = false;
+            el.customerBranch.disabled = false; // select enabled
             el.customerNum.disabled    = false; el.customerNum.readOnly    = true;
             
+            // Check if we need to enable branchNumber based on dropdown
+            const isBranchTypeNum = el.customerBranch.value === 'BRANCH' || el.customerBranch.value === 'สาขาย่อย';
+            el.branchNumber.disabled = !isBranchTypeNum;
+            if (isBranchTypeNum) {
+                el.branchNumber.placeholder = 'เช่น 00001';
+            } else {
+                el.branchNumber.placeholder = '—';
+            }
+
             el.customerNum.value = 'TMP-XXXXXX';
             if (!el.taxId.value) {
                 el.taxId.value = 'TMP-XXXXXX';
@@ -1187,7 +1228,7 @@ function applyState(state) {
             
             el.customerName.disabled   = false; el.customerName.readOnly   = false;
             el.address.disabled        = false; el.address.readOnly        = false;
-            [el.lockBranch, el.lockName, el.lockAddr, el.lockNum]
+            [el.lockBranch, el.lockBranchNum, el.lockName, el.lockAddr, el.lockNum]
                 .forEach(ic => ic.style.display = 'none');
             el.lockNum.style.display = ''; // keep lock on num
             checkManualReadiness();
@@ -1206,10 +1247,11 @@ function applyState(state) {
             el.btnManual.disabled = false;
             el.searchIndicator.style.display = 'none';
             el.customerBranch.disabled = true;
+            el.branchNumber.disabled   = true;
             el.customerNum.disabled    = true;
             el.customerName.disabled   = true;
             el.address.disabled        = true;
-            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+            [el.lockBranch, el.lockBranchNum, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = '');
             
             el.btnSaveOnly.disabled = false;
@@ -1225,10 +1267,11 @@ function applyState(state) {
             el.btnManual.disabled = true;
             el.searchIndicator.style.display = 'none';
             el.customerBranch.disabled = true;
+            el.branchNumber.disabled   = true;
             el.customerNum.disabled    = true;
             el.customerName.disabled   = true;
             el.address.disabled        = true;
-            [el.lockBranch, el.lockNum, el.lockName, el.lockAddr]
+            [el.lockBranch, el.lockBranchNum, el.lockNum, el.lockName, el.lockAddr]
                 .forEach(ic => ic.style.display = '');
 
             el.btnSaveOnly.disabled = true;
@@ -1247,21 +1290,84 @@ function applyState(state) {
 // ============================================================
 // MANUAL ENTRY: enable Save&Send when required fields filled
 // ============================================================
+// Helper to parse and populate customer_branch
+function setBranchFields(dbBranchValue) {
+    const val = (dbBranchValue || '').trim();
+    if (val === 'สำนักงานใหญ่' || val === 'HEAD OFFICE') {
+        el.customerBranch.value = val;
+        el.branchNumber.value = '';
+        el.branchNumber.disabled = true;
+        el.branchNumber.placeholder = '—';
+    } else if (val && /^\d+$/.test(val)) {
+        el.customerBranch.value = 'สาขาย่อย';
+        el.branchNumber.value = val.padStart(5, '0');
+        el.branchNumber.disabled = (currentState !== STATE.MANUAL_ENTRY);
+        el.branchNumber.placeholder = 'เช่น 00001';
+    } else {
+        el.customerBranch.value = '';
+        el.branchNumber.value = '';
+        el.branchNumber.disabled = true;
+        el.branchNumber.placeholder = '—';
+    }
+}
+
+// Helper to validate fields
+function validateFields() {
+    if (!el.taxRecId.value.trim() || !el.taxId.value.trim() ||
+        !el.customerBranch.value.trim() || !el.customerName.value.trim() ||
+        !el.address.value.trim()) {
+        return false;
+    }
+    const isBranchTypeNum = el.customerBranch.value === 'BRANCH' || el.customerBranch.value === 'สาขาย่อย';
+    if (isBranchTypeNum && !el.branchNumber.value.trim()) {
+        return false;
+    }
+    return true;
+}
+
 function checkManualReadiness() {
-    const allFilled =
-        el.customerBranch.value.trim() &&
-        el.customerName.value.trim() &&
-        el.address.value.trim();
+    const allFilled = validateFields();
     el.btnSaveOnly.disabled = !allFilled;
     el.btnSaveSend.disabled = !allFilled;
 }
 
-['customerBranch', 'customerName', 'address'].forEach(id => {
+['customerBranch', 'branchNumber', 'customerName', 'address'].forEach(id => {
     const inp = $(id);
     if (inp) inp.addEventListener('input', () => {
         if (currentState === STATE.MANUAL_ENTRY) checkManualReadiness();
     });
 });
+
+// Dropdown Change Listener
+if (el.customerBranch) {
+    el.customerBranch.addEventListener('change', () => {
+        const isBranchTypeNum = el.customerBranch.value === 'BRANCH' || el.customerBranch.value === 'สาขาย่อย';
+        if (isBranchTypeNum) {
+            el.branchNumber.disabled = (currentState !== STATE.MANUAL_ENTRY);
+            el.branchNumber.placeholder = 'เช่น 00001';
+        } else {
+            el.branchNumber.disabled = true;
+            el.branchNumber.value = '';
+            el.branchNumber.placeholder = '—';
+        }
+        if (currentState === STATE.MANUAL_ENTRY) checkManualReadiness();
+    });
+}
+
+// Branch number validation and padding
+if (el.branchNumber) {
+    el.branchNumber.addEventListener('input', (e) => {
+        e.target.value = e.target.value.replace(/\D/g, ''); // only allow digits
+        if (currentState === STATE.MANUAL_ENTRY) checkManualReadiness();
+    });
+    el.branchNumber.addEventListener('blur', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+            e.target.value = val.padStart(5, '0');
+        }
+        if (currentState === STATE.MANUAL_ENTRY) checkManualReadiness();
+    });
+}
 
 if (el.taxId) {
     el.taxId.addEventListener('input', () => {
@@ -1433,7 +1539,7 @@ async function handleLookupResult(data, isAutoCheck) {
             // Populate the UI with existing customer info from the first invoice
             const firstInv = invoices[0];
             el.taxId.value = firstInv.existing_tax_id;
-            el.customerBranch.value = firstInv.customer_branch || 'สำนักงานใหญ่';
+            setBranchFields(firstInv.customer_branch || 'สำนักงานใหญ่');
             el.customerNum.value    = firstInv.customer_num    || '';
             el.customerName.value   = firstInv.customer_name   || '';
             el.address.value        = firstInv.customer_addr   || '';
@@ -1503,7 +1609,7 @@ async function handleLookupResult(data, isAutoCheck) {
 
             // Populate existing profile
             el.taxId.value = inv.existing_tax_id;
-            el.customerBranch.value = inv.customer_branch || 'สำนักงานใหญ่';
+            setBranchFields(inv.customer_branch || 'สำนักงานใหญ่');
             el.customerNum.value    = inv.customer_num    || '';
             el.customerName.value   = inv.customer_name   || '';
             el.address.value        = inv.customer_addr   || '';
@@ -1570,7 +1676,7 @@ async function doLookup(forceManual = false, isAutoCheck = false) {
 
 el.taxRecId.addEventListener('blur', () => doLookup(false, true));
 el.btnSearch.addEventListener('click', () => doLookup(false));
-el.btnManual.addEventListener('click', () => doLookup(true));
+el.btnManual.addEventListener('click', () => applyState(STATE.MANUAL_ENTRY));
 
 // ============================================================
 // CUSTOMER SELECTION SHEET
@@ -1630,7 +1736,7 @@ el.btnSheetCancel.addEventListener('click', () => {
 el.btnSheetOk.addEventListener('click', () => {
     if (selectedProfileIdx < 0) return;
     const profile = branchProfiles[selectedProfileIdx];
-    el.customerBranch.value = profile.customer_branch || 'สำนักงานใหญ่';
+    setBranchFields(profile.customer_branch || 'สำนักงานใหญ่');
     el.customerNum.value    = profile.customer_num    || '';
     el.customerName.value   = profile.customer_name   || '';
     el.address.value        = profile.customer_addr   || '';
@@ -1650,9 +1756,7 @@ el.btnCancel.addEventListener('click', () => {
 // ============================================================
 el.btnSaveOnly.addEventListener('click', async () => {
     if (el.btnSaveOnly.disabled) return;
-    if (!el.taxRecId.value.trim() || !el.taxId.value.trim() ||
-        !el.customerBranch.value.trim() || !el.customerName.value.trim() ||
-        !el.address.value.trim()) {
+    if (!validateFields()) {
         showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
         return;
     }
@@ -1673,9 +1777,7 @@ el.btnSaveOnly.addEventListener('click', async () => {
 el.btnSaveSend.addEventListener('click', async () => {
     if (el.btnSaveSend.disabled) return;
     // Validate required fields
-    if (!el.taxRecId.value.trim() || !el.taxId.value.trim() ||
-        !el.customerBranch.value.trim() || !el.customerName.value.trim() ||
-        !el.address.value.trim()) {
+    if (!validateFields()) {
         showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
         return;
     }
@@ -1745,17 +1847,20 @@ el.btnSendLine.addEventListener('click', async () => {
 });
 
 // ============================================================
-// SAVE-AND-SEND API CALL
-// ============================================================
 async function doSaveAndSend(sendMethod, emailAddress) {
     el.loadingOverlay.classList.add('show');
+
+    let finalBranchVal = el.customerBranch.value.trim();
+    if (finalBranchVal === 'BRANCH' || finalBranchVal === 'สาขาย่อย') {
+        finalBranchVal = el.branchNumber.value.trim().padStart(5, '0');
+    }
 
     const payload = {
         line_user_id:    lineUserId || 'mock_user_id_for_dev',
         line_display_name: lineDisplayName || 'mock_user_name',
         tax_rec_id:      el.taxRecId.value.trim(),
         tax_id:          el.taxId.value.trim(),
-        customer_branch: el.customerBranch.value.trim(),
+        customer_branch: finalBranchVal,
         customer_num:    el.customerNum.value.trim(),
         customer_name:   el.customerName.value.trim(),
         address:         el.address.value.trim(),
@@ -1781,7 +1886,7 @@ async function doSaveAndSend(sendMethod, emailAddress) {
             el.btnSend.disabled = true;
             el.btnCancel.style.display = 'none';
             // Disable all fields — done
-            [el.taxRecId, el.taxId, el.customerBranch, el.customerNum,
+            [el.taxRecId, el.taxId, el.customerBranch, el.branchNumber, el.customerNum,
              el.customerName, el.address]
                 .forEach(f => { f.disabled = true; });
             el.btnSearch.disabled = true;

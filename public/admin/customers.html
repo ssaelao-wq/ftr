@@ -206,7 +206,7 @@
                             <div class="search-metric">Results Found: <span class="value" id="resCount">0</span></div>
                             <div class="search-metric">Completed Profiles: <span class="value" id="completeCount" style="color: var(--success);">0</span></div>
                         </div>
-                        <div style="display: flex; gap: 1rem;">
+                        <div class="button-group">
                             <button type="button" class="btn btn-secondary" onclick="exportFilteredCsv()" id="exportBtn">
                                 Export
                             </button>
@@ -287,7 +287,7 @@
                     </div>
                     <div class="form-group">
                         <label for="editCustomerBranch">Customer Branch</label>
-                        <input type="text" id="editCustomerBranch" class="form-control" placeholder="e.g. สำนักงานใหญ่" required oninput="checkTaxIdLookup()">
+                        <input type="text" id="editCustomerBranch" class="form-control" placeholder="e.g. สำนักงานใหญ่" required oninput="document.getElementById('editCustomerNum').value = ''">
                     </div>
                 </div>
 
@@ -575,7 +575,7 @@
                     a.remove();
                     window.URL.revokeObjectURL(url);
                     
-                    showAlert('success', 'Accounting CSV generated and downloaded. Record export states updated.');
+                    showAlert('success', 'Accounting ZIP package generated and downloaded. Record export states updated.');
                     performSearch();
                 } else {
                     const data = await response.json();

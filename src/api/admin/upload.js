@@ -231,16 +231,25 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
         const decoder = new TextDecoder(encoding);
         const csvContent = decoder.decode(buffer);
         
-        // Auto-detect delimiter
-        let delimiter = '|';
-        const firstLine = csvContent.split('\n')[0];
-        const commaCount = (firstLine.match(/,/g) || []).length;
-        const pipeCount = (firstLine.match(/\|/g) || []).length;
-        if (commaCount > pipeCount) {
-            delimiter = ',';
+        // Enforce pipe delimiter strictly as requested by the user
+        const delimiter = '|';
+
+        // Pre-process raw text lines to skip non-column header rows (e.g. the first 7 lines of report header)
+        const lines = csvContent.split('\n');
+        let headerLineIndex = -1;
+        for (let i = 0; i < Math.min(20, lines.length); i++) {
+            if (lines[i].includes('รหัสลูกค้า') && lines[i].includes('เลขประจำตัวผู้เสียภาษี')) {
+                headerLineIndex = i;
+                break;
+            }
         }
 
-        const rawRecords = parse(csvContent, {
+        let cleanCsvContent = csvContent;
+        if (headerLineIndex > 0) {
+            cleanCsvContent = lines.slice(headerLineIndex).join('\n');
+        }
+
+        const rawRecords = parse(cleanCsvContent, {
             delimiter: delimiter,
             skip_empty_lines: true,
             trim: true
@@ -250,7 +259,28 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
             return res.status(400).json({ success: false, message: 'CSV file is empty or missing data rows.' });
         }
 
-        const headers = rawRecords[0].map(h => h.trim());
+        // Find the actual header row containing key columns dynamically
+        let headerRowIndex = -1;
+        for (let i = 0; i < Math.min(20, rawRecords.length); i++) {
+            const rowStr = JSON.stringify(rawRecords[i]);
+            if (rowStr.includes('รหัสลูกค้า') && rowStr.includes('เลขประจำตัวผู้เสียภาษี')) {
+                headerRowIndex = i;
+                break;
+            }
+        }
+
+        if (headerRowIndex === -1) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid CSV format: Could not find header row containing required columns (รหัสลูกค้า, เลขประจำตัวผู้เสียภาษี).' 
+            });
+        }
+
+        if (rawRecords.length <= headerRowIndex + 1) {
+            return res.status(400).json({ success: false, message: 'CSV file is empty or missing data rows.' });
+        }
+
+        const headers = rawRecords[headerRowIndex].map(h => h.trim());
 
         const requiredMappings = {
             'เลขประจำตัวผู้เสียภาษี': 'tax_id',
@@ -295,10 +325,13 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
             transactionStarted = true;
 
             let importCount = 0;
+            let updateCount = 0;
             let duplicateCount = 0;
             const skippedTaxIds = [];
+            const processedCustomerNums = new Set();
+            const changeLogMessages = [];
 
-            for (let i = 1; i < rawRecords.length; i++) {
+            for (let i = headerRowIndex + 1; i < rawRecords.length; i++) {
                 const r = rawRecords[i];
                 if (r.length < headers.length) continue; // Skip malformed rows
                 
@@ -321,6 +354,24 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
                     continue;
                 }
 
+                // Skip missing customer code
+                if (!customerNum) {
+                    skippedTaxIds.push({
+                        row: i + 1,
+                        customerNum: '',
+                        taxId: taxId,
+                        reason: 'Missing Customer Number'
+                    });
+                    continue;
+                }
+
+                // In-memory deduplication to avoid redundant inserts/updates or key constraint errors in this transaction
+                if (processedCustomerNums.has(customerNum)) {
+                    duplicateCount++;
+                    continue;
+                }
+                processedCustomerNums.add(customerNum);
+
                 const customerName = r[indexes.customer_name] ? r[indexes.customer_name].trim() : '';
                 const address = r[indexes.customer_addr] ? r[indexes.customer_addr].trim() : '';
                 const email = r[indexes.customer_email] ? r[indexes.customer_email].trim() : '';
@@ -328,22 +379,59 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
                 const branchType = r[indexes.branch_type] ? r[indexes.branch_type].trim() : '';
                 const branchCode = r[indexes.branch_code] ? r[indexes.branch_code].trim() : '';
 
-                let customerBranch = null;
-                if (branchType === 'สำนักงานใหญ่') {
-                    customerBranch = 'สำนักงานใหญ่';
-                } else if (branchType === 'สาขาย่อย') {
-                    customerBranch = branchCode;
+                let customerBranch = 'สำนักงานใหญ่';
+                const cleanType = branchType.trim().toUpperCase();
+                if (cleanType === 'สำนักงานใหญ่' || cleanType === 'HEAD OFFICE') {
+                    customerBranch = branchType.trim();
+                } else if (cleanType === 'สาขาย่อย' || cleanType === 'BRANCH') {
+                    customerBranch = branchCode.trim();
+                } else if (branchType) {
+                    customerBranch = branchType.trim();
                 }
 
-                // Check if customer_num already exists
+                // Check if customer_num already exists in database
                 const [existing] = await connection.execute(
-                    'SELECT id FROM customer_profile WHERE customer_num = ?', 
+                    'SELECT id, tax_id, customer_name, customer_addr, customer_email, customer_phone, customer_branch FROM customer_profile WHERE customer_num = ?', 
                     [customerNum]
                 );
 
                 if (existing.length > 0) {
-                    duplicateCount++;
+                    const oldProfile = existing[0];
+                    const oldTaxId = oldProfile.tax_id || '';
+                    const oldName = oldProfile.customer_name || '';
+                    const oldAddr = oldProfile.customer_addr || '';
+                    const oldEmail = oldProfile.customer_email || '';
+                    const oldPhone = oldProfile.customer_phone || '';
+                    const oldBranch = oldProfile.customer_branch || '';
+                    const newBranchVal = customerBranch || '';
+
+                    const isChanged = 
+                        oldTaxId.trim() !== taxId.trim() ||
+                        oldName.trim() !== customerName.trim() ||
+                        oldAddr.trim() !== address.trim() ||
+                        oldEmail.trim() !== email.trim() ||
+                        oldPhone.trim() !== phone.trim() ||
+                        oldBranch.trim() !== newBranchVal.trim();
+
+                    if (isChanged) {
+                        // Replace/Update the existing customer record in-place
+                        await connection.execute(`
+                            UPDATE customer_profile 
+                            SET tax_id = ?, customer_name = ?, customer_addr = ?, customer_email = ?, customer_phone = ?, customer_branch = ?, is_accounting_exported = TRUE
+                            WHERE customer_num = ?
+                        `, [taxId, customerName, address, email, phone, customerBranch, customerNum]);
+
+                        // Record detailed replace log (old vs new values); flushed to activity_logs + daily file after commit succeeds
+                        const logMessage = `Code: ${customerNum} | Existing: {TaxID: "${oldTaxId}", Name: "${oldName}", Addr: "${oldAddr}", Email: "${oldEmail}", Phone: "${oldPhone}", Branch: "${oldBranch}"} -> Replaced with: {TaxID: "${taxId}", Name: "${customerName}", Addr: "${address}", Email: "${email}", Phone: "${phone}", Branch: "${newBranchVal}"}`;
+                        console.log(`[Customer Replace] ${logMessage}`);
+                        changeLogMessages.push(logMessage);
+
+                        updateCount++;
+                    } else {
+                        duplicateCount++;
+                    }
                 } else {
+                    // Insert new customer record
                     await connection.execute(`
                         INSERT INTO customer_profile 
                         (tax_id, customer_num, customer_name, customer_addr, customer_email, customer_phone, customer_branch, is_accounting_exported)
@@ -354,11 +442,13 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
             }
 
             await connection.commit();
-            
+
             // Pass variables to outer scope
             res.locals.importCount = importCount;
+            res.locals.updateCount = updateCount;
             res.locals.duplicateCount = duplicateCount;
             res.locals.skippedTaxIds = skippedTaxIds;
+            res.locals.changeLogMessages = changeLogMessages;
         } catch (txErr) {
             if (transactionStarted) {
                 await connection.rollback().catch(() => {});
@@ -368,25 +458,32 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
             connection.release();
         }
 
+        // Only log changes once the transaction has actually committed, so a mid-import
+        // failure/rollback never leaves audit entries for changes that didn't take effect
+        for (const msg of res.locals.changeLogMessages) {
+            await logActivity('EDIT_CUSTOMER_UPLOAD', msg, username);
+        }
+
         const importCount = res.locals.importCount;
+        const updateCount = res.locals.updateCount;
         const duplicateCount = res.locals.duplicateCount;
         const skippedTaxIds = res.locals.skippedTaxIds;
 
-        await logActivity('REQ_UPLOAD_CUSTOMER', `${username}:${importCount}`, username);
+        await logActivity('REQ_UPLOAD_CUSTOMER', `${username}:${importCount}:${updateCount}`, username);
 
-        let message = `Successfully imported ${importCount} customer profiles.`;
+        let message = `Successfully imported ${importCount} new customer profiles and updated ${updateCount} existing profiles.`;
         if (duplicateCount > 0) {
             message += ` ${duplicateCount} duplicate records were skipped.`;
         }
         if (skippedTaxIds.length > 0) {
-            message += `\n\nIgnored ${skippedTaxIds.length} records with invalid Tax ID (must be exactly 13 digits):\n` + 
+            message += `\n\nIgnored ${skippedTaxIds.length} records with invalid Tax ID or missing info:\n` + 
                 skippedTaxIds.map(item => `- Row ${item.row} (Cust Code: ${item.customerNum || 'N/A'}): "${item.taxId}" (${item.reason})`).join('\n');
         }
 
-        if (importCount === 0) {
+        if (importCount === 0 && updateCount === 0) {
             let errorMsg = `All records failed to save.`;
             if (skippedTaxIds.length > 0) {
-                errorMsg += `\n\nIgnored ${skippedTaxIds.length} records with invalid Tax ID (must be exactly 13 digits):\n` +
+                errorMsg += `\n\nIgnored ${skippedTaxIds.length} records with invalid Tax ID or missing info:\n` +
                     skippedTaxIds.map(item => `- Row ${item.row} (Cust Code: ${item.customerNum || 'N/A'}): "${item.taxId}" (${item.reason})`).join('\n');
             }
             return res.status(400).json({
@@ -400,6 +497,7 @@ router.post('/customer-profile', upload.single('file'), async (req, res) => {
             success: true,
             message: message,
             importCount,
+            updateCount,
             duplicateCount,
             skippedCount: skippedTaxIds.length,
             skipped: skippedTaxIds

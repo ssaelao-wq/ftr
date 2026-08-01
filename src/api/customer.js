@@ -222,7 +222,7 @@ router.get('/lookup-branches', async (req, res) => {
                 `SELECT customer_branch, customer_num, customer_name, customer_addr
                  FROM customer_profile
                  WHERE tax_id = ?
-                 ORDER BY customer_branch = 'สำนักงานใหญ่' DESC, customer_branch ASC`,
+                 ORDER BY customer_branch = 'สำนักงานใหญ่' DESC, customer_branch = 'HEAD OFFICE' DESC, customer_branch ASC`,
                 [tax_id.trim()]
             );
             responsePayload.branches = rows;
@@ -307,7 +307,8 @@ router.post('/update-profile', async (req, res) => {
             `UPDATE invoices
              SET customer_num = ?, 
                  container_num = IF(container_num IS NULL OR container_num = '', ?, container_num),
-                 is_accounting_exported = FALSE, is_customer_data_updated = TRUE, status = 'pending'
+                 is_accounting_exported = FALSE, is_customer_data_updated = TRUE, 
+                 status = IF(status = 'ready', 'ready', 'pending')
              WHERE tax_rec_id = ?`,
             [profileCustNum, container_num && container_num.trim() ? container_num.trim() : null, tax_rec_id]
         );
@@ -425,12 +426,12 @@ router.post('/save-and-send', async (req, res) => {
             // Update existing profile
             const oldCustomerNum = existingProfile[0].customer_num;
             activeCustomerNum = oldCustomerNum || activeCustomerNum;
-            if (!activeCustomerNum || activeCustomerNum === 'TMP-00000' || activeCustomerNum === 'TMP-XXXXXX' || activeCustomerNum.startsWith('TMP-')) {
+            if (!activeCustomerNum || activeCustomerNum === 'TMP-00000' || activeCustomerNum === 'TMP-XXXXXX') {
                 activeCustomerNum = await generateUniqueTmpCustomerNum(db);
             }
             await db.execute(
-                'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, customer_num = ?, is_accounting_exported = FALSE WHERE customer_num = ?',
-                [customer_name.trim(), address.trim(), activeCustomerNum, oldCustomerNum || activeCustomerNum]
+                'UPDATE customer_profile SET customer_name = ?, customer_addr = ?, is_accounting_exported = FALSE WHERE customer_num = ?',
+                [customer_name.trim(), address.trim(), activeCustomerNum]
             );
         }
 
@@ -441,7 +442,7 @@ router.post('/save-and-send', async (req, res) => {
                  container_num = IF(container_num IS NULL OR container_num = '', ?, container_num),
                  is_accounting_exported = FALSE,
                  is_customer_data_updated = TRUE,
-                 status = 'pending'
+                 status = IF(status = 'ready', 'ready', 'pending')
              WHERE tax_rec_id IN (${placeholders})`,
             [
                 activeCustomerNum,

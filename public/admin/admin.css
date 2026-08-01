@@ -830,3 +830,49 @@ select.form-control {
     transform: translate(-50%, 0);
 }
 
+/* Button Group Layout & Responsive Mobile Styling */
+.button-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.button-group.right {
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .filters-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        gap: 1rem !important;
+    }
+    
+    .search-metrics {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+        width: 100% !important;
+    }
+    
+    .search-metric {
+        width: 100% !important;
+        justify-content: space-between !important;
+    }
+    
+    .button-group {
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 0.75rem !important;
+    }
+    
+    .button-group.right {
+        justify-content: flex-start !important;
+    }
+    
+    .button-group .btn {
+        width: 100% !important;
+    }
+}
+
+

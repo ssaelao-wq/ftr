@@ -123,7 +123,7 @@
 
 ### Rule #13 — Project Knowledge Persistence (Continuous Handover)
 
-> **Always updated work logic, architectural to `ftr_system_design.mdd` before ending a session.**
+> **Always updated work logic, architectural to `ftr_system_design.md` before ending a session.**
 
 - Every time a new or updated requirement that changes software logic is completed, append details information to `ftr_system_design.md`.
 - Every time a new or updated technology, DB schema, architectural change is completed, append details information to `ftr_system_design.md`.

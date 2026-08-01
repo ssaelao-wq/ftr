@@ -32,7 +32,7 @@ async function main() {
         tax_id: '0105534102275',
         service_date: '2026-05-07',  // Will format to 07/05/69
         booking_num: 'BKG1234567',
-        container_num: 'MSKU9876543',
+        container_num: 'MSKU9876543,TEMU4009700,TEMU4009701,TEMU4009702,TEMU4009703',
     };
 
     const items = [
@@ -90,10 +90,18 @@ async function main() {
     });
 
     const bookingNum = (header.booking_num || '').trim();
-    const containerNum = (header.container_num || '').trim();
     const hasBkg = bookingNum.length > 0;
-    const hasCntr = containerNum.length > 0;
+
+    // Format & wrap container numbers
+    const rawContainerNum = (header.container_num || '');
+    const cntrLines = wrapContainerNumbers(rawContainerNum, 40);
+    const hasCntr = cntrLines.length > 0;
     const hasBkgCntr = hasBkg || hasCntr;
+
+    // Calculate how many rows BKG & CNTR lines will occupy
+    let extraRowsCount = 0;
+    if (hasBkg) extraRowsCount += 1;
+    if (hasCntr) extraRowsCount += cntrLines.length;
 
     // Chunking logic to split items into pages
     const MAX_ROWS_PER_PAGE = 9;
@@ -101,15 +109,16 @@ async function main() {
     const tempItems = [...itemObjects];
 
     if (hasBkgCntr) {
-        if (tempItems.length <= 7) {
+        const lastPageThreshold = Math.max(1, MAX_ROWS_PER_PAGE - extraRowsCount);
+        if (tempItems.length <= lastPageThreshold) {
             pages.push({
                 items: tempItems,
                 hasBkgCntr: true
             });
         } else {
-            while (tempItems.length > 7) {
+            while (tempItems.length > lastPageThreshold) {
                 pages.push({
-                    items: tempItems.splice(0, 9),
+                    items: tempItems.splice(0, MAX_ROWS_PER_PAGE),
                     hasBkgCntr: false
                 });
             }
@@ -127,7 +136,7 @@ async function main() {
         } else {
             while (tempItems.length > 0) {
                 pages.push({
-                    items: tempItems.splice(0, 9),
+                    items: tempItems.splice(0, MAX_ROWS_PER_PAGE),
                     hasBkgCntr: false
                 });
             }
@@ -193,25 +202,35 @@ async function main() {
 
         // Append BKG and CNTR rows if needed on this page
         if (pageData.hasBkgCntr) {
-            itemsHtml += `
-                <tr style="height: 22px;">
-                    <td class="text-center">&nbsp;</td>
-                    <td class="text-left" style="padding-left: 20px;">BKG: ${bookingNum}</td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-right"></td>
-                    <td class="text-right"></td>
-                </tr>
-                <tr style="height: 22px;">
-                    <td class="text-center">&nbsp;</td>
-                    <td class="text-left" style="padding-left: 20px;">CNTR: ${containerNum}</td>
-                    <td class="text-center"></td>
-                    <td class="text-center"></td>
-                    <td class="text-right"></td>
-                    <td class="text-right"></td>
-                </tr>
-            `;
-            rowCount += 2;
+            if (hasBkg) {
+                itemsHtml += `
+                    <tr style="height: 22px;">
+                        <td class="text-center">&nbsp;</td>
+                        <td class="text-left" style="padding-left: 20px;">BKG: ${bookingNum}</td>
+                        <td class="text-center"></td>
+                        <td class="text-center"></td>
+                        <td class="text-right"></td>
+                        <td class="text-right"></td>
+                    </tr>
+                `;
+                rowCount++;
+            }
+            if (hasCntr) {
+                cntrLines.forEach((line, lineIdx) => {
+                    const prefix = lineIdx === 0 ? 'CNTR: ' : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+                    itemsHtml += `
+                        <tr style="height: 22px;">
+                            <td class="text-center">&nbsp;</td>
+                            <td class="text-left" style="padding-left: 20px;">${prefix}${line}</td>
+                            <td class="text-center"></td>
+                            <td class="text-center"></td>
+                            <td class="text-right"></td>
+                            <td class="text-right"></td>
+                        </tr>
+                    `;
+                    rowCount++;
+                });
+            }
         }
 
         // Pad table with empty rows
